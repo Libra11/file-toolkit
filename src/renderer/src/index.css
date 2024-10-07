@@ -1,0 +1,17 @@
+/* Add this to your existing styles */
+body {
+  -webkit-app-region: no-drag;
+}
+
+/* 为自定义标题栏添加特定的类 */
+.custom-titlebar {
+  -webkit-app-region: no-drag;
+}
+
+/* 确保按钮和其他交互元素不可拖动 */
+button,
+input,
+select,
+[role='button'] {
+  -webkit-app-region: no-drag;
+}
