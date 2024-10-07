@@ -43,5 +43,7 @@
   "selectLanguage": "选择语言",
   "darkMode": "暗黑模式",
   "selectFile": "选择文件",
-  "preview": "预览"
+  "preview": "预览",
+  "quality": "质量",
+  "qualityTooltip": "数字越小，质量越高，文件越大"
 }

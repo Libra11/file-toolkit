@@ -9,7 +9,7 @@ import path from 'path'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import fs from 'fs'
-import { Mp4ToGifOptions } from '@shared/types'
+import { JpgToPngOptions, Mp4ToGifOptions, PngToJpgOptions } from '@shared/types'
 
 const execFileAsync = promisify(execFile)
 
@@ -62,6 +62,66 @@ ipcMain.handle(
       return outputPath
     } catch (error) {
       console.error('Error during conversion:', error)
+      throw error
+    }
+  }
+)
+
+ipcMain.handle(
+  'convert-png-to-jpg',
+  async (_, inputPath: string, outputPath: string, optionsStr: string) => {
+    try {
+      const options: PngToJpgOptions = JSON.parse(optionsStr)
+
+      if (fs.existsSync(outputPath)) {
+        console.log('Output file already exists, deleting...')
+        fs.unlinkSync(outputPath)
+        console.log('Existing output file deleted')
+      }
+
+      const ffmpegArgs = [
+        '-i',
+        inputPath,
+        '-qscale:v',
+        options.quality.toString(),
+        '-vf',
+        `scale=${options.scale}`,
+        outputPath
+      ]
+
+      await execFileAsync(ffmpegPath, ffmpegArgs)
+
+      console.log('PNG to JPG conversion completed')
+      console.log('Output file exists:', fs.existsSync(outputPath))
+      return outputPath
+    } catch (error) {
+      console.error('Error during PNG to JPG conversion:', error)
+      throw error
+    }
+  }
+)
+
+ipcMain.handle(
+  'convert-jpg-to-png',
+  async (_, inputPath: string, outputPath: string, optionsStr: string) => {
+    try {
+      const options: JpgToPngOptions = JSON.parse(optionsStr)
+
+      if (fs.existsSync(outputPath)) {
+        console.log('Output file already exists, deleting...')
+        fs.unlinkSync(outputPath)
+        console.log('Existing output file deleted')
+      }
+
+      const ffmpegArgs = ['-i', inputPath, '-vf', `scale=${options.scale}`, outputPath]
+
+      await execFileAsync(ffmpegPath, ffmpegArgs)
+
+      console.log('JPG to PNG conversion completed')
+      console.log('Output file exists:', fs.existsSync(outputPath))
+      return outputPath
+    } catch (error) {
+      console.error('Error during JPG to PNG conversion:', error)
       throw error
     }
   }

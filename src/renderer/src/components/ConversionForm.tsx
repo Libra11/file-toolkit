@@ -13,7 +13,13 @@ import CategorySelect from '@renderer/components/CategorySelect'
 import ConversionTypeSelect from '@renderer/components/ConversionTypeSelect'
 import FileInput from '@renderer/components/FileInput'
 import AdvancedSettings from '@renderer/components/AdvancedSettings'
-import { CONVERSION_TYPES, ConversionCategory } from '@renderer/lib/conversionTypes'
+import {
+  CONVERSION_TYPES,
+  ConversionCategory,
+  ConversionType,
+  getDefaultOutputExtension
+} from '@renderer/lib/conversionTypes'
+import { ConversionOptions } from '@shared/types'
 
 interface ConversionFormProps {
   categories: ConversionCategory[]
@@ -22,11 +28,67 @@ interface ConversionFormProps {
 export default function ConversionForm({ categories }: ConversionFormProps): JSX.Element {
   const { t } = useTranslation()
   const [selectedCategory, setSelectedCategory] = useState('')
-  const [selectedConversion, setSelectedConversion] = useState('')
+  const [selectedConversion, setSelectedConversion] = useState<ConversionType | ''>('')
   const [isConverting, setIsConverting] = useState(false)
   const [convertedFilePath, setConvertedFilePath] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [advancedOptions, setAdvancedOptions] = useState({})
+  const [advancedOptions, setAdvancedOptions] = useState<ConversionOptions>({
+    fps: 10,
+    scale: '480:-1',
+    quality: 5
+  })
+
+  const saveOutputFile = async (conversionType: ConversionType): Promise<string> => {
+    const extension = getDefaultOutputExtension(conversionType)
+    const defaultFileName = `output.${extension}`
+    const outputPath = await window.api.saveFile(defaultFileName)
+    if (!outputPath) {
+      throw new Error('No output file selected')
+    }
+    return outputPath
+  }
+
+  const convertMp4ToGif = async (
+    inputPath: string,
+    outputPath: string,
+    optionsStr: string
+  ): Promise<string> => {
+    return await window.api.convertMp4ToGif(inputPath, outputPath, optionsStr)
+  }
+
+  const convertPngToJpg = async (
+    inputPath: string,
+    outputPath: string,
+    optionsStr: string
+  ): Promise<string> => {
+    return await window.api.convertPngToJpg(inputPath, outputPath, optionsStr)
+  }
+
+  const convertJpgToPng = async (
+    inputPath: string,
+    outputPath: string,
+    optionsStr: string
+  ): Promise<string> => {
+    return await window.api.convertJpgToPng(inputPath, outputPath, optionsStr)
+  }
+
+  const performConversion = async (
+    conversionType: ConversionType,
+    inputPath: string,
+    outputPath: string,
+    optionsStr: string
+  ): Promise<string> => {
+    switch (conversionType) {
+      case CONVERSION_TYPES.MP4_TO_GIF:
+        return await convertMp4ToGif(inputPath, outputPath, optionsStr)
+      case CONVERSION_TYPES.PNG_TO_JPG:
+        return await convertPngToJpg(inputPath, outputPath, optionsStr)
+      case CONVERSION_TYPES.JPG_TO_PNG:
+        return await convertJpgToPng(inputPath, outputPath, optionsStr)
+      default:
+        throw new Error(`Unsupported conversion type: ${conversionType}`)
+    }
+  }
 
   const handleConvert = async (): Promise<void> => {
     console.log(selectedFile, selectedConversion)
@@ -34,27 +96,27 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
 
     setIsConverting(true)
     try {
-      if (selectedConversion === CONVERSION_TYPES.MP4_TO_GIF) {
-        const inputPath = selectedFile.path
-        const defaultFileName = 'output.gif'
-        const outputPath = await window.api.saveFile(defaultFileName)
+      const inputPath = selectedFile.path
+      const outputPath = await saveOutputFile(selectedConversion)
+      const optionsStr = JSON.stringify(advancedOptions)
 
-        if (!outputPath) {
-          throw new Error('No output file selected')
-        }
-
-        const optionsStr = JSON.stringify(advancedOptions)
-
-        const convertedPath = await window.api.convertMp4ToGif(inputPath, outputPath, optionsStr)
-        setConvertedFilePath(convertedPath)
-      }
-      // Add more conversion types here in the future
+      const convertedPath = await performConversion(
+        selectedConversion,
+        inputPath,
+        outputPath,
+        optionsStr
+      )
+      setConvertedFilePath(convertedPath)
     } catch (error) {
       console.error('Conversion error:', error)
       // Handle error (e.g., show error message to user)
     } finally {
       setIsConverting(false)
     }
+  }
+
+  const handleConversionChange = (conversion: ConversionType | ''): void => {
+    setSelectedConversion(conversion)
   }
 
   return (
@@ -69,7 +131,7 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
           categories={categories}
           selectedCategory={selectedCategory}
           selectedConversion={selectedConversion}
-          onConversionChange={setSelectedConversion}
+          onConversionChange={handleConversionChange}
         />
       </div>
 
@@ -84,7 +146,6 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
           >
             <FileInput onFileSelect={setSelectedFile} />
             <AdvancedSettings
-              selectedCategory={selectedCategory}
               conversionType={selectedConversion}
               onOptionsChange={setAdvancedOptions}
             />

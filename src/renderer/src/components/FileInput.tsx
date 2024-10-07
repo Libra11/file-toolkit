@@ -6,7 +6,7 @@
  */
 import React, { useRef, useState } from 'react'
 import { Button } from '@renderer/components/ui/button'
-import { Upload } from 'lucide-react'
+import { Upload, File, X } from 'lucide-react'
 import { t } from 'i18next'
 
 interface FileInputProps {
@@ -31,20 +31,39 @@ const FileInput: React.FC<FileInputProps> = ({ onFileSelect }) => {
     fileInputRef.current?.click()
   }
 
+  const handleRemoveFile = (): void => {
+    setSelectedFileName(null)
+    onFileSelect(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   return (
     <div className="flex items-center">
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".mp4" // 根据您支持的文件类型进行调整
+        accept=".mp4, .png, .jpg, .jpeg, .gif"
         className="hidden"
       />
-      <Button onClick={handleButtonClick} variant="default" className="mr-4">
+      <Button onClick={handleButtonClick} variant="outline" className="border-dashed">
         <Upload className="mr-2 h-4 w-4" />
         {t('selectFile')}
       </Button>
-      {selectedFileName && <span className="text-sm text-gray-600">{selectedFileName}</span>}
+      {selectedFileName && (
+        <div className="ml-4 flex items-center bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-md px-3 py-1.5 border border-blue-200 dark:border-blue-700">
+          <File className="h-4 w-4 mr-2" />
+          <span className="text-sm font-medium">{selectedFileName}</span>
+          <button
+            onClick={handleRemoveFile}
+            className="ml-2 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-200 focus:outline-none"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

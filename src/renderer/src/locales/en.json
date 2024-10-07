@@ -43,5 +43,7 @@
   "selectLanguage": "Select a language",
   "darkMode": "Dark Mode",
   "selectFile": "Select File",
-  "preview": "Preview"
+  "preview": "Preview",
+  "quality": "Quality",
+  "qualityTooltip": "The smaller the number, the higher the quality, the larger the file"
 }

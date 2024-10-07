@@ -5,7 +5,6 @@
  * Description:
  */
 import { useTranslation } from 'react-i18next'
-import { Label } from '@renderer/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -13,13 +12,14 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { ConversionCategory } from '@renderer/lib/conversionTypes'
+import { ConversionCategory, ConversionType } from '@renderer/lib/conversionTypes'
+import { Label } from '@renderer/components/ui/label'
 
 interface ConversionTypeSelectProps {
   categories: ConversionCategory[]
   selectedCategory: string
-  selectedConversion: string
-  onConversionChange: (conversion: string) => void
+  selectedConversion: ConversionType | ''
+  onConversionChange: (conversion: ConversionType | '') => void
 }
 
 export default function ConversionTypeSelect({
@@ -29,27 +29,30 @@ export default function ConversionTypeSelect({
   onConversionChange
 }: ConversionTypeSelectProps): JSX.Element {
   const { t } = useTranslation()
-  const conversionTypes = selectedCategory
-    ? categories.find((c) => c.name === selectedCategory)?.types || []
-    : []
+
+  const handleConversionChange = (value: string): void => {
+    onConversionChange(value as ConversionType | '')
+  }
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="conversionType">{t('conversionType')}</Label>
+      <Label htmlFor="conversion">{t('selectCategory')}</Label>
       <Select
         value={selectedConversion}
-        onValueChange={onConversionChange}
+        onValueChange={handleConversionChange}
         disabled={!selectedCategory}
       >
-        <SelectTrigger id="conversionType">
+        <SelectTrigger>
           <SelectValue placeholder={t('selectConversion')} />
         </SelectTrigger>
         <SelectContent>
-          {conversionTypes.map((type) => (
-            <SelectItem key={type} value={type}>
-              {t(type)}
-            </SelectItem>
-          ))}
+          {categories
+            .find((category) => category.name === selectedCategory)
+            ?.types.map((type) => (
+              <SelectItem key={type} value={type}>
+                {t(type)}
+              </SelectItem>
+            ))}
         </SelectContent>
       </Select>
     </div>
