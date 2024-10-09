@@ -44,11 +44,11 @@ export default function AdvancedSettings({
   const { t } = useTranslation()
   const [conversionOptions, setConversionOptions] = useState<ConversionOptions>({
     fps: 10,
-    scale: '480:-1',
+    scale: '-1:-1', // Use inputFileScale if provided, otherwise default to '480:-1'
     quality: 5
   })
 
-  const scaleOptions = ['320:-1', '480:-1', '640:-1', '800:-1', '1024:-1']
+  const scaleOptions = ['-1:-1', '320:-1', '480:-1', '640:-1', '800:-1', '1024:-1']
   const fpsOptions = [10, 15, 20, 25, 30]
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function AdvancedSettings({
           <div key={setting} className="ml-1 space-y-2 flex-1 mr-4">
             <Label htmlFor="fps">{t('fps')}</Label>
             <Select
-              defaultValue={conversionOptions.fps.toString()}
+              defaultValue={conversionOptions.fps!.toString()}
               onValueChange={(value) => handleOptionChange('fps', parseInt(value))}
             >
               <SelectTrigger id="fps">
@@ -96,7 +96,9 @@ export default function AdvancedSettings({
               <SelectContent>
                 {scaleOptions.map((scale) => (
                   <SelectItem key={scale} value={scale}>
-                    {scale.split(':')[0]}
+                    {scale.split(':')[0] === '-1'
+                      ? t('originalResolution')
+                      : `${scale.split(':')[0]}`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -128,7 +130,7 @@ export default function AdvancedSettings({
               min={2}
               max={31}
               step={1}
-              value={[conversionOptions.quality]}
+              value={[conversionOptions.quality!]}
               onValueChange={(value) => handleOptionChange('quality', value[0])}
             />
           </div>

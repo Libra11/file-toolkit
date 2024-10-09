@@ -45,5 +45,6 @@
   "selectFile": "Select File",
   "preview": "Preview",
   "quality": "Quality",
-  "qualityTooltip": "The smaller the number, the higher the quality, the larger the file"
+  "qualityTooltip": "The smaller the number, the higher the quality, the larger the file",
+  "originalResolution": "Original Resolution"
 }

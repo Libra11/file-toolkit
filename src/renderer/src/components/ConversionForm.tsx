@@ -72,6 +72,14 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
     return await window.api.convertJpgToPng(inputPath, outputPath, optionsStr)
   }
 
+  const convertWebpToJpg = async (
+    inputPath: string,
+    outputPath: string,
+    optionsStr: string
+  ): Promise<string> => {
+    return await window.api.convertWebpToJpg(inputPath, outputPath, optionsStr)
+  }
+
   const performConversion = async (
     conversionType: ConversionType,
     inputPath: string,
@@ -85,6 +93,8 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
         return await convertPngToJpg(inputPath, outputPath, optionsStr)
       case CONVERSION_TYPES.JPG_TO_PNG:
         return await convertJpgToPng(inputPath, outputPath, optionsStr)
+      case CONVERSION_TYPES.WEBP_TO_JPG:
+        return await convertWebpToJpg(inputPath, outputPath, optionsStr)
       default:
         throw new Error(`Unsupported conversion type: ${conversionType}`)
     }

@@ -9,7 +9,7 @@ import path from 'path'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import fs from 'fs'
-import { JpgToPngOptions, Mp4ToGifOptions, PngToJpgOptions } from '@shared/types'
+import { JpgToPngOptions, Mp4ToGifOptions, PngToJpgOptions, WebpToJpgOptions } from '@shared/types'
 
 const execFileAsync = promisify(execFile)
 
@@ -30,100 +30,96 @@ const ffmpegPath = app.isPackaged
       process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
     )
 
+function checkFileExists(filePath: string): void {
+  if (fs.existsSync(filePath)) {
+    console.log('File already exists, deleting...')
+    fs.unlinkSync(filePath)
+    console.log('Existing file deleted')
+  }
+}
+
 ipcMain.handle(
   'convert-mp4-to-gif',
   async (_, inputPath: string, outputPath: string, optionsStr: string) => {
-    try {
-      const options: Mp4ToGifOptions = JSON.parse(optionsStr)
-      console.log(options)
+    const options: Mp4ToGifOptions = JSON.parse(optionsStr)
+    checkFileExists(outputPath)
+    const ffmpegArgs =
+      options.scale === '-1:-1'
+        ? ['-i', inputPath, '-vf', `fps=${options.fps}`, '-c:v', 'gif', outputPath]
+        : [
+            '-i',
+            inputPath,
+            '-vf',
+            `fps=${options.fps},scale=${options.scale}:flags=lanczos`,
+            '-c:v',
+            'gif',
+            outputPath
+          ]
 
-      if (fs.existsSync(outputPath)) {
-        console.log('File already exists, deleting...')
-        fs.unlinkSync(outputPath)
-        console.log('Existing file deleted')
-      }
-
-      console.log('Starting conversion...')
-
-      const ffmpegArgs = [
-        '-i',
-        inputPath,
-        '-vf',
-        `fps=${options.fps},scale=${options.scale}:flags=lanczos`,
-        '-c:v',
-        'gif',
-        outputPath
-      ]
-
-      await execFileAsync(ffmpegPath, ffmpegArgs)
-
-      console.log('Conversion completed')
-      console.log('File exists:', fs.existsSync(outputPath))
-      return outputPath
-    } catch (error) {
-      console.error('Error during conversion:', error)
-      throw error
-    }
+    await execFileAsync(ffmpegPath, ffmpegArgs)
+    return outputPath
   }
 )
 
 ipcMain.handle(
   'convert-png-to-jpg',
   async (_, inputPath: string, outputPath: string, optionsStr: string) => {
-    try {
-      const options: PngToJpgOptions = JSON.parse(optionsStr)
+    const options: PngToJpgOptions = JSON.parse(optionsStr)
+    checkFileExists(outputPath)
 
-      if (fs.existsSync(outputPath)) {
-        console.log('Output file already exists, deleting...')
-        fs.unlinkSync(outputPath)
-        console.log('Existing output file deleted')
-      }
+    const ffmpegArgs =
+      options.scale === '-1:-1'
+        ? ['-i', inputPath, '-qscale:v', options.quality!.toString(), outputPath]
+        : [
+            '-i',
+            inputPath,
+            '-qscale:v',
+            options.quality!.toString(),
+            '-vf',
+            `scale=${options.scale}`,
+            outputPath
+          ]
 
-      const ffmpegArgs = [
-        '-i',
-        inputPath,
-        '-qscale:v',
-        options.quality.toString(),
-        '-vf',
-        `scale=${options.scale}`,
-        outputPath
-      ]
-
-      await execFileAsync(ffmpegPath, ffmpegArgs)
-
-      console.log('PNG to JPG conversion completed')
-      console.log('Output file exists:', fs.existsSync(outputPath))
-      return outputPath
-    } catch (error) {
-      console.error('Error during PNG to JPG conversion:', error)
-      throw error
-    }
+    await execFileAsync(ffmpegPath, ffmpegArgs)
+    return outputPath
   }
 )
 
 ipcMain.handle(
   'convert-jpg-to-png',
   async (_, inputPath: string, outputPath: string, optionsStr: string) => {
-    try {
-      const options: JpgToPngOptions = JSON.parse(optionsStr)
+    const options: JpgToPngOptions = JSON.parse(optionsStr)
+    checkFileExists(outputPath)
+    const ffmpegArgs =
+      options.scale === '-1:-1'
+        ? ['-i', inputPath, outputPath]
+        : ['-i', inputPath, '-vf', `scale=${options.scale}`, outputPath]
 
-      if (fs.existsSync(outputPath)) {
-        console.log('Output file already exists, deleting...')
-        fs.unlinkSync(outputPath)
-        console.log('Existing output file deleted')
-      }
+    await execFileAsync(ffmpegPath, ffmpegArgs)
+    return outputPath
+  }
+)
 
-      const ffmpegArgs = ['-i', inputPath, '-vf', `scale=${options.scale}`, outputPath]
+ipcMain.handle(
+  'convert-webp-to-jpg',
+  async (_, inputPath: string, outputPath: string, optionsStr: string) => {
+    const options: WebpToJpgOptions = JSON.parse(optionsStr)
+    checkFileExists(outputPath)
+    const ffmpegArgs =
+      options.scale === '-1:-1'
+        ? ['-i', inputPath, '-qscale:v', options.quality!.toString(), outputPath]
+        : [
+            '-i',
+            inputPath,
+            '-qscale:v',
+            options.quality!.toString(),
+            '-vf',
+            `scale=${options.scale}`,
+            outputPath
+          ]
 
-      await execFileAsync(ffmpegPath, ffmpegArgs)
-
-      console.log('JPG to PNG conversion completed')
-      console.log('Output file exists:', fs.existsSync(outputPath))
-      return outputPath
-    } catch (error) {
-      console.error('Error during JPG to PNG conversion:', error)
-      throw error
-    }
+    await execFileAsync(ffmpegPath, ffmpegArgs)
+    return outputPath
   }
 )
 
@@ -149,5 +145,3 @@ ipcMain.handle('check-file-exists', async (_, filePath: string) => {
     return false
   }
 })
-
-// ... 其他代码

@@ -5,18 +5,21 @@
  * @Description:
  */
 
-export interface Mp4ToGifOptions {
-  scale: '320:-1' | '480:-1' | '640:-1' | '800:-1' | '1024:-1'
-  fps: 10 | 15 | 20 | 25 | 30
+interface BaseOptions {
+  scale: '-1:-1' | '320:-1' | '480:-1' | '640:-1' | '800:-1' | '1024:-1'
 }
 
-export interface PngToJpgOptions {
-  scale: '320:-1' | '480:-1' | '640:-1' | '800:-1' | '1024:-1'
-  quality: number // 2-31
+interface FpsOption {
+  fps?: 10 | 15 | 20 | 25 | 30
 }
 
-export interface JpgToPngOptions {
-  scale: '320:-1' | '480:-1' | '640:-1' | '800:-1' | '1024:-1'
+interface QualityOption {
+  quality?: number // 2-31
 }
 
-export type ConversionOptions = Mp4ToGifOptions & PngToJpgOptions & JpgToPngOptions
+export type Mp4ToGifOptions = BaseOptions & FpsOption
+export type PngToJpgOptions = BaseOptions & QualityOption
+export type JpgToPngOptions = BaseOptions
+export type WebpToJpgOptions = BaseOptions & QualityOption
+
+export type ConversionOptions = BaseOptions & Partial<FpsOption & QualityOption>

@@ -15,6 +15,8 @@ const api = {
     ipcRenderer.invoke('convert-png-to-jpg', inputPath, outputPath, optionsStr),
   convertJpgToPng: (inputPath: string, outputPath: string, optionsStr: string): Promise<unknown> =>
     ipcRenderer.invoke('convert-jpg-to-png', inputPath, outputPath, optionsStr),
+  convertWebpToJpg: (inputPath: string, outputPath: string, optionsStr: string): Promise<unknown> =>
+    ipcRenderer.invoke('convert-webp-to-jpg', inputPath, outputPath, optionsStr),
   selectDirectory: (): Promise<unknown> => ipcRenderer.invoke('select-directory'),
   checkFileExists: (filePath: string): Promise<unknown> =>
     ipcRenderer.invoke('check-file-exists', filePath),
