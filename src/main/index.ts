@@ -42,6 +42,12 @@ function createWindow(): void {
     mainWindow.show()
   })
 
+  mainWindow.webContents.on('did-finish-load', () => {
+    setInterval(() => {
+      mainWindow.webContents.send('convert-mp4-to-gif', 'test')
+    }, 1000)
+  })
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }

@@ -30,6 +30,8 @@ const ffmpegPath = app.isPackaged
       process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
     )
 
+console.log(ffmpegPath)
+
 function checkFileExists(filePath: string): void {
   if (fs.existsSync(filePath)) {
     console.log('File already exists, deleting...')

@@ -39,7 +39,6 @@
     "electron-updater": "^6.1.7",
     "framer-motion": "^11.11.1",
     "i18next": "^23.15.2",
-    "libra-tool": "file:",
     "lucide-react": "^0.447.0",
     "react-i18next": "^15.0.2",
     "tailwind-merge": "^2.5.3",

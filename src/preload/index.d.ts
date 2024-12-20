@@ -1,18 +1,18 @@
+/*
+ * @Author: Libra
+ * @Date: 2024-12-19 17:11:38
+ * @LastEditors: Libra
+ * @Description:
+ */
 import { ElectronAPI } from '@electron-toolkit/preload'
+import type { Ffmpeg } from './types/ffmpeg'
+import type { System } from './types/system'
 
+export type IpcListener = (event: IpcRendererEvent, ...args: unknown[]) => void
 declare global {
   interface Window {
     electron: ElectronAPI
-    api: {
-      convertMp4ToGif: (inputPath: string, outputPath: string, options: string) => Promise<string>
-      convertPngToJpg: (inputPath: string, outputPath: string, options: string) => Promise<string>
-      convertJpgToPng: (inputPath: string, outputPath: string, options: string) => Promise<string>
-      convertWebpToJpg: (inputPath: string, outputPath: string, options: string) => Promise<string>
-      selectDirectory: () => Promise<string | undefined>
-      checkFileExists: (filePath: string) => Promise<boolean>
-      saveFile: (filePath: string) => Promise<string>
-      minimizeWindow: () => Promise<void>
-      closeWindow: () => Promise<void>
-    }
+    ffmpeg: Ffmpeg
+    system: System
   }
 }

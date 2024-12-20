@@ -12,11 +12,11 @@ const CustomTitleBar: React.FC = () => {
   // 删除未使用的 useTranslation 钩子
 
   const handleMinimize = async (): Promise<void> => {
-    await window.api.minimizeWindow()
+    await window.system.minimizeWindow()
   }
 
   const handleClose = async (): Promise<void> => {
-    await window.api.closeWindow()
+    await window.system.closeWindow()
   }
 
   return (

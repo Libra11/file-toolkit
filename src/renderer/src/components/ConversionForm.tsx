@@ -41,7 +41,7 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
   const saveOutputFile = async (conversionType: ConversionType): Promise<string> => {
     const extension = getDefaultOutputExtension(conversionType)
     const defaultFileName = `output.${extension}`
-    const outputPath = await window.api.saveFile(defaultFileName)
+    const outputPath = await window.system.saveFile(defaultFileName)
     if (!outputPath) {
       throw new Error('No output file selected')
     }
@@ -53,7 +53,7 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
     outputPath: string,
     optionsStr: string
   ): Promise<string> => {
-    return await window.api.convertMp4ToGif(inputPath, outputPath, optionsStr)
+    return await window.ffmpeg.convertMp4ToGif(inputPath, outputPath, optionsStr)
   }
 
   const convertPngToJpg = async (
@@ -61,7 +61,7 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
     outputPath: string,
     optionsStr: string
   ): Promise<string> => {
-    return await window.api.convertPngToJpg(inputPath, outputPath, optionsStr)
+    return await window.ffmpeg.convertPngToJpg(inputPath, outputPath, optionsStr)
   }
 
   const convertJpgToPng = async (
@@ -69,7 +69,7 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
     outputPath: string,
     optionsStr: string
   ): Promise<string> => {
-    return await window.api.convertJpgToPng(inputPath, outputPath, optionsStr)
+    return await window.ffmpeg.convertJpgToPng(inputPath, outputPath, optionsStr)
   }
 
   const convertWebpToJpg = async (
@@ -77,7 +77,7 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
     outputPath: string,
     optionsStr: string
   ): Promise<string> => {
-    return await window.api.convertWebpToJpg(inputPath, outputPath, optionsStr)
+    return await window.ffmpeg.convertWebpToJpg(inputPath, outputPath, optionsStr)
   }
 
   const performConversion = async (
