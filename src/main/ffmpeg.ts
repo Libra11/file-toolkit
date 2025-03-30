@@ -4,13 +4,9 @@
  * @LastEditors: Libra
  * @Description: 初始化FFmpeg相关功能
  */
-import { registerFileConversionHandlers } from './handlers/fileHandlers'
-import { registerFileCompressionHandlers } from './handlers/compressHandlers'
+import { registerAllHandlers } from './handlers'
 
-// 注册文件转换处理程序
-registerFileConversionHandlers()
-
-// 注册文件压缩处理程序
-registerFileCompressionHandlers()
+// 注册所有文件处理程序
+registerAllHandlers()
 
 console.log('FFmpeg功能已初始化')
