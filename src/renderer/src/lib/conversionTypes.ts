@@ -4,22 +4,25 @@
  * @LastEditors: Libra
  * @Description:
  */
-import { ImageIcon, FileText, Video, Music } from 'lucide-react'
+import { ImageIcon, Video, Music } from 'lucide-react'
 
 // 定义转换类型常量
 export const CONVERSION_TYPES = {
-  MP4_TO_GIF: 'mp4ToGif',
-  PNG_TO_JPG: 'pngToJpg',
+  // 图片转换
   JPG_TO_PNG: 'jpgToPng',
+  PNG_TO_JPG: 'pngToJpg',
   WEBP_TO_JPG: 'webpToJpg',
-  TIFF_TO_PNG: 'tiffToPng',
-  PDF_TO_DOCX: 'pdfToDocx',
-  DOCX_TO_PDF: 'docxToPdf',
-  TXT_TO_PDF: 'txtToPdf',
-  EPUB_TO_PDF: 'epubToPdf',
+  JPG_TO_WEBP: 'jpgToWebp',
+  PNG_TO_WEBP: 'pngToWebp',
+  WEBP_TO_PNG: 'webpToPng',
+
+  // 视频转换
+  MP4_TO_GIF: 'mp4ToGif',
   AVI_TO_MP4: 'aviToMp4',
   MOV_TO_MP4: 'movToMp4',
   WEBM_TO_MP4: 'webmToMp4',
+
+  // 音频转换
   MP3_TO_WAV: 'mp3ToWav',
   WAV_TO_MP3: 'wavToMp3',
   M4A_TO_MP3: 'm4aToMp3',
@@ -38,7 +41,7 @@ export function getDefaultOutputExtension(conversionType: ConversionType): strin
 
 export interface ConversionCategory {
   name: string
-  icon: typeof ImageIcon | typeof FileText | typeof Video | typeof Music
+  icon: typeof ImageIcon | typeof Video | typeof Music
   types: ConversionType[]
 }
 
@@ -47,20 +50,13 @@ export const conversionCategories: ConversionCategory[] = [
     name: 'image',
     icon: ImageIcon,
     types: [
+      // JPG、PNG和WebP三种格式之间的互相转换
       CONVERSION_TYPES.JPG_TO_PNG,
       CONVERSION_TYPES.PNG_TO_JPG,
+      CONVERSION_TYPES.JPG_TO_WEBP,
       CONVERSION_TYPES.WEBP_TO_JPG,
-      CONVERSION_TYPES.TIFF_TO_PNG
-    ]
-  },
-  {
-    name: 'document',
-    icon: FileText,
-    types: [
-      CONVERSION_TYPES.PDF_TO_DOCX,
-      CONVERSION_TYPES.DOCX_TO_PDF,
-      CONVERSION_TYPES.TXT_TO_PDF,
-      CONVERSION_TYPES.EPUB_TO_PDF
+      CONVERSION_TYPES.PNG_TO_WEBP,
+      CONVERSION_TYPES.WEBP_TO_PNG
     ]
   },
   {

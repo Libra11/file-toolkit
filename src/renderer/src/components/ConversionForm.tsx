@@ -65,8 +65,26 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
     return await window.ffmpeg.convertWebpToJpg(inputPath, outputPath)
   }
 
+  const convertJpgToWebp = async (inputPath: string, outputPath: string): Promise<string> => {
+    return await window.ffmpeg.convertJpgToWebp(inputPath, outputPath)
+  }
+
+  const convertPngToWebp = async (inputPath: string, outputPath: string): Promise<string> => {
+    return await window.ffmpeg.convertPngToWebp(inputPath, outputPath)
+  }
+
+  const convertWebpToPng = async (inputPath: string, outputPath: string): Promise<string> => {
+    return await window.ffmpeg.convertWebpToPng(inputPath, outputPath)
+  }
+
   const openFileLocation = async (filePath: string): Promise<boolean> => {
-    return await window.system.openFileLocation(filePath)
+    try {
+      // 使用electron.ipcRenderer直接调用IPC处理程序
+      return await window.electron.ipcRenderer.invoke('open-file-location', filePath)
+    } catch (error) {
+      console.error('打开文件位置错误:', error)
+      return false
+    }
   }
 
   const performConversion = async (
@@ -75,16 +93,27 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
     outputPath: string
   ): Promise<string> => {
     switch (conversionType) {
-      case CONVERSION_TYPES.MP4_TO_GIF:
-        return await convertMp4ToGif(inputPath, outputPath)
-      case CONVERSION_TYPES.PNG_TO_JPG:
-        return await convertPngToJpg(inputPath, outputPath)
+      // 图片转换
       case CONVERSION_TYPES.JPG_TO_PNG:
         return await convertJpgToPng(inputPath, outputPath)
+      case CONVERSION_TYPES.PNG_TO_JPG:
+        return await convertPngToJpg(inputPath, outputPath)
       case CONVERSION_TYPES.WEBP_TO_JPG:
         return await convertWebpToJpg(inputPath, outputPath)
+      case CONVERSION_TYPES.JPG_TO_WEBP:
+        return await convertJpgToWebp(inputPath, outputPath)
+      case CONVERSION_TYPES.PNG_TO_WEBP:
+        return await convertPngToWebp(inputPath, outputPath)
+      case CONVERSION_TYPES.WEBP_TO_PNG:
+        return await convertWebpToPng(inputPath, outputPath)
+
+      // 视频转换
+      case CONVERSION_TYPES.MP4_TO_GIF:
+        return await convertMp4ToGif(inputPath, outputPath)
+
+      // 默认处理
       default:
-        throw new Error(`Unsupported conversion type: ${conversionType}`)
+        throw new Error(`未支持的转换类型: ${conversionType}`)
     }
   }
 

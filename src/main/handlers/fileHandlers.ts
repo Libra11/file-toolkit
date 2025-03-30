@@ -9,7 +9,10 @@ import {
   convertMp4ToGif,
   convertPngToJpg,
   convertJpgToPng,
-  convertWebpToJpg
+  convertWebpToJpg,
+  convertJpgToWebp,
+  convertPngToWebp,
+  convertWebpToPng
 } from '../converters/fileConverters'
 import { selectDirectory, saveFileDialog } from '../utils/dialogs'
 import { isFileExists } from '../utils/fileSystem'
@@ -63,6 +66,42 @@ export function registerFileConversionHandlers(): void {
       return result
     } catch (error) {
       console.error('WEBP到JPG转换IPC错误:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('convert-jpg-to-webp', async (_, inputPath: string, outputPath: string) => {
+    try {
+      console.log(`IPC调用: convert-jpg-to-webp ${inputPath} -> ${outputPath}`)
+      const result = await convertJpgToWebp(inputPath, outputPath)
+      console.log(`转换成功: ${result}`)
+      return result
+    } catch (error) {
+      console.error('JPG到WEBP转换IPC错误:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('convert-png-to-webp', async (_, inputPath: string, outputPath: string) => {
+    try {
+      console.log(`IPC调用: convert-png-to-webp ${inputPath} -> ${outputPath}`)
+      const result = await convertPngToWebp(inputPath, outputPath)
+      console.log(`转换成功: ${result}`)
+      return result
+    } catch (error) {
+      console.error('PNG到WEBP转换IPC错误:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('convert-webp-to-png', async (_, inputPath: string, outputPath: string) => {
+    try {
+      console.log(`IPC调用: convert-webp-to-png ${inputPath} -> ${outputPath}`)
+      const result = await convertWebpToPng(inputPath, outputPath)
+      console.log(`转换成功: ${result}`)
+      return result
+    } catch (error) {
+      console.error('WEBP到PNG转换IPC错误:', error)
       throw error
     }
   })

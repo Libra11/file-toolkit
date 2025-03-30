@@ -51,5 +51,38 @@ export const ffmpeg: Ffmpeg = {
       console.error('预加载脚本: convertWebpToJpg错误:', error)
       throw error
     }
+  },
+  convertJpgToWebp: async (inputPath, outputPath) => {
+    try {
+      console.log(`预加载脚本: 调用convertJpgToWebp, 输入:${inputPath}, 输出:${outputPath}`)
+      const result = await ipcRenderer.invoke('convert-jpg-to-webp', inputPath, outputPath)
+      console.log(`预加载脚本: convertJpgToWebp成功, 结果:${result}`)
+      return result
+    } catch (error) {
+      console.error('预加载脚本: convertJpgToWebp错误:', error)
+      throw error
+    }
+  },
+  convertPngToWebp: async (inputPath, outputPath) => {
+    try {
+      console.log(`预加载脚本: 调用convertPngToWebp, 输入:${inputPath}, 输出:${outputPath}`)
+      const result = await ipcRenderer.invoke('convert-png-to-webp', inputPath, outputPath)
+      console.log(`预加载脚本: convertPngToWebp成功, 结果:${result}`)
+      return result
+    } catch (error) {
+      console.error('预加载脚本: convertPngToWebp错误:', error)
+      throw error
+    }
+  },
+  convertWebpToPng: async (inputPath, outputPath) => {
+    try {
+      console.log(`预加载脚本: 调用convertWebpToPng, 输入:${inputPath}, 输出:${outputPath}`)
+      const result = await ipcRenderer.invoke('convert-webp-to-png', inputPath, outputPath)
+      console.log(`预加载脚本: convertWebpToPng成功, 结果:${result}`)
+      return result
+    } catch (error) {
+      console.error('预加载脚本: convertWebpToPng错误:', error)
+      throw error
+    }
   }
 }
