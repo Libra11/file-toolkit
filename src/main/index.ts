@@ -16,7 +16,6 @@ function createWindow(): void {
     width: 900,
     height: 800,
     show: false,
-    resizable: false,
     autoHideMenuBar: true,
     frame: false, // Add this line to remove the default frame
     ...(process.platform === 'linux' ? { icon } : {}),
