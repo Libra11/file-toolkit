@@ -10,8 +10,8 @@ import {
   convertJpgToPng,
   convertPngToWebp,
   convertWebpToPng,
-  convertWebpToJpg,
-  convertJpgToWebp
+  convertJpgToWebp,
+  convertWebpToJpg
 } from '../../converters/index'
 
 /**

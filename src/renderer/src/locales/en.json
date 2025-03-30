@@ -21,6 +21,9 @@
   "jpgToPng": "JPG to PNG",
   "pngToJpg": "PNG to JPG",
   "webpToJpg": "WEBP to JPG",
+  "jpgToWebp": "JPG to WEBP",
+  "pngToWebp": "PNG to WEBP",
+  "webpToPng": "WEBP to PNG",
   "tiffToPng": "TIFF to PNG",
   "pdfToDocx": "PDF to DOCX",
   "docxToPdf": "DOCX to PDF",
@@ -68,5 +71,17 @@
   "conversionSuccess": "Conversion Success",
   "outputFile": "Output File",
   "openFileLocation": "Open File Location",
-  "convertAnother": "Convert Another"
+  "convertAnother": "Convert Another",
+  "batchMode": "Batch Mode",
+  "singleFileMode": "Single File Mode",
+  "batchConversion": "Batch Conversion",
+  "dropFilesHere": "Drop multiple files here",
+  "selectedFiles": "Selected Files",
+  "batchConvertFiles": "Batch Convert Files",
+  "batchConverting": "Batch Converting",
+  "batchConversionSuccess": "Batch Conversion Success",
+  "successCount": "Success Count",
+  "outputFiles": "Output Files",
+  "openOutputFolder": "Open Output Folder",
+  "convertMoreFiles": "Convert More Files"
 }

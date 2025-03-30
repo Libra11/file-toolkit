@@ -7,7 +7,20 @@
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, Loader2, CheckCircle2, Zap, FileUp, Download } from 'lucide-react'
+import {
+  ArrowRight,
+  Loader2,
+  CheckCircle2,
+  Zap,
+  FileUp,
+  Download,
+  Files,
+  Upload,
+  File,
+  Check,
+  X,
+  AlertCircle
+} from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import CategorySelect from '@renderer/components/CategorySelect'
 import ConversionTypeSelect from '@renderer/components/ConversionTypeSelect'
@@ -26,6 +39,7 @@ import {
 } from '@renderer/components/ui/tooltip'
 import { Badge } from '@renderer/components/ui/badge'
 import { cn } from '@renderer/lib/utils'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 
 interface ConversionFormProps {
   categories: ConversionCategory[]
@@ -38,6 +52,11 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
   const [isConverting, setIsConverting] = useState(false)
   const [convertedFilePath, setConvertedFilePath] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [isBatchMode, setIsBatchMode] = useState(false)
+  const [isBatchConverting, setIsBatchConverting] = useState(false)
+  const [batchResults, setBatchResults] = useState<string[]>([])
+  const [batchProgress, setBatchProgress] = useState(0)
 
   const saveOutputFile = async (conversionType: ConversionType): Promise<string> => {
     const extension = getDefaultOutputExtension(conversionType)
@@ -111,9 +130,88 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
       case CONVERSION_TYPES.MP4_TO_GIF:
         return await convertMp4ToGif(inputPath, outputPath)
 
+      // 音频转换
+      case CONVERSION_TYPES.MP3_TO_WAV:
+        return await window.electron.ipcRenderer.invoke('convert-mp3-to-wav', inputPath, outputPath)
+      case CONVERSION_TYPES.WAV_TO_MP3:
+        return await window.electron.ipcRenderer.invoke('convert-wav-to-mp3', inputPath, outputPath)
+      case CONVERSION_TYPES.FLAC_TO_MP3:
+        return await window.electron.ipcRenderer.invoke(
+          'convert-flac-to-mp3',
+          inputPath,
+          outputPath
+        )
+      case CONVERSION_TYPES.M4A_TO_MP3:
+        return await window.electron.ipcRenderer.invoke('convert-m4a-to-mp3', inputPath, outputPath)
+
       // 默认处理
       default:
         throw new Error(`未支持的转换类型: ${conversionType}`)
+    }
+  }
+
+  const selectBatchOutputDirectory = async (): Promise<string> => {
+    const outputDir = await window.system.selectDirectory()
+    if (!outputDir) {
+      throw new Error('未选择输出目录')
+    }
+    return outputDir
+  }
+
+  const performBatchConversion = async (
+    conversionType: ConversionType,
+    inputPaths: string[],
+    outputDir: string
+  ): Promise<string[]> => {
+    // 定义在switch外部避免词法声明错误
+    const results: string[] = []
+    const extension = getDefaultOutputExtension(conversionType)
+
+    switch (conversionType) {
+      // 音频批量转换
+      case CONVERSION_TYPES.MP3_TO_WAV:
+        return await window.electron.ipcRenderer.invoke(
+          'convert-batch-mp3-to-wav',
+          inputPaths,
+          outputDir
+        )
+      case CONVERSION_TYPES.WAV_TO_MP3:
+        return await window.electron.ipcRenderer.invoke(
+          'convert-batch-wav-to-mp3',
+          inputPaths,
+          outputDir
+        )
+      case CONVERSION_TYPES.FLAC_TO_MP3:
+        return await window.electron.ipcRenderer.invoke(
+          'convert-batch-flac-to-mp3',
+          inputPaths,
+          outputDir
+        )
+      case CONVERSION_TYPES.M4A_TO_MP3:
+        return await window.electron.ipcRenderer.invoke(
+          'convert-batch-m4a-to-mp3',
+          inputPaths,
+          outputDir
+        )
+      default:
+        // 对于不支持批量转换的类型，我们手动逐个转换
+        for (let i = 0; i < inputPaths.length; i++) {
+          const inputPath = inputPaths[i]
+          const fileName = inputPath.split('/').pop()?.split('\\').pop() || `file-${i}`
+          const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'))
+          const outputPath = `${outputDir}/${nameWithoutExt}.${extension}`
+
+          try {
+            const result = await performConversion(conversionType, inputPath, outputPath)
+            results.push(result)
+            // 更新进度
+            setBatchProgress(Math.round(((i + 1) / inputPaths.length) * 100))
+          } catch (error) {
+            console.error(`批量转换文件 ${inputPath} 失败:`, error)
+          }
+        }
+
+        return results
     }
   }
 
@@ -155,6 +253,34 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
       // Handle error (e.g., show error message to user)
     } finally {
       setIsConverting(false)
+    }
+  }
+
+  const handleBatchConvert = async (): Promise<void> => {
+    if (selectedFiles.length === 0 || !selectedConversion) return
+
+    setIsBatchConverting(true)
+    setBatchResults([])
+    setBatchProgress(0)
+
+    try {
+      const inputPaths = selectedFiles.map((file) => file.path)
+
+      // 选择输出目录
+      const outputDir = await selectBatchOutputDirectory()
+
+      console.log(`开始批量转换文件, 文件数: ${inputPaths.length}, 输出目录: ${outputDir}`)
+
+      // 执行批量转换
+      const results = await performBatchConversion(selectedConversion, inputPaths, outputDir)
+
+      console.log('批量转换完成, 成功数量:', results.length)
+      setBatchResults(results)
+      setBatchProgress(100)
+    } catch (error) {
+      console.error('批量转换错误:', error)
+    } finally {
+      setIsBatchConverting(false)
     }
   }
 
@@ -262,7 +388,176 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
                 </div>
               </div>
               <div className="p-4">
-                <FileInput onFileSelect={setSelectedFile} />
+                <Tabs
+                  defaultValue="single"
+                  className="w-full"
+                  onValueChange={(value) => {
+                    const isBatch = value === 'batch'
+                    setIsBatchMode(isBatch)
+
+                    // 清除相关状态
+                    setConvertedFilePath(null)
+                    setBatchResults([])
+
+                    if (!isBatch) {
+                      setSelectedFiles([])
+                    } else {
+                      setSelectedFile(null)
+                    }
+                  }}
+                >
+                  <TabsList className="grid w-full grid-cols-2 mb-4 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-lg">
+                    <TabsTrigger
+                      value="single"
+                      className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-md py-2"
+                    >
+                      {t('singleFileMode')}
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="batch"
+                      className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-md py-2"
+                    >
+                      {t('batchMode')}
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="single" className="space-y-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <FileUp className="h-5 w-5 text-indigo-500" />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {t('selectFile')}
+                      </span>
+                    </div>
+                    <FileInput onFileSelect={setSelectedFile} />
+                  </TabsContent>
+
+                  <TabsContent value="batch" className="space-y-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Files className="h-5 w-5 text-indigo-500" />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {t('batchConversion')}
+                      </span>
+                    </div>
+
+                    <div
+                      className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-4 text-center hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors"
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        const files = Array.from(e.dataTransfer.files)
+                        setSelectedFiles(files)
+                      }}
+                    >
+                      {selectedFiles.length === 0 ? (
+                        <>
+                          <input
+                            type="file"
+                            multiple
+                            className="hidden"
+                            id="batch-file-input"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files.length > 0) {
+                                setSelectedFiles(Array.from(e.target.files))
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor="batch-file-input"
+                            className="cursor-pointer flex flex-col items-center justify-center py-3"
+                          >
+                            <div className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 p-4 rounded-full mb-3">
+                              <Upload className="h-6 w-6" />
+                            </div>
+                            <p className="font-medium text-indigo-600 dark:text-indigo-400">
+                              {t('selectFile')}
+                            </p>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                              {t('dropFilesHere')}
+                            </p>
+                          </label>
+                        </>
+                      ) : (
+                        <div className="bg-white dark:bg-slate-800/70 backdrop-blur-sm rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 p-3 rounded-full">
+                                <File size={20} />
+                              </div>
+                              <div>
+                                <div className="flex items-center">
+                                  <h4 className="font-medium text-sm line-clamp-1 mr-2">
+                                    {selectedFiles.length} {t('selectedFiles')}
+                                  </h4>
+                                  <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs px-2 py-0.5 rounded-full flex items-center">
+                                    <Check size={12} className="mr-1" />
+                                    {t('selected')}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center">
+                                  <AlertCircle size={12} className="mr-1" />
+                                  {t('readyForConversion')}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setSelectedFiles([])}
+                              className="hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-full h-8 w-8"
+                            >
+                              <X size={16} />
+                            </Button>
+                          </div>
+
+                          <div className="mt-3 max-h-32 overflow-y-auto bg-slate-50 dark:bg-slate-900/50 rounded-md border border-slate-100 dark:border-slate-700/50 p-1">
+                            {selectedFiles.map((file, index) => (
+                              <div
+                                key={index}
+                                className="text-xs p-2 rounded mb-1 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
+                              >
+                                <span className="truncate max-w-[280px] text-slate-700 dark:text-slate-300">
+                                  {file.name}
+                                </span>
+                                <button
+                                  className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    const newFiles = [...selectedFiles]
+                                    newFiles.splice(index, 1)
+                                    setSelectedFiles(newFiles.length ? newFiles : [])
+                                  }}
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="mt-3 flex justify-center">
+                            <label
+                              htmlFor="batch-file-input-more"
+                              className="cursor-pointer"
+                            ></label>
+                            <input
+                              type="file"
+                              multiple
+                              className="hidden"
+                              id="batch-file-input-more"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files.length > 0) {
+                                  setSelectedFiles([
+                                    ...selectedFiles,
+                                    ...Array.from(e.target.files)
+                                  ])
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
             </motion.div>
 
@@ -273,38 +568,69 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
               className="relative"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl blur-md opacity-20 -z-10 group-hover:opacity-30 transition-opacity" />
-              <Button
-                className={cn(
-                  'w-full h-14 relative overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-md rounded-xl border-none',
-                  isConverting && 'from-indigo-500 to-indigo-700',
-                  !selectedFile && 'opacity-80'
-                )}
-                onClick={handleConvert}
-                disabled={isConverting || !selectedFile}
-              >
-                <span
-                  className="absolute inset-0 w-full h-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)] group-hover:animate-shimmer"
-                  style={{ transform: 'translateX(-100%)' }}
-                ></span>
-                <span className="relative z-10 flex items-center justify-center w-full h-full font-medium text-lg">
-                  {isConverting ? (
-                    <>
-                      <Loader2 className="mr-3 h-6 w-6 animate-spin" />
-                      <span>{t('converting')}</span>
-                      <span className="ml-1 animate-pulse">...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download className="mr-3 h-6 w-6" />
-                      {t('convertFile')}
-                    </>
+              {isBatchMode ? (
+                <Button
+                  className={cn(
+                    'w-full h-14 relative overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-md rounded-xl border-none',
+                    isBatchConverting && 'from-indigo-500 to-indigo-700',
+                    selectedFiles.length === 0 && 'opacity-80'
                   )}
-                </span>
-              </Button>
+                  onClick={handleBatchConvert}
+                  disabled={isBatchConverting || selectedFiles.length === 0}
+                >
+                  <span
+                    className="absolute inset-0 w-full h-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)] group-hover:animate-shimmer"
+                    style={{ transform: 'translateX(-100%)' }}
+                  ></span>
+                  <span className="relative z-10 flex items-center justify-center w-full h-full font-medium text-lg">
+                    {isBatchConverting ? (
+                      <>
+                        <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                        <span>{t('batchConverting')}</span>
+                        <span className="ml-1">{batchProgress}%</span>
+                      </>
+                    ) : (
+                      <>
+                        <Files className="mr-3 h-6 w-6" />
+                        {t('batchConvertFiles')}
+                      </>
+                    )}
+                  </span>
+                </Button>
+              ) : (
+                <Button
+                  className={cn(
+                    'w-full h-14 relative overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-md rounded-xl border-none',
+                    isConverting && 'from-indigo-500 to-indigo-700',
+                    !selectedFile && 'opacity-80'
+                  )}
+                  onClick={handleConvert}
+                  disabled={isConverting || !selectedFile}
+                >
+                  <span
+                    className="absolute inset-0 w-full h-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)] group-hover:animate-shimmer"
+                    style={{ transform: 'translateX(-100%)' }}
+                  ></span>
+                  <span className="relative z-10 flex items-center justify-center w-full h-full font-medium text-lg">
+                    {isConverting ? (
+                      <>
+                        <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                        <span>{t('converting')}</span>
+                        <span className="ml-1 animate-pulse">...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="mr-3 h-6 w-6" />
+                        {t('convertFile')}
+                      </>
+                    )}
+                  </span>
+                </Button>
+              )}
             </motion.div>
 
             <AnimatePresence>
-              {convertedFilePath && (
+              {isBatchMode && batchResults.length > 0 ? (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -318,86 +644,164 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
                           <CheckCircle2 className="h-5 w-5" />
                         </div>
                         <h3 className="font-medium text-green-800 dark:text-green-300 text-lg">
-                          {t('conversionSuccess')}
+                          {t('batchConversionSuccess')}
                         </h3>
                       </div>
                       <div className="text-xs px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-800/40 text-green-800 dark:text-green-300 font-medium border border-green-200 dark:border-green-700/30">
-                        {selectedConversion ? t(selectedConversion) : ''}
+                        {t('successCount')}: {batchResults.length} / {selectedFiles.length}
                       </div>
                     </div>
                   </div>
 
                   <div className="p-5 space-y-4">
-                    <div className="flex flex-col md:flex-row md:items-center gap-4">
-                      <div className="w-full md:w-32 h-32 bg-slate-100 dark:bg-slate-700/30 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner">
-                        <img
-                          src={`myapp:///${convertedFilePath}`}
-                          alt="Preview"
-                          className="max-w-full max-h-full object-contain"
-                          onError={(e) => {
-                            console.error('图片加载失败:', convertedFilePath)
-                            ;(e.target as HTMLImageElement).src =
-                              'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWltYWdlIj48cmVjdCB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHg9IjMiIHk9IjMiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBvbHlsaW5lIHBvaW50cz0iMjEgMTUgMTYgMTAgNSAyMSIvPjwvc3ZnPg=='
-                          }}
-                        />
+                    <div className="bg-slate-50 dark:bg-slate-800/80 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                      <div className="text-sm font-medium flex items-center text-green-700 dark:text-green-400 mb-1.5">
+                        <ArrowRight className="h-4 w-4 mr-1.5" />
+                        {t('outputFiles')}
                       </div>
-                      <div className="flex-1 space-y-4">
-                        <div className="bg-slate-50 dark:bg-slate-800/80 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                          <div className="text-sm font-medium flex items-center text-green-700 dark:text-green-400 mb-1.5">
-                            <ArrowRight className="h-4 w-4 mr-1.5" />
-                            {t('outputFile')}
-                          </div>
-                          <div className="text-xs bg-white dark:bg-slate-900/50 text-slate-800 dark:text-slate-300 mt-1 break-all p-2 rounded border border-slate-200 dark:border-slate-700 font-mono">
-                            {convertedFilePath}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/50 hover:border-green-300 dark:hover:border-green-700 transition-all duration-200"
-                            onClick={async () => {
-                              if (convertedFilePath) {
-                                console.log('打开文件位置:', convertedFilePath)
-                                // 使用electron.shell.showItemInFolder API
-                                try {
-                                  await openFileLocation(convertedFilePath)
-                                } catch (error) {
-                                  console.error('打开文件位置失败:', error)
-                                }
-                              }
-                            }}
+                      <div className="text-xs bg-white dark:bg-slate-900/50 text-slate-800 dark:text-slate-300 mt-1 break-all p-2 rounded border border-slate-200 dark:border-slate-700 font-mono max-h-32 overflow-y-auto">
+                        {batchResults.map((path, index) => (
+                          <div
+                            key={index}
+                            className="mb-1 pb-1 border-b border-slate-100 dark:border-slate-800 last:border-0"
                           >
-                            <Download className="mr-1.5 h-4 w-4" />
-                            {t('openFileLocation')}
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                            onClick={() => {
-                              // 保留转换类型，但清除文件选择
-                              setSelectedFile(null)
-                              setConvertedFilePath(null)
-
-                              // 重新聚焦到文件输入框，提示用户选择新文件
-                              const fileInput = document.querySelector(
-                                'input[type="file"]'
-                              ) as HTMLInputElement | null
-                              if (fileInput) {
-                                fileInput.click()
-                              }
-                            }}
-                          >
-                            {t('convertAnother')}
-                          </Button>
-                        </div>
+                            {path}
+                          </div>
+                        ))}
                       </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/50 hover:border-green-300 dark:hover:border-green-700 transition-all duration-200"
+                        onClick={async () => {
+                          if (batchResults.length > 0) {
+                            // 打开第一个文件所在的文件夹
+                            try {
+                              await openFileLocation(batchResults[0])
+                            } catch (error) {
+                              console.error('打开文件位置失败:', error)
+                            }
+                          }
+                        }}
+                      >
+                        <Download className="mr-1.5 h-4 w-4" />
+                        {t('openOutputFolder')}
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        onClick={() => {
+                          setSelectedFiles([])
+                          setBatchResults([])
+                        }}
+                      >
+                        {t('convertMoreFiles')}
+                      </Button>
                     </div>
                   </div>
                 </motion.div>
+              ) : (
+                convertedFilePath &&
+                !isBatchMode && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="rounded-xl border-2 border-green-200 dark:border-green-800/30 overflow-hidden bg-white dark:bg-slate-800 shadow-lg"
+                  >
+                    <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 p-4 border-b border-green-200 dark:border-green-800/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-500 text-white p-2 rounded-lg shadow-sm mr-3">
+                            <CheckCircle2 className="h-5 w-5" />
+                          </div>
+                          <h3 className="font-medium text-green-800 dark:text-green-300 text-lg">
+                            {t('conversionSuccess')}
+                          </h3>
+                        </div>
+                        <div className="text-xs px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-800/40 text-green-800 dark:text-green-300 font-medium border border-green-200 dark:border-green-700/30">
+                          {selectedConversion ? t(selectedConversion) : ''}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-5 space-y-4">
+                      <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        <div className="w-full md:w-32 h-32 bg-slate-100 dark:bg-slate-700/30 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner">
+                          <img
+                            src={`myapp:///${convertedFilePath}`}
+                            alt="Preview"
+                            className="max-w-full max-h-full object-contain"
+                            onError={(e) => {
+                              console.error('图片加载失败:', convertedFilePath)
+                              ;(e.target as HTMLImageElement).src =
+                                'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWltYWdlIj48cmVjdCB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHg9IjMiIHk9IjMiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBvbHlsaW5lIHBvaW50cz0iMjEgMTUgMTYgMTAgNSAyMSIvPjwvc3ZnPg=='
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 space-y-4">
+                          <div className="bg-slate-50 dark:bg-slate-800/80 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                            <div className="text-sm font-medium flex items-center text-green-700 dark:text-green-400 mb-1.5">
+                              <ArrowRight className="h-4 w-4 mr-1.5" />
+                              {t('outputFile')}
+                            </div>
+                            <div className="text-xs bg-white dark:bg-slate-900/50 text-slate-800 dark:text-slate-300 mt-1 break-all p-2 rounded border border-slate-200 dark:border-slate-700 font-mono">
+                              {convertedFilePath}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/50 hover:border-green-300 dark:hover:border-green-700 transition-all duration-200"
+                              onClick={async () => {
+                                if (convertedFilePath) {
+                                  console.log('打开文件位置:', convertedFilePath)
+                                  // 使用electron.shell.showItemInFolder API
+                                  try {
+                                    await openFileLocation(convertedFilePath)
+                                  } catch (error) {
+                                    console.error('打开文件位置失败:', error)
+                                  }
+                                }
+                              }}
+                            >
+                              <Download className="mr-1.5 h-4 w-4" />
+                              {t('openFileLocation')}
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              onClick={() => {
+                                // 保留转换类型，但清除文件选择
+                                setSelectedFile(null)
+                                setConvertedFilePath(null)
+
+                                // 重新聚焦到文件输入框，提示用户选择新文件
+                                const fileInput = document.querySelector(
+                                  'input[type="file"]'
+                                ) as HTMLInputElement | null
+                                if (fileInput) {
+                                  fileInput.click()
+                                }
+                              }}
+                            >
+                              {t('convertAnother')}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )
               )}
             </AnimatePresence>
           </motion.div>

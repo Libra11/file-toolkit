@@ -7,6 +7,7 @@
 import { ffmpegPath, execFileAsync } from '../utils/ffmpegConfig'
 import { checkFileExists } from '../utils/fileSystem'
 import fs from 'fs'
+import path from 'path'
 
 /**
  * 将MP3转换为WAV
@@ -210,6 +211,256 @@ export async function convertMp3ToFlac(inputPath: string, outputPath: string): P
     return outputPath
   } catch (error) {
     console.error(`MP3到FLAC转换错误:`, error)
+    throw error
+  }
+}
+
+/**
+ * 批量转换MP3到WAV
+ * @param inputPaths 输入文件路径数组
+ * @param outputDir 输出目录
+ * @returns 转换后的文件路径数组
+ */
+export async function batchConvertMp3ToWav(
+  inputPaths: string[],
+  outputDir: string
+): Promise<string[]> {
+  try {
+    console.log(`开始批量转换MP3到WAV, 共${inputPaths.length}个文件`)
+
+    // 确保输出目录存在
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true })
+    }
+
+    const results: string[] = []
+    const errors: { path: string; error: unknown }[] = []
+
+    // 处理每一个文件
+    for (const inputPath of inputPaths) {
+      try {
+        // 生成输出文件名
+        const fileName = path.basename(inputPath)
+        const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'))
+        const outputPath = path.join(outputDir, `${nameWithoutExt}.wav`)
+
+        // 转换单个文件
+        const result = await convertMp3ToWav(inputPath, outputPath)
+        results.push(result)
+      } catch (error) {
+        console.error(`批量转换时处理文件 ${inputPath} 失败:`, error)
+        errors.push({ path: inputPath, error })
+      }
+    }
+
+    // 如果有错误，记录到日志
+    if (errors.length > 0) {
+      console.error(`批量MP3到WAV转换过程中有 ${errors.length} 个文件失败`)
+    }
+
+    return results
+  } catch (error) {
+    console.error(`批量MP3到WAV转换错误:`, error)
+    throw error
+  }
+}
+
+/**
+ * 批量转换WAV到MP3
+ * @param inputPaths 输入文件路径数组
+ * @param outputDir 输出目录
+ * @returns 转换后的文件路径数组
+ */
+export async function batchConvertWavToMp3(
+  inputPaths: string[],
+  outputDir: string
+): Promise<string[]> {
+  try {
+    console.log(`开始批量转换WAV到MP3, 共${inputPaths.length}个文件`)
+
+    // 确保输出目录存在
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true })
+    }
+
+    const results: string[] = []
+    const errors: { path: string; error: unknown }[] = []
+
+    // 处理每一个文件
+    for (const inputPath of inputPaths) {
+      try {
+        // 生成输出文件名
+        const fileName = path.basename(inputPath)
+        const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'))
+        const outputPath = path.join(outputDir, `${nameWithoutExt}.mp3`)
+
+        // 转换单个文件
+        const result = await convertWavToMp3(inputPath, outputPath)
+        results.push(result)
+      } catch (error) {
+        console.error(`批量转换时处理文件 ${inputPath} 失败:`, error)
+        errors.push({ path: inputPath, error })
+      }
+    }
+
+    // 如果有错误，记录到日志
+    if (errors.length > 0) {
+      console.error(`批量WAV到MP3转换过程中有 ${errors.length} 个文件失败`)
+    }
+
+    return results
+  } catch (error) {
+    console.error(`批量WAV到MP3转换错误:`, error)
+    throw error
+  }
+}
+
+/**
+ * 批量转换FLAC到MP3
+ * @param inputPaths 输入文件路径数组
+ * @param outputDir 输出目录
+ * @returns 转换后的文件路径数组
+ */
+export async function batchConvertFlacToMp3(
+  inputPaths: string[],
+  outputDir: string
+): Promise<string[]> {
+  try {
+    console.log(`开始批量转换FLAC到MP3, 共${inputPaths.length}个文件`)
+
+    // 确保输出目录存在
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true })
+    }
+
+    const results: string[] = []
+    const errors: { path: string; error: unknown }[] = []
+
+    // 处理每一个文件
+    for (const inputPath of inputPaths) {
+      try {
+        // 生成输出文件名
+        const fileName = path.basename(inputPath)
+        const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'))
+        const outputPath = path.join(outputDir, `${nameWithoutExt}.mp3`)
+
+        // 转换单个文件
+        const result = await convertFlacToMp3(inputPath, outputPath)
+        results.push(result)
+      } catch (error) {
+        console.error(`批量转换时处理文件 ${inputPath} 失败:`, error)
+        errors.push({ path: inputPath, error })
+      }
+    }
+
+    // 如果有错误，记录到日志
+    if (errors.length > 0) {
+      console.error(`批量FLAC到MP3转换过程中有 ${errors.length} 个文件失败`)
+    }
+
+    return results
+  } catch (error) {
+    console.error(`批量FLAC到MP3转换错误:`, error)
+    throw error
+  }
+}
+
+/**
+ * 批量转换MP3到FLAC
+ * @param inputPaths 输入文件路径数组
+ * @param outputDir 输出目录
+ * @returns 转换后的文件路径数组
+ */
+export async function batchConvertMp3ToFlac(
+  inputPaths: string[],
+  outputDir: string
+): Promise<string[]> {
+  try {
+    console.log(`开始批量转换MP3到FLAC, 共${inputPaths.length}个文件`)
+
+    // 确保输出目录存在
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true })
+    }
+
+    const results: string[] = []
+    const errors: { path: string; error: unknown }[] = []
+
+    // 处理每一个文件
+    for (const inputPath of inputPaths) {
+      try {
+        // 生成输出文件名
+        const fileName = path.basename(inputPath)
+        const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'))
+        const outputPath = path.join(outputDir, `${nameWithoutExt}.flac`)
+
+        // 转换单个文件
+        const result = await convertMp3ToFlac(inputPath, outputPath)
+        results.push(result)
+      } catch (error) {
+        console.error(`批量转换时处理文件 ${inputPath} 失败:`, error)
+        errors.push({ path: inputPath, error })
+      }
+    }
+
+    // 如果有错误，记录到日志
+    if (errors.length > 0) {
+      console.error(`批量MP3到FLAC转换过程中有 ${errors.length} 个文件失败`)
+    }
+
+    return results
+  } catch (error) {
+    console.error(`批量MP3到FLAC转换错误:`, error)
+    throw error
+  }
+}
+
+/**
+ * 批量转换M4A到MP3
+ * @param inputPaths 输入文件路径数组
+ * @param outputDir 输出目录
+ * @returns 转换后的文件路径数组
+ */
+export async function batchConvertM4aToMp3(
+  inputPaths: string[],
+  outputDir: string
+): Promise<string[]> {
+  try {
+    console.log(`开始批量转换M4A到MP3, 共${inputPaths.length}个文件`)
+
+    // 确保输出目录存在
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true })
+    }
+
+    const results: string[] = []
+    const errors: { path: string; error: unknown }[] = []
+
+    // 处理每一个文件
+    for (const inputPath of inputPaths) {
+      try {
+        // 生成输出文件名
+        const fileName = path.basename(inputPath)
+        const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'))
+        const outputPath = path.join(outputDir, `${nameWithoutExt}.mp3`)
+
+        // 转换单个文件
+        const result = await convertM4aToMp3(inputPath, outputPath)
+        results.push(result)
+      } catch (error) {
+        console.error(`批量转换时处理文件 ${inputPath} 失败:`, error)
+        errors.push({ path: inputPath, error })
+      }
+    }
+
+    // 如果有错误，记录到日志
+    if (errors.length > 0) {
+      console.error(`批量M4A到MP3转换过程中有 ${errors.length} 个文件失败`)
+    }
+
+    return results
+  } catch (error) {
+    console.error(`批量M4A到MP3转换错误:`, error)
     throw error
   }
 }

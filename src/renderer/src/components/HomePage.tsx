@@ -1,3 +1,9 @@
+/**
+ * Author: Libra
+ * Date: 2025-03-30 11:37:05
+ * LastEditors: Libra
+ * Description:
+ */
 /*
  * @Author: Libra
  * @Date: 2024-03-30
@@ -82,8 +88,22 @@ export default function HomePage(): JSX.Element {
             </h2>
             <button
               onClick={() => setActiveTool(ActiveTool.None)}
-              className="text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 rounded-full transition-colors"
             >
+              <svg
+                className="w-3.5 h-3.5 mr-1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 12H5M5 12L12 19M5 12L12 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
               {t('backToHome')}
             </button>
           </div>
@@ -98,8 +118,22 @@ export default function HomePage(): JSX.Element {
             </h2>
             <button
               onClick={() => setActiveTool(ActiveTool.None)}
-              className="text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 rounded-full transition-colors"
             >
+              <svg
+                className="w-3.5 h-3.5 mr-1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 12H5M5 12L12 19M5 12L12 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
               {t('backToHome')}
             </button>
           </div>

@@ -12,9 +12,9 @@ import { convertMp4ToGif } from '../../converters/index'
  */
 export function registerVideoConversionHandlers(): void {
   // MP4转GIF
-  ipcMain.handle('mp4-to-gif', async (_, inputPath: string, outputPath: string) => {
+  ipcMain.handle('convert-mp4-to-gif', async (_, inputPath: string, outputPath: string) => {
     try {
-      console.log(`IPC调用: mp4-to-gif ${inputPath} -> ${outputPath}`)
+      console.log(`IPC调用: convert-mp4-to-gif ${inputPath} -> ${outputPath}`)
       const result = await convertMp4ToGif(inputPath, outputPath)
       console.log(`转换成功: ${result}`)
       return result

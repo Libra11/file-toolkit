@@ -114,9 +114,6 @@ const FileInput: React.FC<FileInputProps> = ({ onFileSelect }) => {
               <p className="font-medium text-primary">{t('selectFile')}</p>
               <p className="text-sm text-muted-foreground">{t('dropFileHere')}</p>
             </div>
-            <Button variant="secondary" size="sm" className="mt-2">
-              {t('browseFiles')}
-            </Button>
           </motion.div>
         ) : (
           <motion.div
