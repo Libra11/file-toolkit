@@ -15,6 +15,7 @@ import {
 import { ConversionCategory, ConversionType } from '@renderer/lib/conversionTypes'
 import { Label } from '@renderer/components/ui/label'
 import { Badge } from '@renderer/components/ui/badge'
+import { FileInput, FileOutput, ArrowRight } from 'lucide-react'
 
 interface ConversionTypeSelectProps {
   categories: ConversionCategory[]
@@ -51,12 +52,13 @@ export default function ConversionTypeSelect({
         {selectedConversion && (
           <Badge
             variant="outline"
-            className="mr-2 bg-primary/5 border-primary/20 text-primary text-[10px] px-1.5 py-0"
+            className="mr-2 bg-primary/5 border-primary/20 text-primary text-[10px] px-1.5 py-0.5 font-medium min-w-[50px] flex items-center justify-center rounded-sm"
           >
+            <FileOutput className="h-3 w-3 mr-1" />
             {getFormatDetails(selectedConversion)?.output || ''}
           </Badge>
         )}
-        {t('conversionType')}
+        <span className="text-slate-700 dark:text-slate-300">{t('conversionType')}</span>
       </Label>
       <Select
         value={selectedConversion}
@@ -78,21 +80,23 @@ export default function ConversionTypeSelect({
                 <SelectItem
                   key={type}
                   value={type}
-                  className="cursor-pointer focus:bg-primary/5 focus:text-primary"
+                  className="cursor-pointer focus:bg-primary/5 focus:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors duration-150"
                 >
-                  <div className="flex items-center">
-                    <div className="flex items-center justify-center mr-2">
+                  <div className="flex items-center w-full py-0.5">
+                    <div className="flex items-center">
                       <Badge
                         variant="outline"
-                        className="mr-1 text-[10px] px-1 py-0 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+                        className="mr-1 text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 min-w-[50px] flex items-center justify-center"
                       >
+                        <FileInput className="h-3 w-3 mr-1" />
                         {formatDetails?.input || ''}
                       </Badge>
-                      <span className="text-muted-foreground text-xs mx-0.5">→</span>
+                      <ArrowRight className="h-3 w-3 text-muted-foreground mx-1" />
                       <Badge
                         variant="outline"
-                        className="text-[10px] px-1 py-0 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300"
+                        className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 min-w-[50px] flex items-center justify-center"
                       >
+                        <FileOutput className="h-3 w-3 mr-1" />
                         {formatDetails?.output || ''}
                       </Badge>
                     </div>
