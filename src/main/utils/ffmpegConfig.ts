@@ -26,11 +26,11 @@ export const ffmpegPath = app.isPackaged
       __dirname,
       '..',
       '..',
-      '..',
       'resources',
       'ffmpeg',
       process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
     )
 
+console.log('ffmpegPath', __dirname)
 // 初始化时打印FFmpeg路径
 console.log('FFmpeg路径:', ffmpegPath)

@@ -1,0 +1,26 @@
+/*
+ * @Author: Libra
+ * @Date: 2024-03-30
+ * @LastEditors: Libra
+ * @Description: 主CSS入口文件
+ */
+
+/* 导入Tailwind CSS */
+@import './tailwind.css';
+
+/* 导入其他CSS文件 */
+@import './main.css';
+@import './base.css';
+
+/* 导入已有的index.css */
+@import '../index.css';
+
+/* 全局样式 */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}

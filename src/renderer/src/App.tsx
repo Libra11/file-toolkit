@@ -4,19 +4,35 @@
  * LastEditors: Libra
  * Description:
  */
-import FileConversionTool from '@renderer/components/FileConversionTool'
-import { SettingsMenu } from '@renderer/components/SettingsMenu'
-import CustomTitleBar from '@renderer/components/CustomTitleBar'
+import { useEffect } from 'react'
+import './assets/index.css'
+import AppLayout from './components/ui/layout/AppLayout'
+import HomePage from './components/HomePage'
 
 function App(): JSX.Element {
+  // 注册窗口最小化和关闭事件处理器
+  useEffect(() => {
+    const handleMinimize = (): void => {
+      window.electron.ipcRenderer.invoke('minimize-window')
+    }
+
+    const handleClose = (): void => {
+      window.electron.ipcRenderer.invoke('close-window')
+    }
+
+    window.addEventListener('minimize-window', handleMinimize)
+    window.addEventListener('close-window', handleClose)
+
+    return (): void => {
+      window.removeEventListener('minimize-window', handleMinimize)
+      window.removeEventListener('close-window', handleClose)
+    }
+  }, [])
+
   return (
-    <div className="w-screen h-screen bg-background flex flex-col">
-      <CustomTitleBar />
-      <div className="flex-1">
-        <FileConversionTool />
-        <SettingsMenu />
-      </div>
-    </div>
+    <AppLayout>
+      <HomePage />
+    </AppLayout>
   )
 }
 

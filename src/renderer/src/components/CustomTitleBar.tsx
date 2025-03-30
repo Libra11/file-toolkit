@@ -5,12 +5,9 @@
  * Description:
  */
 import React from 'react'
-// 删除未使用的 useTranslation 导入
-import { Minus, X } from 'lucide-react' // 导入 lucide-react 图标
+import { Minus, X, FileType2 } from 'lucide-react' // 导入 FileType2 图标作为应用图标
 
 const CustomTitleBar: React.FC = () => {
-  // 删除未使用的 useTranslation 钩子
-
   const handleMinimize = async (): Promise<void> => {
     await window.system.minimizeWindow()
   }
@@ -20,25 +17,30 @@ const CustomTitleBar: React.FC = () => {
   }
 
   return (
-    <div className="fixed top-0 left-0 w-full bg-[hsl(var(--background))] z-50 h-8 flex items-center justify-between px-2 select-none custom-titlebar">
+    <div className="fixed top-0 left-0 w-full bg-gradient-to-r from-primary/10 to-secondary/10 backdrop-blur-md z-50 h-10 flex items-center justify-between px-4 shadow-sm select-none custom-titlebar border-b border-border/40">
       <div
         className="flex items-center flex-grow h-full"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
-        {/* 这里可以添加应用程序图标或名称 */}
+        <div className="flex items-center">
+          <FileType2 size={18} className="text-primary mr-2" />
+          <span className="font-semibold text-sm bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            文件转换大师
+          </span>
+        </div>
       </div>
-      <div className="flex space-x-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <div className="flex" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <button
           onClick={handleMinimize}
-          className="p-1 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
+          className="p-1.5 rounded-md hover:bg-gray-200/80 dark:hover:bg-gray-800/80 transition-colors duration-200 flex items-center justify-center"
         >
-          <Minus size={14} className="text-gray-600 dark:text-gray-300" />
+          <Minus size={16} className="text-gray-600 dark:text-gray-400" />
         </button>
         <button
           onClick={handleClose}
-          className="p-1 rounded-sm hover:bg-red-500 transition-colors duration-200"
+          className="p-1.5 rounded-md hover:bg-red-500 transition-colors duration-200 flex items-center justify-center ml-1"
         >
-          <X size={14} className="text-gray-600 dark:text-gray-300 hover:text-white" />
+          <X size={16} className="text-gray-600 dark:text-gray-400 group-hover:text-white" />
         </button>
       </div>
     </div>

@@ -34,6 +34,12 @@ export interface System {
    */
   closeWindow: () => Promise<void>
   /**
+   * 打开文件位置
+   * @param filePath 文件路径
+   * @returns 是否成功
+   */
+  openFileLocation: (filePath: string) => Promise<boolean>
+  /**
    * 监听ipc消息
    * @param channel 通道
    * @param listener 监听器
@@ -45,5 +51,5 @@ export interface System {
    * @param channel 通道
    * @returns 无
    */
-  ipcRendererOff: (channel: string, listener: IpcListener) => void
+  ipcRendererOff: (channel: string) => void
 }

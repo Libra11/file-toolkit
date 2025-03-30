@@ -4,7 +4,7 @@
  * @LastEditors: Libra
  * @Description: 文件相关IPC处理程序
  */
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
 import {
   convertMp4ToGif,
   convertPngToJpg,
@@ -20,32 +20,101 @@ import { isFileExists } from '../utils/fileSystem'
 export function registerFileConversionHandlers(): void {
   // 文件转换处理程序
   ipcMain.handle('convert-mp4-to-gif', async (_, inputPath: string, outputPath: string) => {
-    return await convertMp4ToGif(inputPath, outputPath)
+    try {
+      console.log(`IPC调用: convert-mp4-to-gif ${inputPath} -> ${outputPath}`)
+      const result = await convertMp4ToGif(inputPath, outputPath)
+      console.log(`转换成功: ${result}`)
+      return result
+    } catch (error) {
+      console.error('MP4到GIF转换IPC错误:', error)
+      throw error
+    }
   })
 
   ipcMain.handle('convert-png-to-jpg', async (_, inputPath: string, outputPath: string) => {
-    return await convertPngToJpg(inputPath, outputPath)
+    try {
+      console.log(`IPC调用: convert-png-to-jpg ${inputPath} -> ${outputPath}`)
+      const result = await convertPngToJpg(inputPath, outputPath)
+      console.log(`转换成功: ${result}`)
+      return result
+    } catch (error) {
+      console.error('PNG到JPG转换IPC错误:', error)
+      throw error
+    }
   })
 
   ipcMain.handle('convert-jpg-to-png', async (_, inputPath: string, outputPath: string) => {
-    return await convertJpgToPng(inputPath, outputPath)
+    try {
+      console.log(`IPC调用: convert-jpg-to-png ${inputPath} -> ${outputPath}`)
+      const result = await convertJpgToPng(inputPath, outputPath)
+      console.log(`转换成功: ${result}`)
+      return result
+    } catch (error) {
+      console.error('JPG到PNG转换IPC错误:', error)
+      throw error
+    }
   })
 
   ipcMain.handle('convert-webp-to-jpg', async (_, inputPath: string, outputPath: string) => {
-    return await convertWebpToJpg(inputPath, outputPath)
+    try {
+      console.log(`IPC调用: convert-webp-to-jpg ${inputPath} -> ${outputPath}`)
+      const result = await convertWebpToJpg(inputPath, outputPath)
+      console.log(`转换成功: ${result}`)
+      return result
+    } catch (error) {
+      console.error('WEBP到JPG转换IPC错误:', error)
+      throw error
+    }
   })
 
   // 文件对话框处理程序
   ipcMain.handle('select-directory', async () => {
-    return await selectDirectory()
+    try {
+      const result = await selectDirectory()
+      console.log(`选择目录: ${result}`)
+      return result
+    } catch (error) {
+      console.error('选择目录错误:', error)
+      throw error
+    }
   })
 
   ipcMain.handle('save-file', async (_, filePath: string) => {
-    return await saveFileDialog(filePath)
+    try {
+      console.log(`IPC调用: save-file ${filePath}`)
+      const result = await saveFileDialog(filePath)
+      console.log(`保存文件对话框结果: ${result}`)
+      return result
+    } catch (error) {
+      console.error('保存文件对话框错误:', error)
+      throw error
+    }
   })
 
   // 文件系统操作处理程序
   ipcMain.handle('check-file-exists', async (_, filePath: string) => {
-    return await isFileExists(filePath)
+    try {
+      console.log(`IPC调用: check-file-exists ${filePath}`)
+      const result = await isFileExists(filePath)
+      console.log(`文件存在检查结果: ${result}`)
+      return result
+    } catch (error) {
+      console.error('文件存在检查错误:', error)
+      throw error
+    }
+  })
+
+  // 打开文件位置
+  ipcMain.handle('open-file-location', async (_, filePath: string) => {
+    try {
+      console.log(`IPC调用: open-file-location ${filePath}`)
+      const cleanPath = filePath.replace(/^"|"$/g, '') // 去除可能的引号
+      const success = await shell.showItemInFolder(cleanPath)
+      console.log(`打开文件位置结果: ${success}`)
+      return success
+    } catch (error) {
+      console.error('打开文件位置错误:', error)
+      throw error
+    }
   })
 }

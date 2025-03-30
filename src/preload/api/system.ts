@@ -15,6 +15,7 @@ export const system: System = {
   saveFile: (filePath) => ipcRenderer.invoke('save-file', filePath),
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   closeWindow: () => ipcRenderer.invoke('close-window'),
+  openFileLocation: (filePath) => ipcRenderer.invoke('open-file-location', filePath),
   ipcRendererOn: (channel, listener) => {
     ipcRendererMap.set(channel, listener)
     return ipcRenderer.on(channel, listener)

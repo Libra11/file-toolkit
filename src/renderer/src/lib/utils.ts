@@ -1,12 +1,15 @@
 /*
  * @Author: Libra
- * @Date: 2024-10-07 00:51:48
+ * @Date: 2024-03-30
  * @LastEditors: Libra
- * @Description:
+ * @Description: 工具函数库
  */
-import { type ClassValue, clsx } from 'clsx'
+import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
+/**
+ * 合并类名，解决tailwind类冲突问题
+ */
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs))
 }
