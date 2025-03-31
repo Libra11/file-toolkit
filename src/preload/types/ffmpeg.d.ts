@@ -13,6 +13,27 @@ export interface Ffmpeg {
    */
   convertMp4ToGif: (inputPath: string, outputPath: string) => Promise<string>
   /**
+   * 将avi转换为mp4
+   * @param inputPath 输入路径
+   * @param outputPath 输出路径
+   * @returns 输出路径
+   */
+  convertAviToMp4: (inputPath: string, outputPath: string) => Promise<string>
+  /**
+   * 将mov转换为mp4
+   * @param inputPath 输入路径
+   * @param outputPath 输出路径
+   * @returns 输出路径
+   */
+  convertMovToMp4: (inputPath: string, outputPath: string) => Promise<string>
+  /**
+   * 将webm转换为mp4
+   * @param inputPath 输入路径
+   * @param outputPath 输出路径
+   * @returns 输出路径
+   */
+  convertWebmToMp4: (inputPath: string, outputPath: string) => Promise<string>
+  /**
    * 将png转换为jpg
    * @param inputPath 输入路径
    * @param outputPath 输出路径

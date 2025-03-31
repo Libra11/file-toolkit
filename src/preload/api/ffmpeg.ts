@@ -19,14 +19,37 @@ export const ffmpeg: Ffmpeg = {
       throw error
     }
   },
-  convertPngToJpg: async (inputPath, outputPath) => {
+  convertAviToMp4: async (inputPath, outputPath) => {
     try {
-      console.log(`预加载脚本: 调用convertPngToJpg, 输入:${inputPath}, 输出:${outputPath}`)
+      console.log(`预加载脚本: 调用convertAviToMp4, 输入:${inputPath}, 输出:${outputPath}`)
+      const result = await ipcRenderer.invoke('convert-avi-to-mp4', inputPath, outputPath)
+      console.log(`预加载脚本: convertAviToMp4成功, 结果:${result}`)
+      return result
+    } catch (error) {
+      console.error('预加载脚本: convertAviToMp4错误:', error)
+      throw error
+    }
+  },
+  convertMovToMp4: async (inputPath, outputPath) => {
+    try {
+      console.log(`预加载脚本: 调用convertMovToMp4, 输入:${inputPath}, 输出:${outputPath}`)
       const result = await ipcRenderer.invoke('convert-png-to-jpg', inputPath, outputPath)
       console.log(`预加载脚本: convertPngToJpg成功, 结果:${result}`)
       return result
     } catch (error) {
       console.error('预加载脚本: convertPngToJpg错误:', error)
+      throw error
+    }
+  },
+
+  convertWebmToMp4: async (inputPath, outputPath) => {
+    try {
+      console.log(`预加载脚本: 调用convertWebmToMp4, 输入:${inputPath}, 输出:${outputPath}`)
+      const result = await ipcRenderer.invoke('convert-webm-to-mp4', inputPath, outputPath)
+      console.log(`预加载脚本: convertWebmToMp4成功, 结果:${result}`)
+      return result
+    } catch (error) {
+      console.error('预加载脚本: convertWebmToMp4错误:', error)
       throw error
     }
   },
@@ -38,6 +61,17 @@ export const ffmpeg: Ffmpeg = {
       return result
     } catch (error) {
       console.error('预加载脚本: convertJpgToPng错误:', error)
+      throw error
+    }
+  },
+  convertPngToJpg: async (inputPath, outputPath) => {
+    try {
+      console.log(`预加载脚本: 调用convertPngToJpg, 输入:${inputPath}, 输出:${outputPath}`)
+      const result = await ipcRenderer.invoke('convert-png-to-jpg', inputPath, outputPath)
+      console.log(`预加载脚本: convertPngToJpg成功, 结果:${result}`)
+      return result
+    } catch (error) {
+      console.error('预加载脚本: convertPngToJpg错误:', error)
       throw error
     }
   },

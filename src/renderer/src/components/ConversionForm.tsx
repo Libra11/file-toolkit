@@ -73,6 +73,18 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
     return await window.ffmpeg.convertMp4ToGif(inputPath, outputPath)
   }
 
+  const convertAviToMp4 = async (inputPath: string, outputPath: string): Promise<string> => {
+    return await window.ffmpeg.convertAviToMp4(inputPath, outputPath)
+  }
+
+  const convertMovToMp4 = async (inputPath: string, outputPath: string): Promise<string> => {
+    return await window.ffmpeg.convertMovToMp4(inputPath, outputPath)
+  }
+
+  const convertWebmToMp4 = async (inputPath: string, outputPath: string): Promise<string> => {
+    return await window.ffmpeg.convertWebmToMp4(inputPath, outputPath)
+  }
+
   const convertPngToJpg = async (inputPath: string, outputPath: string): Promise<string> => {
     return await window.ffmpeg.convertPngToJpg(inputPath, outputPath)
   }
@@ -130,6 +142,12 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
       // 视频转换
       case CONVERSION_TYPES.MP4_TO_GIF:
         return await convertMp4ToGif(inputPath, outputPath)
+      case CONVERSION_TYPES.AVI_TO_MP4:
+        return await convertAviToMp4(inputPath, outputPath)
+      case CONVERSION_TYPES.MOV_TO_MP4:
+        return await convertMovToMp4(inputPath, outputPath)
+      case CONVERSION_TYPES.WEBM_TO_MP4:
+        return await convertWebmToMp4(inputPath, outputPath)
 
       // 音频转换
       case CONVERSION_TYPES.MP3_TO_WAV:
