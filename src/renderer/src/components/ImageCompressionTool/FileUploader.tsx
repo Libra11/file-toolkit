@@ -1,3 +1,9 @@
+/**
+ * Author: Libra
+ * Date: 2025-03-31 17:16:57
+ * LastEditors: Libra
+ * Description:
+ */
 import { useTranslation } from 'react-i18next'
 import { FileUp } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
@@ -83,7 +89,7 @@ export function FileUploader({
             {batchMode ? t('dropFilesHere') : t('dragDropImage')}
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
-            {t('supportedFormats')}: JPEG, PNG, WebP, GIF, TIFF
+            {t('supportedFormats')}: JPEG, PNG, WebP
           </p>
           <Button className="mt-4" size="sm">
             {batchMode ? t('selectFiles') : t('selectImage')}

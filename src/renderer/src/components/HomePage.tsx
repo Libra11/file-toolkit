@@ -13,7 +13,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { FileType2, Sparkles, FileDown } from 'lucide-react'
+import { FileType2, Sparkles, FileDown, ImageIcon, Video, Music } from 'lucide-react'
 import ToolCard from '@renderer/components/ui/card/ToolCard'
 import FileConversionTool from '@renderer/components/FileConversionTool'
 import ImageCompressionTool from '@renderer/components/ImageCompressionTool'
@@ -21,7 +21,10 @@ import ImageCompressionTool from '@renderer/components/ImageCompressionTool'
 enum ActiveTool {
   None,
   Conversion,
-  Compression
+  Compression,
+  ImageCompression,
+  AudioCompression,
+  VideoCompression
 }
 
 export default function HomePage(): JSX.Element {
@@ -116,7 +119,7 @@ export default function HomePage(): JSX.Element {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
               <FileDown className="mr-2 h-5 w-5 text-emerald-500" />
-              {t('imageCompression')}
+              {t('fileCompression')}
             </h2>
             <button
               onClick={() => setActiveTool(ActiveTool.None)}
@@ -139,7 +142,150 @@ export default function HomePage(): JSX.Element {
               {t('backToHome')}
             </button>
           </div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4"
+          >
+            <ToolCard
+              icon={<ImageIcon size={24} />}
+              title={t('imageCompression')}
+              description={t('imageCompressionDescription')}
+              onClick={() => setActiveTool(ActiveTool.ImageCompression)}
+              iconColor="text-blue-500"
+            />
+            <ToolCard
+              icon={<Music size={24} />}
+              title={t('audioCompression')}
+              description={t('audioCompressionDescription')}
+              onClick={() => setActiveTool(ActiveTool.AudioCompression)}
+              iconColor="text-purple-500"
+            />
+            <ToolCard
+              icon={<Video size={24} />}
+              title={t('videoCompression')}
+              description={t('videoCompressionDescription')}
+              onClick={() => setActiveTool(ActiveTool.VideoCompression)}
+              iconColor="text-red-500"
+            />
+          </motion.div>
+        </>
+      ) : activeTool === ActiveTool.ImageCompression ? (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
+              <ImageIcon className="mr-2 h-5 w-5 text-blue-500" />
+              {t('imageCompression')}
+            </h2>
+            <button
+              onClick={() => setActiveTool(ActiveTool.Compression)}
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 rounded-full transition-colors"
+            >
+              <svg
+                className="w-3.5 h-3.5 mr-1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 12H5M5 12L12 19M5 12L12 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {t('backToHome')}
+            </button>
+          </div>
           <ImageCompressionTool />
+        </>
+      ) : activeTool === ActiveTool.AudioCompression ? (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
+              <Music className="mr-2 h-5 w-5 text-purple-500" />
+              {t('audioCompression')}
+            </h2>
+            <button
+              onClick={() => setActiveTool(ActiveTool.Compression)}
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-800/40 rounded-full transition-colors"
+            >
+              <svg
+                className="w-3.5 h-3.5 mr-1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 12H5M5 12L12 19M5 12L12 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {t('backToHome')}
+            </button>
+          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 shadow-sm p-8 text-center"
+          >
+            <Music className="w-16 h-16 mx-auto text-purple-500 opacity-50 mb-4" />
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+              {t('comingSoon')}
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              {t('audioCompressionComingSoon')}
+            </p>
+          </motion.div>
+        </>
+      ) : activeTool === ActiveTool.VideoCompression ? (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
+              <Video className="mr-2 h-5 w-5 text-red-500" />
+              {t('videoCompression')}
+            </h2>
+            <button
+              onClick={() => setActiveTool(ActiveTool.Compression)}
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-800/40 rounded-full transition-colors"
+            >
+              <svg
+                className="w-3.5 h-3.5 mr-1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 12H5M5 12L12 19M5 12L12 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {t('backToHome')}
+            </button>
+          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 shadow-sm p-8 text-center"
+          >
+            <Video className="w-16 h-16 mx-auto text-red-500 opacity-50 mb-4" />
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+              {t('comingSoon')}
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              {t('videoCompressionComingSoon')}
+            </p>
+          </motion.div>
         </>
       ) : null}
     </div>
