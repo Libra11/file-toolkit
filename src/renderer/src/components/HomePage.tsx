@@ -6,16 +6,17 @@
  */
 /*
  * @Author: Libra
- * @Date: 2024-03-30
+ * @Date: 2024-10-07 01:16:28
  * @LastEditors: Libra
- * @Description: 应用主页
+ * @Description:
  */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { FileType2, FileArchive, Sparkles } from 'lucide-react'
-import ToolCard from './ui/card/ToolCard'
-import FileConversionTool from './FileConversionTool'
+import { FileType2, Sparkles, FileDown } from 'lucide-react'
+import ToolCard from '@renderer/components/ui/card/ToolCard'
+import FileConversionTool from '@renderer/components/FileConversionTool'
+import ImageCompressionTool from '@renderer/components/ImageCompressionTool'
 
 enum ActiveTool {
   None,
@@ -44,7 +45,7 @@ export default function HomePage(): JSX.Element {
   }
 
   return (
-    <div className="space-y-12">
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
       {activeTool === ActiveTool.None ? (
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
           <motion.div variants={itemVariants} className="text-center mb-12">
@@ -60,22 +61,23 @@ export default function HomePage(): JSX.Element {
             </p>
           </motion.div>
 
-          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div
+            variants={itemVariants}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8"
+          >
             <ToolCard
-              icon={<FileType2 className="w-6 h-6" />}
+              icon={<FileType2 size={24} />}
               title={t('fileConversion')}
               description={t('fileConversionDescription')}
               onClick={() => setActiveTool(ActiveTool.Conversion)}
               iconColor="text-blue-500"
             />
-
             <ToolCard
-              icon={<FileArchive className="w-6 h-6" />}
+              icon={<FileDown size={24} />}
               title={t('fileCompression')}
               description={t('fileCompressionDescription')}
               onClick={() => setActiveTool(ActiveTool.Compression)}
-              iconColor="text-violet-500"
-              badge={t('comingSoon')}
+              iconColor="text-emerald-500"
             />
           </motion.div>
         </motion.div>
@@ -109,16 +111,16 @@ export default function HomePage(): JSX.Element {
           </div>
           <FileConversionTool />
         </>
-      ) : (
+      ) : activeTool === ActiveTool.Compression ? (
         <>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-              <FileArchive className="mr-2 h-5 w-5 text-violet-500" />
-              {t('fileCompression')}
+              <FileDown className="mr-2 h-5 w-5 text-emerald-500" />
+              {t('imageCompression')}
             </h2>
             <button
               onClick={() => setActiveTool(ActiveTool.None)}
-              className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 rounded-full transition-colors"
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-800/40 rounded-full transition-colors"
             >
               <svg
                 className="w-3.5 h-3.5 mr-1.5"
@@ -137,22 +139,9 @@ export default function HomePage(): JSX.Element {
               {t('backToHome')}
             </button>
           </div>
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="relative">
-              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 blur opacity-40"></div>
-              <div className="relative bg-white dark:bg-slate-800 rounded-full p-6">
-                <Sparkles className="h-12 w-12 text-violet-500 animate-pulse" />
-              </div>
-            </div>
-            <h3 className="mt-6 text-2xl font-bold text-slate-900 dark:text-white">
-              {t('comingSoon')}
-            </h3>
-            <p className="mt-2 text-slate-500 dark:text-slate-400 max-w-md">
-              {t('compressionToolComingSoon')}
-            </p>
-          </div>
+          <ImageCompressionTool />
         </>
-      )}
+      ) : null}
     </div>
   )
 }

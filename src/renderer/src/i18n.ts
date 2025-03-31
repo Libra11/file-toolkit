@@ -7,8 +7,8 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
-import enTranslations from './locales/en.json'
-import zhTranslations from './locales/zh-CN.json'
+import enTranslations from './locales/en/translation.json'
+import zhTranslations from './locales/zh-CN/translation.json'
 
 // 从localStorage获取用户上次选择的语言
 const savedLanguage = localStorage.getItem('language')

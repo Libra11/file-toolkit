@@ -19,7 +19,8 @@ import {
   File,
   Check,
   X,
-  AlertCircle
+  AlertCircle,
+  Music
 } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import CategorySelect from '@renderer/components/CategorySelect'
@@ -455,6 +456,7 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
                             multiple
                             className="hidden"
                             id="batch-file-input"
+                            accept=".mp4, .png, .jpg, .jpeg, .gif, .webp, .mp3, .wav, .m4a, .flac, .avi, .mov, .webm"
                             onChange={(e) => {
                               if (e.target.files && e.target.files.length > 0) {
                                 setSelectedFiles(Array.from(e.target.files))
@@ -543,6 +545,7 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
                               multiple
                               className="hidden"
                               id="batch-file-input-more"
+                              accept=".mp4, .png, .jpg, .jpeg, .gif, .webp, .mp3, .wav, .m4a, .flac, .avi, .mov, .webm"
                               onChange={(e) => {
                                 if (e.target.files && e.target.files.length > 0) {
                                   setSelectedFiles([
@@ -731,18 +734,92 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
                     </div>
 
                     <div className="p-5 space-y-4">
-                      <div className="flex flex-col md:flex-row md:items-center gap-4">
-                        <div className="w-full md:w-32 h-32 bg-slate-100 dark:bg-slate-700/30 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner">
-                          <img
-                            src={`myapp:///${convertedFilePath}`}
-                            alt="Preview"
-                            className="max-w-full max-h-full object-contain"
-                            onError={(e) => {
-                              console.error('图片加载失败:', convertedFilePath)
-                              ;(e.target as HTMLImageElement).src =
-                                'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWltYWdlIj48cmVjdCB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHg9IjMiIHk9IjMiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBvbHlsaW5lIHBvaW50cz0iMjEgMTUgMTYgMTAgNSAyMSIvPjwvc3ZnPg=='
-                            }}
-                          />
+                      <div className="flex flex-col gap-4">
+                        <div className="w-full h-auto bg-slate-100 dark:bg-slate-700/30 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner p-2">
+                          {convertedFilePath && (
+                            <>
+                              {/* 图片类型 */}
+                              {['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(
+                                convertedFilePath.split('.').pop()?.toLowerCase() || ''
+                              ) && (
+                                <img
+                                  src={`myapp:///${convertedFilePath}`}
+                                  alt="图片预览"
+                                  className="max-w-full max-h-48 object-contain"
+                                  onError={(e) => {
+                                    console.error('图片加载失败:', convertedFilePath)
+                                    ;(e.target as HTMLImageElement).src =
+                                      'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWltYWdlIj48cmVjdCB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHg9IjMiIHk9IjMiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBvbHlsaW5lIHBvaW50cz0iMjEgMTUgMTYgMTAgNSAyMSIvPjwvc3ZnPg=='
+                                  }}
+                                />
+                              )}
+
+                              {/* 音频类型 */}
+                              {['mp3', 'wav', 'flac', 'm4a'].includes(
+                                convertedFilePath.split('.').pop()?.toLowerCase() || ''
+                              ) && (
+                                <div className="text-center w-full flex flex-col items-center justify-center py-2">
+                                  <Music className="h-10 w-10 text-indigo-500 mb-2" />
+                                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
+                                    {t('audioConverted')}
+                                  </p>
+                                  <audio
+                                    controls
+                                    className="w-full max-w-[360px]"
+                                    src={`myapp:///${convertedFilePath}`}
+                                  >
+                                    <source src={`myapp:///${convertedFilePath}`} />
+                                    {t('audioConverted')}
+                                  </audio>
+                                </div>
+                              )}
+
+                              {/* 视频类型 */}
+                              {['mp4', 'avi', 'mov', 'webm'].includes(
+                                convertedFilePath.split('.').pop()?.toLowerCase() || ''
+                              ) && (
+                                <div className="text-center w-full flex flex-col items-center justify-center">
+                                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                                    {t('videoConverted')}
+                                  </p>
+                                  <video
+                                    controls
+                                    className="max-w-full max-h-48 object-contain"
+                                    src={`myapp:///${convertedFilePath}`}
+                                  >
+                                    <source src={`myapp:///${convertedFilePath}`} />
+                                    {t('videoConverted')}
+                                  </video>
+                                </div>
+                              )}
+
+                              {/* 默认类型（未知文件类型） */}
+                              {![
+                                'jpg',
+                                'jpeg',
+                                'png',
+                                'webp',
+                                'mp3',
+                                'wav',
+                                'flac',
+                                'm4a',
+                                'mp4',
+                                'avi',
+                                'mov',
+                                'webm',
+                                'gif'
+                              ].includes(
+                                convertedFilePath.split('.').pop()?.toLowerCase() || ''
+                              ) && (
+                                <div className="text-center">
+                                  <FileUp className="h-16 w-16 text-indigo-500 mb-2" />
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                                    {t('fileConverted')}
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                         <div className="flex-1 space-y-4">
                           <div className="bg-slate-50 dark:bg-slate-800/80 rounded-lg p-3 border border-slate-200 dark:border-slate-700">

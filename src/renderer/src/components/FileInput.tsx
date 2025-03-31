@@ -66,7 +66,7 @@ const FileInput: React.FC<FileInputProps> = ({ onFileSelect }) => {
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".mp4, .png, .jpg, .jpeg, .gif, .webp"
+        accept=".mp4, .png, .jpg, .jpeg, .gif, .webp, .mp3, .wav, .m4a, .flac, .avi, .mov, .webm"
         className="hidden"
       />
 
