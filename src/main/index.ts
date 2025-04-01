@@ -6,16 +6,17 @@
  */
 import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
 import path, { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { electronApp, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import '@main/ffmpeg'
 
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
+    width: 600,
     height: 800,
     show: false,
+    resizable: false,
     autoHideMenuBar: true,
     frame: false, // Add this line to remove the default frame
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -39,12 +40,6 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
-  })
-
-  mainWindow.webContents.on('did-finish-load', () => {
-    setInterval(() => {
-      mainWindow.webContents.send('convert-mp4-to-gif', 'test')
-    }, 1000)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -77,13 +72,6 @@ app.whenReady().then(() => {
   })
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
-
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
 
   createWindow()
 

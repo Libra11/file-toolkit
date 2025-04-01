@@ -1,7 +1,8 @@
 appId: com.electron.app
 productName: libra-tool
 directories:
-  buildResources: build
+  buildResources: 'assets'
+
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -9,21 +10,47 @@ files:
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+
 extraResources:
   - from: 'resources'
     to: 'resources'
-asarUnpack:
-  - resources/**
+    filter:
+      [
+        '!resources/ffmpeg/ffmpeg.exe',
+        '!resources/ffprobe/ffprobe.exe',
+        '!resources/ffmpeg/ffmpeg',
+        '!resources/ffprobe/ffprobe',
+        '!**/.DS_Store'
+      ]
+
 win:
   executableName: libra-tool
+  extraResources:
+    - from: 'resources/ffmpeg/ffmpeg.exe'
+      to: 'resources/ffmpeg/ffmpeg.exe'
+    - from: 'resources/ffprobe/ffprobe.exe'
+      to: 'resources/ffprobe/ffprobe.exe'
+  target:
+    - nsis
+
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  createStartMenuShortcut: true
   allowToChangeInstallationDirectory: true
   oneClick: false
   perMachine: false
+  menuCategory: true
+  displayLanguageSelector: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  deleteAppDataOnUninstall: false
+  warningsAsErrors: false
+  unicode: true
+
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
@@ -32,8 +59,15 @@ mac:
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
+  extraResources:
+    - from: 'resources/ffmpeg/ffmpeg'
+      to: 'resources/ffmpeg/ffmpeg'
+    - from: 'resources/ffprobe/ffprobe'
+      to: 'resources/ffprobe/ffprobe'
+
 dmg:
   artifactName: ${name}-${version}.${ext}
+
 linux:
   target:
     - AppImage
@@ -41,12 +75,16 @@ linux:
     - deb
   maintainer: electronjs.org
   category: Utility
+
 appImage:
   artifactName: ${name}-${version}.${ext}
+
 npmRebuild: false
+
 publish:
   provider: generic
   url: https://example.com/auto-updates
+
 protocols:
   - name: MyApp Protocol
     schemes:
