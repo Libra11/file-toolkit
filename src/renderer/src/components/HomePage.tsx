@@ -18,6 +18,7 @@ import ToolCard from '@renderer/components/ui/card/ToolCard'
 import FileConversionTool from '@renderer/components/FileConversionTool'
 import ImageCompressionTool from '@renderer/components/ImageCompressionTool'
 import AudioCompressionTool from '@renderer/components/AudioCompressionTool'
+import VideoCompressionTool from '@renderer/components/VideoCompressionTool'
 
 enum ActiveTool {
   None,
@@ -260,20 +261,7 @@ export default function HomePage(): JSX.Element {
               {t('backToHome')}
             </button>
           </div>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 shadow-sm p-8 text-center"
-          >
-            <Video className="w-16 h-16 mx-auto text-red-500 opacity-50 mb-4" />
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-              {t('comingSoon')}
-            </h3>
-            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-              {t('videoCompressionComingSoon')}
-            </p>
-          </motion.div>
+          <VideoCompressionTool />
         </>
       ) : null}
     </div>

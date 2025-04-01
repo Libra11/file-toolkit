@@ -36,7 +36,9 @@ export function registerAudioCompressionHandlers(): void {
           format
         )
 
-        console.log(`压缩成功: ${result}`)
+        console.log(`压缩成功: ${result.outputPath}`)
+        console.log(`原始大小: ${result.originalSize} 字节`)
+        console.log(`压缩后大小: ${result.compressedSize} 字节`)
 
         return result
       } catch (error) {

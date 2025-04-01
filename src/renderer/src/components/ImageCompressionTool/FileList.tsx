@@ -1,5 +1,11 @@
+/**
+ * Author: Libra
+ * Date: 2025-03-31 17:45:33
+ * LastEditors: Libra
+ * Description:
+ */
 import { useTranslation } from 'react-i18next'
-import { File, X, Image as ImageIcon } from 'lucide-react'
+import { X, Image as ImageIcon } from 'lucide-react'
 import { formatBytes } from './utils'
 
 interface FileListProps {

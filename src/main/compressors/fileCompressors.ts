@@ -8,6 +8,7 @@ import { ffmpegPath, execFileAsync, ffprobePath } from '../utils/ffmpegConfig'
 import { checkFileExists } from '../utils/fileSystem'
 import path from 'path'
 import fs from 'fs/promises'
+import { existsSync } from 'fs'
 
 // 图片压缩设置接口
 export interface ImageCompressionOptions {
@@ -276,29 +277,94 @@ export async function compressImage(
  * @param inputPath 输入路径
  * @param outputPath 输出路径
  * @param crf 压缩率 (0-51, 越大压缩率越高但质量越低)
+ * @param options 其他压缩选项
  * @returns 输出文件路径
  */
 export async function compressVideo(
   inputPath: string,
   outputPath: string,
-  crf: number = 23
-): Promise<string> {
-  checkFileExists(outputPath)
-  // 使用ffmpeg压缩视频
-  const ffmpegArgs = [
-    '-i',
-    inputPath,
-    '-c:v',
-    'libx264',
-    '-crf',
-    crf.toString(),
-    '-preset',
-    'medium',
-    outputPath
-  ]
+  crf: number = 23,
+  options: {
+    format?: string
+    encoder?: string
+    preset?: string
+    width?: number
+    height?: number
+    fps?: number
+    maintainAspectRatio?: boolean
+  } = {}
+): Promise<{
+  outputPath: string
+  originalSize: number
+  compressedSize: number
+}> {
+  // 检查输入文件是否存在
+  if (!existsSync(inputPath)) {
+    throw new Error(`输入文件不存在: ${inputPath}`)
+  }
 
+  // 确保输出目录存在
+  const outputDir = path.dirname(outputPath)
+  await fs.mkdir(outputDir, { recursive: true })
+
+  // 如果输出文件已存在，则删除
+  checkFileExists(outputPath)
+
+  // 确定编码器
+  // const encoder = options.encoder || 'libx264' // 默认使用H.264
+
+  // 确定预设
+  const preset = options.preset || 'medium' // 默认使用medium预设
+
+  // 基础ffmpeg参数
+  const ffmpegArgs = ['-i', inputPath]
+
+  // 如果指定了分辨率
+  if (options.width || options.height) {
+    let scaleFilter = 'scale='
+
+    // 设置宽度，如果未指定则使用-1表示自动按比例计算
+    scaleFilter += options.width ? options.width : '-1'
+
+    // 添加分隔符
+    scaleFilter += ':'
+
+    // 设置高度，如果未指定则使用-1表示自动按比例计算
+    scaleFilter += options.height ? options.height : '-1'
+
+    // 添加过滤器选项
+    ffmpegArgs.push('-vf', scaleFilter)
+  }
+
+  // 如果指定了帧率
+  if (options.fps) {
+    ffmpegArgs.push('-r', options.fps.toString())
+  }
+
+  // 视频编码器设置
+  // ffmpegArgs.push('-c:v', encoder)
+
+  // 质量控制
+  ffmpegArgs.push('-crf', crf.toString())
+
+  // 编码预设
+  ffmpegArgs.push('-preset', preset)
+
+  // 音频编码 (默认保持原始音频编码)
+  ffmpegArgs.push('-c:a', 'copy')
+
+  // 输出文件
+  ffmpegArgs.push(outputPath)
+
+  console.log('ffmpeg视频压缩命令:', ffmpegArgs.join(' '))
+
+  // 执行ffmpeg命令
   await execFileAsync(ffmpegPath, ffmpegArgs)
-  return outputPath
+  return {
+    outputPath,
+    originalSize: await getFileSize(inputPath),
+    compressedSize: await getFileSize(outputPath)
+  }
 }
 
 /**
@@ -381,6 +447,81 @@ export async function compressAudio(
     }
   } catch (error) {
     console.error('音频压缩失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 获取视频信息
+ * @param videoPath 视频文件路径
+ * @returns 视频信息对象
+ */
+export async function getVideoInfo(videoPath: string): Promise<{
+  width?: number
+  height?: number
+  duration?: number
+  bitrate?: number
+  fps?: number
+  codec?: string
+  format?: string
+}> {
+  try {
+    // 检查文件是否是视频文件
+    const ext = path.extname(videoPath).toLowerCase()
+    const validVideoExts = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.flv', '.wmv', '.m4v']
+    if (!validVideoExts.includes(ext)) {
+      throw new Error(`不支持的视频格式: ${ext}`)
+    }
+
+    // 使用ffprobe获取视频信息
+    const args = [
+      '-v',
+      'error',
+      '-select_streams',
+      'v:0',
+      '-show_entries',
+      'stream=width,height,codec_name,r_frame_rate,bit_rate',
+      '-show_entries',
+      'format=duration,format_name,bit_rate',
+      '-of',
+      'json',
+      videoPath
+    ]
+
+    const { stdout } = await execFileAsync(ffprobePath, args)
+    const info = JSON.parse(stdout)
+
+    // 处理帧率 (可能是"24/1"这样的格式)
+    let fps
+    if (info.streams && info.streams[0] && info.streams[0].r_frame_rate) {
+      const fpsStr = info.streams[0].r_frame_rate
+      if (fpsStr.includes('/')) {
+        const [num, den] = fpsStr.split('/').map(Number)
+        fps = Math.round((num / den) * 100) / 100 // 保留两位小数
+      } else {
+        fps = parseFloat(fpsStr)
+      }
+    }
+
+    // 获取比特率
+    let bitrate = 0
+    if (info.streams && info.streams[0] && info.streams[0].bit_rate) {
+      bitrate = parseInt(info.streams[0].bit_rate)
+    } else if (info.format && info.format.bit_rate) {
+      bitrate = parseInt(info.format.bit_rate)
+    }
+
+    return {
+      width: info.streams?.[0]?.width,
+      height: info.streams?.[0]?.height,
+      duration: info.format?.duration ? parseFloat(info.format.duration) : undefined,
+      bitrate,
+      fps,
+      codec: info.streams?.[0]?.codec_name,
+      format: info.format?.format_name
+    }
+  } catch (error) {
+    console.error('获取视频信息失败:', error)
     throw error
   }
 }

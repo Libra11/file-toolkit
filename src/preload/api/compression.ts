@@ -39,8 +39,33 @@ export const compression: Compression = {
     }
   },
 
-  compressVideo: (inputPath, outputPath) =>
-    ipcRenderer.invoke('compress-video', inputPath, outputPath),
+  compressVideo: async (inputPath, outputPath, options = {}) => {
+    try {
+      console.log(`预加载脚本: 调用compressVideo, 输入:${inputPath}, 输出:${outputPath}`)
+      console.log('压缩选项:', options)
+
+      const result = await ipcRenderer.invoke('compress-video', inputPath, outputPath, options)
+
+      console.log(`预加载脚本: compressVideo成功, 结果:`, result)
+      return result
+    } catch (error) {
+      console.error('预加载脚本: compressVideo错误:', error)
+      throw error
+    }
+  },
+
+  // 获取视频信息
+  getVideoInfo: async (inputPath: string) => {
+    try {
+      console.log(`预加载脚本: 调用getVideoInfo, 输入:${inputPath}`)
+      const result = await ipcRenderer.invoke('get-video-info', inputPath)
+      console.log(`预加载脚本: getVideoInfo成功, 结果:`, result)
+      return result
+    } catch (error) {
+      console.error('预加载脚本: getVideoInfo错误:', error)
+      throw error
+    }
+  },
 
   compressAudio: (
     inputPath: string,

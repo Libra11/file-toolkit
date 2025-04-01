@@ -40,6 +40,30 @@ export interface SizeEstimationResult {
   newHeight?: number
 }
 
+// 视频压缩选项
+export interface VideoCompressionOptions {
+  format?: string // 输出格式
+  encoder?: string // 视频编码器
+  crf?: number // 质量因子 (0-51)
+  preset?: string // 编码预设
+  width?: number
+  height?: number
+  fps?: number
+  maintainAspectRatio?: boolean
+}
+
+// 视频压缩结果
+export interface VideoCompressionResult {
+  outputPath: string
+  originalSize: number
+  compressedSize: number
+  compressionRatio: number
+  duration?: number
+  width?: number
+  height?: number
+  format?: string
+}
+
 export interface Compression {
   /**
    * 压缩图片
@@ -71,9 +95,14 @@ export interface Compression {
    * 压缩视频
    * @param inputPath 输入路径
    * @param outputPath 输出路径
-   * @returns 输出路径
+   * @param options 压缩选项
+   * @returns 压缩结果
    */
-  compressVideo: (inputPath: string, outputPath: string) => Promise<string>
+  compressVideo: (
+    inputPath: string,
+    outputPath: string,
+    options?: Partial<VideoCompressionOptions>
+  ) => Promise<VideoCompressionResult>
 
   /**
    * 压缩音频
@@ -82,4 +111,19 @@ export interface Compression {
    * @returns 输出路径
    */
   compressAudio: (inputPath: string, outputPath: string) => Promise<string>
+
+  /**
+   * 获取视频信息
+   * @param inputPath 输入路径
+   * @returns 视频信息对象
+   */
+  getVideoInfo: (inputPath: string) => Promise<{
+    width?: number
+    height?: number
+    duration?: number
+    bitrate?: number
+    fps?: number
+    codec?: string
+    format?: string
+  }>
 }
