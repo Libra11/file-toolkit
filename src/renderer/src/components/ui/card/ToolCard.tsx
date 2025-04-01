@@ -8,6 +8,7 @@ import { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { cn } from '@renderer/lib/utils'
+import { t } from 'i18next'
 
 interface ToolCardProps {
   icon: ReactNode
@@ -62,7 +63,7 @@ export default function ToolCard({
         </div>
 
         <div className="mt-5 flex items-center text-sm font-medium text-blue-600 dark:text-blue-400">
-          <span className="mr-2">{onClick ? '打开工具' : '即将推出'}</span>
+          <span className="mr-2">{onClick ? t('openTool') : t('comingSoon')}</span>
           <ArrowRight className="h-4 w-4" />
         </div>
       </div>

@@ -42,6 +42,21 @@ export const compression: Compression = {
   compressVideo: (inputPath, outputPath) =>
     ipcRenderer.invoke('compress-video', inputPath, outputPath),
 
-  compressAudio: (inputPath, outputPath) =>
-    ipcRenderer.invoke('compress-audio', inputPath, outputPath)
+  compressAudio: (
+    inputPath: string,
+    outputPath: string,
+    bitrate?: string,
+    sampleRate?: number,
+    channels?: number,
+    format?: 'mp3' | 'aac' | 'ogg' | 'wav'
+  ) =>
+    ipcRenderer.invoke(
+      'compress-audio',
+      inputPath,
+      outputPath,
+      bitrate,
+      sampleRate,
+      channels,
+      format
+    )
 }

@@ -160,6 +160,12 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
           inputPath,
           outputPath
         )
+      case CONVERSION_TYPES.MP3_TO_FLAC:
+        return await window.electron.ipcRenderer.invoke(
+          'convert-mp3-to-flac',
+          inputPath,
+          outputPath
+        )
       case CONVERSION_TYPES.M4A_TO_MP3:
         return await window.electron.ipcRenderer.invoke('convert-m4a-to-mp3', inputPath, outputPath)
 
@@ -182,56 +188,25 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
     inputPaths: string[],
     outputDir: string
   ): Promise<string[]> => {
-    // 定义在switch外部避免词法声明错误
     const results: string[] = []
     const extension = getDefaultOutputExtension(conversionType)
+    for (let i = 0; i < inputPaths.length; i++) {
+      const inputPath = inputPaths[i]
+      const fileName = inputPath.split('/').pop()?.split('\\').pop() || `file-${i}`
+      const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'))
+      const outputPath = `${outputDir}/${nameWithoutExt}.${extension}`
 
-    switch (conversionType) {
-      // 音频批量转换
-      case CONVERSION_TYPES.MP3_TO_WAV:
-        return await window.electron.ipcRenderer.invoke(
-          'convert-batch-mp3-to-wav',
-          inputPaths,
-          outputDir
-        )
-      case CONVERSION_TYPES.WAV_TO_MP3:
-        return await window.electron.ipcRenderer.invoke(
-          'convert-batch-wav-to-mp3',
-          inputPaths,
-          outputDir
-        )
-      case CONVERSION_TYPES.FLAC_TO_MP3:
-        return await window.electron.ipcRenderer.invoke(
-          'convert-batch-flac-to-mp3',
-          inputPaths,
-          outputDir
-        )
-      case CONVERSION_TYPES.M4A_TO_MP3:
-        return await window.electron.ipcRenderer.invoke(
-          'convert-batch-m4a-to-mp3',
-          inputPaths,
-          outputDir
-        )
-      default:
-        // 对于不支持批量转换的类型，我们手动逐个转换
-        for (let i = 0; i < inputPaths.length; i++) {
-          const inputPath = inputPaths[i]
-          const fileName = inputPath.split('/').pop()?.split('\\').pop() || `file-${i}`
-          const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'))
-          const outputPath = `${outputDir}/${nameWithoutExt}.${extension}`
-
-          try {
-            const result = await performConversion(conversionType, inputPath, outputPath)
-            results.push(result)
-            // 更新进度
-            setBatchProgress(Math.round(((i + 1) / inputPaths.length) * 100))
-          } catch (error) {
-            console.error(`批量转换文件 ${inputPath} 失败:`, error)
-          }
-        }
-
-        return results
+      try {
+        const result = await performConversion(conversionType, inputPath, outputPath)
+        results.push(result)
+        // 更新进度
+        setBatchProgress(Math.round(((i + 1) / inputPaths.length) * 100))
+      } catch (error) {
+        console.error(`批量转换文件 ${inputPath} 失败:`, error)
+      }
     }
+
+    return results
   }
 
   const handleConvert = async (): Promise<void> => {

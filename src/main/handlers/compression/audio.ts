@@ -12,15 +12,37 @@ import { compressAudio } from '../../compressors/fileCompressors'
  */
 export function registerAudioCompressionHandlers(): void {
   // 音频压缩
-  ipcMain.handle('compress-audio', async (_, inputPath: string, outputPath: string) => {
-    try {
-      console.log(`IPC调用: compress-audio ${inputPath} -> ${outputPath}`)
-      const result = await compressAudio(inputPath, outputPath)
-      console.log(`压缩成功: ${result}`)
-      return result
-    } catch (error) {
-      console.error('音频压缩IPC错误:', error)
-      throw error
+  ipcMain.handle(
+    'compress-audio',
+    async (
+      _,
+      inputPath: string,
+      outputPath: string,
+      bitrate: string = '128k',
+      sampleRate?: number,
+      channels?: number,
+      format?: 'mp3' | 'aac' | 'ogg' | 'wav'
+    ) => {
+      try {
+        console.log(`IPC调用: compress-audio ${inputPath} -> ${outputPath}`)
+        console.log('参数:', { bitrate, sampleRate, channels, format })
+
+        const result = await compressAudio(
+          inputPath,
+          outputPath,
+          bitrate,
+          sampleRate,
+          channels,
+          format
+        )
+
+        console.log(`压缩成功: ${result}`)
+
+        return result
+      } catch (error) {
+        console.error('音频压缩IPC错误:', error)
+        throw error
+      }
     }
-  })
+  )
 }

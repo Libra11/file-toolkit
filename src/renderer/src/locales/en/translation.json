@@ -1,4 +1,5 @@
 {
+  "openTool": "Open Tool",
   "noFileChosen": "No file chosen",
   "inputFile": "Input File",
   "chooseFile": "Choose File",
@@ -140,5 +141,28 @@
   "compressionLevel": "Compression Level",
   "text": "Text",
   "compressedImageSaved": "Image has been saved",
-  "processing": "Processing"
+  "processing": "Processing",
+
+  "audioCompressionTool": "Audio Compression Tool",
+  "audioCompressionDescription": "Compress audio files to reduce file size while maintaining good sound quality",
+  "audioCompressionComingSoon": "Audio compression features are in development and coming soon",
+  "compressAudio": "Compress Audio",
+  "compressingAudio": "Compressing audio...",
+  "audioPreview": "Audio Preview",
+  "compressedAudio": "Compressed Audio",
+  "download": "Download",
+  "bitrate": "Bitrate",
+  "sampleRate": "Sample Rate",
+  "channels": "Channels",
+  "selectBitrate": "Select bitrate",
+  "selectSampleRate": "Select sample rate",
+  "selectChannels": "Select channels",
+  "mono": "Mono",
+  "stereo": "Stereo",
+  "originalAudio": "Original Audio",
+  "fileList": "File List",
+  "dragDropAudio": "Drag and drop audio file here",
+  "videoCompressionComingSoon": "Video compression features are in development and coming soon",
+  "duration": "Duration",
+  "format": "Format"
 }

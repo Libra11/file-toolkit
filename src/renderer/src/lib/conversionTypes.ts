@@ -26,7 +26,8 @@ export const CONVERSION_TYPES = {
   MP3_TO_WAV: 'mp3ToWav',
   WAV_TO_MP3: 'wavToMp3',
   M4A_TO_MP3: 'm4aToMp3',
-  FLAC_TO_MP3: 'flacToMp3'
+  FLAC_TO_MP3: 'flacToMp3',
+  MP3_TO_FLAC: 'mp3ToFlac'
 } as const
 
 export type ConversionType = (typeof CONVERSION_TYPES)[keyof typeof CONVERSION_TYPES]
@@ -76,7 +77,8 @@ export const conversionCategories: ConversionCategory[] = [
       CONVERSION_TYPES.MP3_TO_WAV,
       CONVERSION_TYPES.WAV_TO_MP3,
       CONVERSION_TYPES.M4A_TO_MP3,
-      CONVERSION_TYPES.FLAC_TO_MP3
+      CONVERSION_TYPES.FLAC_TO_MP3,
+      CONVERSION_TYPES.MP3_TO_FLAC
     ]
   }
 ]

@@ -306,17 +306,81 @@ export async function compressVideo(
  * @param inputPath 输入路径
  * @param outputPath 输出路径
  * @param bitrate 比特率 (如 '128k')
+ * @param sampleRate 采样率 (如 44100)
+ * @param channels 声道数 (如 2)
+ * @param format 格式 (如 'mp3')
  * @returns 输出文件路径
  */
 export async function compressAudio(
   inputPath: string,
   outputPath: string,
-  bitrate: string = '128k'
-): Promise<string> {
+  bitrate: string = '128k',
+  sampleRate?: number,
+  channels?: number,
+  format?: 'mp3' | 'aac' | 'ogg' | 'wav'
+): Promise<{
+  outputPath: string
+  originalSize: number
+  compressedSize: number
+}> {
   checkFileExists(outputPath)
-  // 使用ffmpeg压缩音频
-  const ffmpegArgs = ['-i', inputPath, '-c:a', 'aac', '-b:a', bitrate, outputPath]
 
-  await execFileAsync(ffmpegPath, ffmpegArgs)
-  return outputPath
+  // 根据输出路径确定格式
+  if (!format) {
+    const ext = outputPath.split('.').pop()?.toLowerCase()
+    if (ext === 'mp3' || ext === 'aac' || ext === 'ogg' || ext === 'wav') {
+      format = ext as 'mp3' | 'aac' | 'ogg' | 'wav'
+    } else {
+      format = 'aac' // 默认格式
+    }
+  }
+
+  // 准备ffmpeg参数
+  const ffmpegArgs: string[] = ['-i', inputPath]
+
+  // 添加采样率设置
+  if (sampleRate) {
+    ffmpegArgs.push('-ar', sampleRate.toString())
+  }
+
+  // 添加声道数设置
+  if (channels) {
+    ffmpegArgs.push('-ac', channels.toString())
+  }
+
+  // 根据格式设置编码器和比特率
+  switch (format) {
+    case 'mp3':
+      ffmpegArgs.push('-c:a', 'libmp3lame', '-b:a', bitrate)
+      break
+    case 'aac':
+      ffmpegArgs.push('-c:a', 'aac', '-b:a', bitrate)
+      break
+    case 'ogg':
+      ffmpegArgs.push('-c:a', 'libvorbis', '-b:a', bitrate)
+      break
+    case 'wav':
+      ffmpegArgs.push('-c:a', 'pcm_s16le') // WAV格式不使用比特率
+      break
+    default:
+      ffmpegArgs.push('-c:a', 'aac', '-b:a', bitrate)
+  }
+
+  // 添加输出路径
+  ffmpegArgs.push(outputPath)
+  console.log(ffmpegArgs)
+
+  console.log('执行音频压缩命令:', ffmpegPath, ffmpegArgs.join(' '))
+
+  try {
+    await execFileAsync(ffmpegPath, ffmpegArgs)
+    return {
+      outputPath,
+      originalSize: await getFileSize(inputPath),
+      compressedSize: await getFileSize(outputPath)
+    }
+  } catch (error) {
+    console.error('音频压缩失败:', error)
+    throw error
+  }
 }

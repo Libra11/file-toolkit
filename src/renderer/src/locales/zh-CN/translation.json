@@ -1,4 +1,5 @@
 {
+  "openTool": "打开工具",
   "noFileChosen": "未选择文件",
   "inputFile": "输入文件",
   "chooseFile": "选择文件",
@@ -140,5 +141,28 @@
   "compressionLevel": "压缩级别",
   "text": "文本",
   "compressedImageSaved": "图片已保存",
-  "processing": "处理中"
+  "processing": "处理中",
+
+  "audioCompressionTool": "音频压缩工具",
+  "audioCompressionDescription": "压缩音频文件，减小文件大小，同时保持良好的音质",
+  "audioCompressionComingSoon": "音频压缩功能正在开发中，即将推出",
+  "compressAudio": "压缩音频",
+  "compressingAudio": "压缩音频中...",
+  "audioPreview": "音频预览",
+  "compressedAudio": "压缩后音频",
+  "download": "下载",
+  "bitrate": "比特率",
+  "sampleRate": "采样率",
+  "channels": "声道",
+  "selectBitrate": "选择比特率",
+  "selectSampleRate": "选择采样率",
+  "selectChannels": "选择声道数",
+  "mono": "单声道",
+  "stereo": "立体声",
+  "originalAudio": "原始音频",
+  "fileList": "文件列表",
+  "dragDropAudio": "拖放音频文件到这里",
+  "videoCompressionComingSoon": "视频压缩功能正在开发中，即将推出",
+  "duration": "时长",
+  "format": "格式"
 }

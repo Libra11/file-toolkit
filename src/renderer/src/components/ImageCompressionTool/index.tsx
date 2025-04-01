@@ -11,9 +11,8 @@ import { useTranslation } from 'react-i18next'
 import { useState, useRef, useEffect } from 'react'
 import { ImageIcon, Loader2 } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
-import { Switch } from '@renderer/components/ui/switch'
-import { Label } from '@renderer/components/ui/label'
 import { Progress } from '@renderer/components/ui/progress'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
 
 // 导入子组件
 import { FileUploader } from './FileUploader'
@@ -42,7 +41,6 @@ export default function ImageCompressionTool(): JSX.Element {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   // 批量模式状态
-  const [batchMode, setBatchMode] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [batchResults, setBatchResults] = useState<CompressionResult[]>([])
   const [batchProgress, setBatchProgress] = useState(0)
@@ -94,8 +92,7 @@ export default function ImageCompressionTool(): JSX.Element {
   }
 
   // 处理模式切换
-  const handleModeToggle = (value: boolean): void => {
-    setBatchMode(value)
+  const handleModeToggle = (): void => {
     resetState()
   }
 
@@ -417,28 +414,25 @@ export default function ImageCompressionTool(): JSX.Element {
     >
       <Card className="border border-slate-200/30 dark:border-slate-700/30 shadow-lg bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm">
         <CardContent className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-              <ImageIcon className="mr-2 h-6 w-6 text-blue-500" />
-              {t('imageCompression')}
-            </h2>
-
-            {/* 模式切换开关 */}
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="mode-toggle" className="text-sm">
-                {batchMode ? t('batchMode') : t('singleFileMode')}
-              </Label>
-              <Switch id="mode-toggle" checked={batchMode} onCheckedChange={handleModeToggle} />
-            </div>
-          </div>
-
-          <p className="text-slate-600 dark:text-slate-400">{t('imageCompressionDescription')}</p>
-
           <div className="space-y-6">
-            {/* 单个文件模式 */}
-            {!batchMode ? (
-              <>
-                {/* 文件上传区域 */}
+            <Tabs defaultValue="single" onValueChange={handleModeToggle}>
+              <TabsList className="grid w-full grid-cols-2 mb-4 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-lg">
+                <TabsTrigger
+                  value="single"
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-md py-2"
+                >
+                  {t('singleFileMode')}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="batch"
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-md py-2"
+                >
+                  {t('batchMode')}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="single" className="space-y-6">
+                {/* 单个文件模式内容 */}
                 {!selectedFile ? (
                   <FileUploader onFileSelect={handleSingleFileSelect} fileInputRef={fileInputRef} />
                 ) : (
@@ -513,11 +507,10 @@ export default function ImageCompressionTool(): JSX.Element {
                     </div>
                   </div>
                 )}
-              </>
-            ) : (
-              /* 批量模式 */
-              <>
-                {/* 批量文件上传 */}
+              </TabsContent>
+
+              <TabsContent value="batch" className="space-y-6">
+                {/* 批量模式内容 */}
                 {selectedFiles.length === 0 || batchResults.length > 0 ? (
                   <>
                     {batchResults.length > 0 ? (
@@ -593,8 +586,8 @@ export default function ImageCompressionTool(): JSX.Element {
                     </div>
                   </div>
                 )}
-              </>
-            )}
+              </TabsContent>
+            </Tabs>
           </div>
         </CardContent>
       </Card>
