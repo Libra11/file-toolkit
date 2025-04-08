@@ -1,5 +1,5 @@
 appId: com.electron.app
-productName: libra-tool
+productName: 文件处理
 directories:
   buildResources: 'assets'
 
@@ -24,7 +24,7 @@ extraResources:
       ]
 
 win:
-  executableName: libra-tool
+  executableName: 文件处理
   extraResources:
     - from: 'resources/ffmpeg/ffmpeg.exe'
       to: 'resources/ffmpeg/ffmpeg.exe'
@@ -64,6 +64,7 @@ mac:
       to: 'resources/ffmpeg/ffmpeg'
     - from: 'resources/ffprobe/ffprobe'
       to: 'resources/ffprobe/ffprobe'
+  icon: resources/icon.png
 
 dmg:
   artifactName: ${name}-${version}.${ext}
@@ -75,6 +76,7 @@ linux:
     - deb
   maintainer: electronjs.org
   category: Utility
+  icon: resources/icon.png
 
 appImage:
   artifactName: ${name}-${version}.${ext}
