@@ -127,7 +127,6 @@
   "loadImage": "Load Image",
   "compressImage": "Compress Image",
   "saveCompressedImage": "Save Compressed Image",
-  "compressAnother": "Compress Another",
   "compressOthers": "Compress Others",
   "batchCompressionSuccess": "Batch Compression Success",
   "remove": "Remove",
@@ -144,7 +143,6 @@
   "text": "Text",
   "compressedImageSaved": "Image has been saved",
   "processing": "Processing",
-
   "audioCompressionTool": "Audio Compression Tool",
   "audioCompressionDescription": "Compress audio files to reduce file size while maintaining good sound quality",
   "audioCompressionComingSoon": "Audio compression features are in development and coming soon",
@@ -172,7 +170,6 @@
   "selectVideo": "Select Video",
   "processingVideo": "Processing video",
   "compressionComplete": "Compression Complete",
-  "batchCompressionSuccess": "{{count}} files have been compressed successfully",
   "compressMore": "Compress More",
   "compressingBatch": "Compressing Batch...",
   "processingFiles": "Processing Files",
