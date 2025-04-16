@@ -9,10 +9,13 @@ import path, { join } from 'path'
 import { electronApp, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import '@main/ffmpeg'
+import checkUpdate from './utils/update'
+
+let mainWindow: BrowserWindow | null = null
 
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 600,
     height: 800,
     show: false,
@@ -31,15 +34,21 @@ function createWindow(): void {
 
   // Add these IPC handlers
   ipcMain.handle('minimize-window', () => {
-    mainWindow.minimize()
+    if (mainWindow) {
+      mainWindow.minimize()
+    }
   })
 
   ipcMain.handle('close-window', () => {
-    app.quit()
+    if (mainWindow) {
+      app.quit()
+    }
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    if (mainWindow) {
+      mainWindow.show()
+    }
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -74,6 +83,7 @@ app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
 
   createWindow()
+  checkUpdate(mainWindow)
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

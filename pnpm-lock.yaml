@@ -58,6 +58,9 @@ dependencies:
   adm-zip:
     specifier: ^0.5.16
     version: 0.5.16
+  builder-util-runtime:
+    specifier: ^9.3.1
+    version: 9.3.1
   class-variance-authority:
     specifier: ^0.7.1
     version: 0.7.1
@@ -79,6 +82,9 @@ dependencies:
   lucide-react:
     specifier: ^0.447.0
     version: 0.447.0(react@18.3.1)
+  original-fs:
+    specifier: ^1.2.0
+    version: 1.2.0
   react-i18next:
     specifier: ^15.0.2
     version: 15.4.1(i18next@23.16.8)(react-dom@18.3.1)(react@18.3.1)
@@ -4920,6 +4926,10 @@ packages:
       type-check: 0.4.0
       word-wrap: 1.2.5
     dev: true
+
+  /original-fs@1.2.0:
+    resolution: {integrity: sha512-IGo+qFumpIV65oDchJrqL0BOk9kr82fObnTesNJt8t3YgP6vfqcmRs0ofPzg3D9PKMeBHt7lrg1k/6L+oFdS8g==}
+    dev: false
 
   /own-keys@1.0.1:
     resolution: {integrity: sha512-qFOyK5PjiWZd+QQIh+1jhdb9LpxTF0qs7Pm8o5QHYZ0M3vKqSqzsZaEB6oWlxZ+q2sJBMI/Ktgd2N5ZwQoRHfg==}

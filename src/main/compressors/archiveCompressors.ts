@@ -9,7 +9,8 @@ import * as compressing from 'compressing'
 import path from 'path'
 import fs from 'fs/promises'
 import { createWriteStream } from 'fs'
-
+// @ts-ignore ignore
+import { OriginalFs } from 'original-fs'
 /**
  * 获取文件大小 (字节)
  * @param filePath 文件路径
@@ -115,7 +116,7 @@ export async function compressFiles(
   // 根据格式选择压缩方法
   switch (format) {
     case ArchiveFormat.ZIP: {
-      const zip = new AdmZip()
+      const zip = new AdmZip(undefined, { fs: OriginalFs })
       zip.addFile('README.txt', Buffer.from('这个压缩包由文件工具包创建。\n'))
 
       for (const inputPath of inputPaths) {
@@ -341,7 +342,7 @@ export async function extractArchive(
   let entryCount = 0
 
   if (ext === '.zip') {
-    const zip = new AdmZip(inputPath)
+    const zip = new AdmZip(inputPath, { fs: OriginalFs })
     // adm-zip 的类型定义可能不完全，但库本身支持密码
     // @ts-ignore ignore
     zip.getEntries().forEach((entry) => {
@@ -425,7 +426,7 @@ export async function listArchiveContents(
   const entries: { name: string; size: number; isDirectory: boolean; date?: Date }[] = []
 
   if (ext === '.zip') {
-    const zip = new AdmZip(archivePath)
+    const zip = new AdmZip(archivePath, { fs: OriginalFs })
     // @ts-ignore ignore
     zip.getEntries().forEach((entry) => {
       // @ts-ignore ignore
