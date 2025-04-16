@@ -1,3 +1,9 @@
+/**
+ * Author: Libra
+ * Date: 2025-03-30 11:36:01
+ * LastEditors: Libra
+ * Description:
+ */
 /*
  * @Author: Libra
  * @Date: 2024-03-30
@@ -73,6 +79,7 @@ export default function AppLayout({ children }: AppLayoutProps): JSX.Element {
         >
           <div className="flex items-center">
             <FileCog className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
+            <span className="text-sm font-medium">{t('appName')}</span>
           </div>
         </div>
         <div

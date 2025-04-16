@@ -8,40 +8,36 @@
  * @Author: Libra
  * @Date: 2024-03-30
  * @LastEditors: Libra
- * @Description: 处理程序导出
+ * @Description: 主进程IPC处理程序注册
  */
-
-// 导入媒体转换处理程序
-import { registerImageConversionHandlers } from './conversion/image'
-import { registerVideoConversionHandlers } from './conversion/video'
-import { registerAudioConversionHandlers } from './conversion/audio'
-
-// 导入媒体压缩处理程序
+import { registerFileSystemHandlers } from './fileSystemHandlers'
 import { registerImageCompressionHandlers } from './compression/image'
 import { registerVideoCompressionHandlers } from './compression/video'
 import { registerAudioCompressionHandlers } from './compression/audio'
-
-// 导入文件系统处理程序
-import { registerFileSystemHandlers } from './fileSystemHandlers'
+import { registerConversionHandlers } from './conversion'
+import { registerArchiveHandlers } from './compression/archive'
 
 /**
  * 注册所有IPC处理程序
  */
 export function registerAllHandlers(): void {
-  // 注册媒体转换处理程序
-  registerImageConversionHandlers()
-  registerVideoConversionHandlers()
-  registerAudioConversionHandlers()
-
-  // 注册媒体压缩处理程序
-  registerImageCompressionHandlers()
-  registerVideoCompressionHandlers()
-  registerAudioCompressionHandlers()
-
-  // 注册文件系统处理程序
+  // 初始化基本的文件系统处理程序
   registerFileSystemHandlers()
 
-  console.log('已注册所有IPC处理程序')
+  // 注册转换处理程序
+  registerConversionHandlers()
+
+  // 注册图像压缩处理程序
+  registerImageCompressionHandlers()
+
+  // 注册视频压缩处理程序
+  registerVideoCompressionHandlers()
+
+  // 注册音频压缩处理程序
+  registerAudioCompressionHandlers()
+
+  // 注册归档压缩/解压处理程序
+  registerArchiveHandlers()
 }
 
 // 导出所有处理程序

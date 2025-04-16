@@ -165,7 +165,7 @@
   "videoCompressionComingSoon": "Video compression features are in development and coming soon",
   "duration": "Duration",
   "format": "Format",
-
+  "appName": "File Toolkit",
   "dropVideoHere": "Drop video here",
   "selectVideo": "Select Video",
   "processingVideo": "Processing video",

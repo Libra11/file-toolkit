@@ -13,12 +13,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { FileType2, Sparkles, FileDown, ImageIcon, Video, Music } from 'lucide-react'
+import { FileType2, Sparkles, FileDown, ImageIcon, Video, Music, Archive } from 'lucide-react'
 import ToolCard from '@renderer/components/ui/card/ToolCard'
 import FileConversionTool from '@renderer/components/FileConversionTool'
 import ImageCompressionTool from '@renderer/components/ImageCompressionTool'
 import AudioCompressionTool from '@renderer/components/AudioCompressionTool'
 import VideoCompressionTool from '@renderer/components/VideoCompressionTool'
+import ArchiveCompressionTool from '@renderer/components/ArchiveCompressionTool'
 
 enum ActiveTool {
   None,
@@ -26,7 +27,8 @@ enum ActiveTool {
   Compression,
   ImageCompression,
   AudioCompression,
-  VideoCompression
+  VideoCompression,
+  ArchiveCompression
 }
 
 export default function HomePage(): JSX.Element {
@@ -83,6 +85,13 @@ export default function HomePage(): JSX.Element {
               description={t('fileCompressionDescription')}
               onClick={() => setActiveTool(ActiveTool.Compression)}
               iconColor="text-emerald-500"
+            />
+            <ToolCard
+              icon={<Archive size={24} />}
+              title={t('archiveCompression')}
+              description={t('archiveCompressionDescription')}
+              onClick={() => setActiveTool(ActiveTool.ArchiveCompression)}
+              iconColor="text-purple-500"
             />
           </motion.div>
         </motion.div>
@@ -262,6 +271,36 @@ export default function HomePage(): JSX.Element {
             </button>
           </div>
           <VideoCompressionTool />
+        </>
+      ) : activeTool === ActiveTool.ArchiveCompression ? (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
+              <Archive className="mr-2 h-5 w-5 text-purple-500" />
+              {t('archiveCompression')}
+            </h2>
+            <button
+              onClick={() => setActiveTool(ActiveTool.None)}
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-800/40 rounded-full transition-colors"
+            >
+              <svg
+                className="w-3.5 h-3.5 mr-1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 12H5M5 12L12 19M5 12L12 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {t('backToHome')}
+            </button>
+          </div>
+          <ArchiveCompressionTool />
         </>
       ) : null}
     </div>

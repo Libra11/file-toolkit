@@ -9,6 +9,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 import { ffmpeg } from './api/ffmpeg'
 import { system } from './api/system'
 import { compression } from './api/compression'
+import { archiveCompression } from './api/archiveCompression'
 
 if (process.contextIsolated) {
   try {
@@ -16,6 +17,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('ffmpeg', ffmpeg)
     contextBridge.exposeInMainWorld('system', system)
     contextBridge.exposeInMainWorld('compression', compression)
+    contextBridge.exposeInMainWorld('archiveCompression', archiveCompression)
   } catch (error) {
     console.error(error)
   }
@@ -28,4 +30,6 @@ if (process.contextIsolated) {
   window.system = system
   // @ts-ignore (define in dts)
   window.compression = compression
+  // @ts-ignore (define in dts)
+  window.archiveCompression = archiveCompression
 }
