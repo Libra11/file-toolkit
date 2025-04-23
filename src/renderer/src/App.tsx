@@ -24,7 +24,7 @@ function App(): JSX.Element {
     window.addEventListener('minimize-window', handleMinimize)
     window.addEventListener('close-window', handleClose)
 
-    console.log('version 1.0.1')
+    console.log('version 1.0.2')
 
     return (): void => {
       window.removeEventListener('minimize-window', handleMinimize)

@@ -13,7 +13,7 @@ export function registerCreateExamHandlers(): void {
   // 获取默认配置
   ipcMain.handle('get-default-config', async () => {
     try {
-      return store.store
+      return store.all
     } catch (error) {
       console.error('获取默认配置失败:', error)
       throw error
@@ -22,7 +22,7 @@ export function registerCreateExamHandlers(): void {
   // 设置默认配置
   ipcMain.handle('set-default-config', async (_, config: ExamConfig) => {
     try {
-      store.set(config)
+      store.setAll(config)
     } catch (error) {
       console.error('设置默认配置失败:', error)
       throw error

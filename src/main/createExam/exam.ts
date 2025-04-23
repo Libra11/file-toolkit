@@ -61,7 +61,7 @@ export const createExam = async (): Promise<void> => {
     sendLog('info', '重置考生分配状态')
 
     // 计算总科目数
-    const totalSubjects = store.store.periods.reduce(
+    const totalSubjects = store.all.periods.reduce(
       (total, period) => total + period.subjects.length,
       0
     )
@@ -72,11 +72,11 @@ export const createExam = async (): Promise<void> => {
     const periodIds: string[] = []
 
     sendLog('info', '正在创建项目...')
-    const projectId = await createProject(store.store.project)
+    const projectId = await createProject(store.all.project)
     sendLog('success', `项目创建成功！项目ID：${projectId}`)
 
     // 2. 创建时段和科目
-    for (const [periodIndex, periodData] of store.store.periods.entries()) {
+    for (const [periodIndex, periodData] of store.all.periods.entries()) {
       // 创建时段
       sendLog('info', `正在创建第 ${periodIndex + 1} 个时段 (${periodData.name})...`)
       const periodId = await createPeriod(
@@ -193,7 +193,7 @@ export const createExam = async (): Promise<void> => {
         // 确认考点
         sendLog('info', `正在确认时段 "${periodData.name}" 的考点信息...`)
         try {
-          await confirmPeriod(periodId, store.store.useMultipleRooms)
+          await confirmPeriod(periodId, store.all.useMultipleRooms)
           sendLog('success', `时段 "${periodData.name}" 考点确认成功！`)
         } catch (error: any) {
           sendLog('error', `时段 "${periodData.name}" 考点确认失败: ${error.message}`)
