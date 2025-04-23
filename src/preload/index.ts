@@ -10,6 +10,7 @@ import { ffmpeg } from './api/ffmpeg'
 import { system } from './api/system'
 import { compression } from './api/compression'
 import { archiveCompression } from './api/archiveCompression'
+import { exam } from './api/exam'
 
 if (process.contextIsolated) {
   try {
@@ -18,6 +19,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('system', system)
     contextBridge.exposeInMainWorld('compression', compression)
     contextBridge.exposeInMainWorld('archiveCompression', archiveCompression)
+    contextBridge.exposeInMainWorld('exam', exam)
   } catch (error) {
     console.error(error)
   }
@@ -32,4 +34,6 @@ if (process.contextIsolated) {
   window.compression = compression
   // @ts-ignore (define in dts)
   window.archiveCompression = archiveCompression
+  // @ts-ignore (define in dts)
+  window.exam = exam
 }

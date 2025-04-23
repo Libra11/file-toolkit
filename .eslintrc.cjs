@@ -12,6 +12,9 @@ module.exports = {
     '@electron-toolkit/eslint-config-ts/recommended',
     '@electron-toolkit/eslint-config-prettier'
   ],
+  rules: {
+    '@typescript-eslint/no-explicit-any': 'off'
+  },
   settings: {
     'import/resolver': {
       alias: {

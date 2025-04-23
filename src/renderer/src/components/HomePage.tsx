@@ -13,13 +13,23 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { FileType2, Sparkles, FileDown, ImageIcon, Video, Music, Archive } from 'lucide-react'
+import {
+  FileType2,
+  Sparkles,
+  FileDown,
+  ImageIcon,
+  Video,
+  Music,
+  Archive,
+  School
+} from 'lucide-react'
 import ToolCard from '@renderer/components/ui/card/ToolCard'
 import FileConversionTool from '@renderer/components/FileConversionTool'
 import ImageCompressionTool from '@renderer/components/ImageCompressionTool'
 import AudioCompressionTool from '@renderer/components/AudioCompressionTool'
 import VideoCompressionTool from '@renderer/components/VideoCompressionTool'
 import ArchiveCompressionTool from '@renderer/components/ArchiveCompressionTool'
+import ExamCreationTool from '@renderer/components/ExamCreationTool'
 
 enum ActiveTool {
   None,
@@ -28,7 +38,8 @@ enum ActiveTool {
   ImageCompression,
   AudioCompression,
   VideoCompression,
-  ArchiveCompression
+  ArchiveCompression,
+  ExamCreation
 }
 
 export default function HomePage(): JSX.Element {
@@ -70,7 +81,7 @@ export default function HomePage(): JSX.Element {
 
           <motion.div
             variants={itemVariants}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8"
           >
             <ToolCard
               icon={<FileType2 size={24} />}
@@ -92,6 +103,13 @@ export default function HomePage(): JSX.Element {
               description={t('archiveCompressionDescription')}
               onClick={() => setActiveTool(ActiveTool.ArchiveCompression)}
               iconColor="text-purple-500"
+            />
+            <ToolCard
+              icon={<School size={24} />}
+              title={t('examCreation')}
+              description={t('examCreationDescription')}
+              onClick={() => setActiveTool(ActiveTool.ExamCreation)}
+              iconColor="text-amber-500"
             />
           </motion.div>
         </motion.div>
@@ -301,6 +319,36 @@ export default function HomePage(): JSX.Element {
             </button>
           </div>
           <ArchiveCompressionTool />
+        </>
+      ) : activeTool === ActiveTool.ExamCreation ? (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
+              <School className="mr-2 h-5 w-5 text-amber-500" />
+              {t('examCreation')}
+            </h2>
+            <button
+              onClick={() => setActiveTool(ActiveTool.None)}
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-800/40 rounded-full transition-colors"
+            >
+              <svg
+                className="w-3.5 h-3.5 mr-1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 12H5M5 12L12 19M5 12L12 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {t('backToHome')}
+            </button>
+          </div>
+          <ExamCreationTool />
         </>
       ) : null}
     </div>

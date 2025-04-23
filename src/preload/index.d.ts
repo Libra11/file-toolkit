@@ -7,6 +7,7 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import type { Ffmpeg } from './types/ffmpeg'
 import type { System } from './types/system'
+import type { Exam } from './types/exam'
 
 export type IpcListener = (event: IpcRendererEvent, ...args: unknown[]) => void
 declare global {
@@ -14,5 +15,6 @@ declare global {
     electron: ElectronAPI
     ffmpeg: Ffmpeg
     system: System
+    exam: Exam
   }
 }

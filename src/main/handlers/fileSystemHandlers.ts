@@ -7,7 +7,6 @@
 import { ipcMain, shell } from 'electron'
 import { selectDirectory, saveFileDialog } from '../utils/dialogs'
 import { isFileExists } from '../utils/fileSystem'
-
 /**
  * 注册文件系统相关的IPC处理程序
  */
