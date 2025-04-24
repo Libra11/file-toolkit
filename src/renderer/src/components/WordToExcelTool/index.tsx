@@ -211,12 +211,13 @@ const WordToExcelTool = (): JSX.Element => {
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-t-lg border-b border-blue-100 dark:border-blue-800/30">
             <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
               <Settings className="h-5 w-5" />
-              {t('wordToExcelTool')}
+              {t('wordToExcel')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <AnimatePresence>
               <motion.div
+                key="fileConfig"
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
                 {...fadeInAnimation}
                 transition={{ duration: 0.3, delay: 0.1 }}
@@ -248,6 +249,7 @@ const WordToExcelTool = (): JSX.Element => {
               </motion.div>
 
               <motion.div
+                key="textareaSection"
                 className="space-y-2"
                 {...fadeInAnimation}
                 transition={{ duration: 0.3, delay: 0.2 }}
@@ -265,6 +267,7 @@ const WordToExcelTool = (): JSX.Element => {
               </motion.div>
 
               <motion.div
+                key="buttonSection"
                 className="flex flex-wrap gap-3 pt-2"
                 {...fadeInAnimation}
                 transition={{ duration: 0.3, delay: 0.3 }}

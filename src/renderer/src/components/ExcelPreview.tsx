@@ -15,27 +15,72 @@ interface ExcelPreviewProps {
   data: string[][]
 }
 
+interface TableInfo {
+  type: string
+  maxCols: number
+  hasAnswer: boolean
+  normalizedData: string[][]
+}
+
 const ExcelPreview = ({ data }: ExcelPreviewProps): JSX.Element => {
   const { t } = useTranslation()
   const tableRef = useRef<HTMLTableElement>(null)
   const [isCopied, setIsCopied] = useState<boolean>(false)
 
-  // 根据数据推测题目类型
-  const questionType = useMemo(() => {
-    if (!data || data.length === 0) return 'unknown'
+  // 根据数据分析表格结构和题目信息
+  const tableInfo = useMemo((): TableInfo => {
+    if (!data || data.length === 0) {
+      return {
+        type: 'unknown',
+        maxCols: 0,
+        hasAnswer: false,
+        normalizedData: []
+      }
+    }
 
-    const firstRow = data[0]
-    // 检查是否为判断题（通常包含"正确"、"错误"字样）
-    if (firstRow.some((cell) => cell === '正确') && firstRow.some((cell) => cell === '错误')) {
-      return 'trueFalse'
+    // 找出最大列数
+    const maxCols = Math.max(...data.map((row) => row.length))
+
+    // 分析题目类型
+    let type = 'multipleChoice'
+    let hasAnswer = false
+
+    // 判断题特征检测
+    if (
+      data.some((row) => row.some((cell) => cell === '正确') && row.some((cell) => cell === '错误'))
+    ) {
+      type = 'trueFalse'
+      // 检查是否有答案列
+      hasAnswer = data.some((row) => row.length > 3)
     }
-    // 检查是否为填空题（通常第一列之后直接是答案，没有选项A、B、C等）
-    else if (firstRow.length >= 2 && firstRow.length <= 3) {
-      return 'fillBlank'
+    // 填空题特征检测
+    else if (data.every((row) => row.length >= 2 && row.length <= 3)) {
+      type = 'fillBlank'
+      hasAnswer = true
     }
-    // 默认为选择题
+    // 选择题 - 检查是否最后一列是答案
     else {
-      return 'multipleChoice'
+      hasAnswer = data.some((row) => {
+        const lastCell = row[row.length - 1]
+        // 答案通常是单个字母或者短文本
+        return lastCell && row.length > 2 && /^[A-D]$|^[A-D],|^答案/.test(lastCell)
+      })
+    }
+
+    // 规范化数据，确保每行具有相同的列数
+    const normalizedData = data.map((row) => {
+      const newRow = [...row]
+      while (newRow.length < maxCols) {
+        newRow.push('')
+      }
+      return newRow
+    })
+
+    return {
+      type,
+      maxCols,
+      hasAnswer,
+      normalizedData
     }
   }, [data])
 
@@ -76,28 +121,65 @@ const ExcelPreview = ({ data }: ExcelPreviewProps): JSX.Element => {
     }
   }
 
-  // 获取表头标题
-  const getHeaderTitle = (index: number): string => {
+  // 根据列索引和题目类型获取表头内容
+  const getHeaderTitle = (
+    index: number,
+    maxCols: number,
+    type: string,
+    hasAnswer: boolean
+  ): string => {
     if (index === 0) return t('questionContent', '题目内容')
 
-    switch (questionType) {
+    // 如果是最后一列，且有答案标记
+    if (hasAnswer && index === maxCols - 1) {
+      return t('answer', '答案')
+    }
+
+    switch (type) {
       case 'trueFalse':
         if (index === 1) return t('trueOption', '正确')
         if (index === 2) return t('falseOption', '错误')
-        if (index === 3) return t('answer', '答案')
-        return `${t('column', '列')} ${index + 1}`
+        return `${t('column', '列')} ${index}`
 
       case 'fillBlank':
-        return index === 1 ? t('answer', '答案') : `${t('answer', '答案')} ${index}`
+        return index > 0 ? `${t('answer', '答案')} ${index}` : t('answer', '答案')
 
       case 'multipleChoice':
       default:
-        return `${t('option', '选项')} ${String.fromCharCode(64 + index)}`
+        // 如果选项数超过26个（超过Z），则使用AA, AB...
+        if (index <= 26) {
+          return `${t('option', '选项')} ${String.fromCharCode(64 + index)}`
+        } else {
+          const first = String.fromCharCode(64 + Math.floor((index - 1) / 26))
+          const second = String.fromCharCode(64 + (((index - 1) % 26) + 1))
+          return `${t('option', '选项')} ${first}${second}`
+        }
     }
   }
 
+  // 判断单元格是否为答案单元格
+  const isAnswerCell = (
+    rowIndex: number,
+    colIndex: number,
+    maxCols: number,
+    type: string,
+    hasAnswer: boolean
+  ): boolean => {
+    // 最后一列是答案
+    if (hasAnswer && colIndex === maxCols - 1) {
+      return true
+    }
+
+    // 填空题的所有非第一列都是答案
+    if (type === 'fillBlank' && colIndex > 0) {
+      return true
+    }
+
+    return false
+  }
+
   return (
-    <div className="space-y-4 p-4">
+    <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="text-slate-700 dark:text-slate-300 flex items-center gap-2 bg-slate-100/70 dark:bg-slate-700/30 px-3 py-1.5 rounded-lg shadow-sm">
           <span className="text-sm font-medium">{t('totalQuestions')}</span>{' '}
@@ -124,31 +206,33 @@ const ExcelPreview = ({ data }: ExcelPreviewProps): JSX.Element => {
       <div className="overflow-auto max-h-[500px] rounded-lg border border-slate-200 dark:border-slate-700 shadow-md bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
         <table ref={tableRef} className="w-full border-collapse table-fixed">
           <colgroup>
-            {data[0]?.map((_, index) => (
+            {Array.from({ length: tableInfo.maxCols }).map((_, index) => (
               <col
                 key={`col-${index}`}
                 className={
                   index === 0
-                    ? 'w-5/12' // 第一列占40%宽度
-                    : ''
-                } // 其他列自适应
+                    ? 'w-5/12' // 第一列占42%宽度
+                    : tableInfo.hasAnswer && index === tableInfo.maxCols - 1
+                      ? 'w-1/12' // 答案列较窄
+                      : '' // 其他列自适应
+                }
               />
             ))}
           </colgroup>
           <thead className="sticky top-0 bg-gradient-to-r from-blue-50/90 to-indigo-50/90 dark:from-blue-900/30 dark:to-indigo-900/30 backdrop-blur-sm">
             <tr>
-              {data[0]?.map((_, index) => (
+              {Array.from({ length: tableInfo.maxCols }).map((_, index) => (
                 <th
                   key={`header-${index}`}
                   className="py-3 px-4 text-left text-sm font-medium text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700"
                 >
-                  {getHeaderTitle(index)}
+                  {getHeaderTitle(index, tableInfo.maxCols, tableInfo.type, tableInfo.hasAnswer)}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {data.map((row, rowIndex) => (
+            {tableInfo.normalizedData.map((row, rowIndex) => (
               <tr
                 key={rowIndex}
                 className={`
@@ -160,12 +244,10 @@ const ExcelPreview = ({ data }: ExcelPreviewProps): JSX.Element => {
                   <td
                     key={cellIndex}
                     className={`
-                      border-b border-slate-200 dark:border-slate-700 p-3 text-slate-700 dark:text-slate-300
+                      border-b border-slate-200 dark:border-slate-700 p-3 text-slate-700 dark:text-slate-300 break-all
                       ${cellIndex === 0 ? 'font-medium' : ''} 
                       ${cellIndex === 0 ? 'whitespace-normal break-words' : 'whitespace-normal'}
-                      ${cellIndex === row.length - 1 && questionType === 'multipleChoice' ? 'text-blue-600 dark:text-blue-400 font-medium' : ''}
-                      ${questionType === 'fillBlank' && cellIndex > 0 ? 'text-blue-600 dark:text-blue-400 font-medium' : ''}
-                      ${questionType === 'trueFalse' && cellIndex === row.length - 1 ? 'text-blue-600 dark:text-blue-400 font-medium' : ''}
+                      ${isAnswerCell(rowIndex, cellIndex, tableInfo.maxCols, tableInfo.type, tableInfo.hasAnswer) ? 'text-blue-600 dark:text-blue-400 font-medium' : ''}
                     `}
                   >
                     {cell}
