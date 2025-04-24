@@ -16,8 +16,8 @@ let mainWindow: BrowserWindow | null = null
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 600,
-    height: 800,
+    width: 950,
+    height: 950,
     show: false,
     autoHideMenuBar: true,
     frame: false, // Add this line to remove the default frame
