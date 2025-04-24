@@ -35,11 +35,11 @@ export default function ToolCard({
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={cn(
-        'bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-all duration-200',
+        'bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col',
         className
       )}
     >
-      <div className="p-6">
+      <div className="p-6 flex-1">
         <div className="flex items-start justify-between">
           <div
             className={cn(

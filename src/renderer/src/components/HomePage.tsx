@@ -69,7 +69,7 @@ export default function HomePage(): JSX.Element {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="px-4 py-8 w-full">
       {activeTool === ActiveTool.None ? (
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
           <motion.div variants={itemVariants} className="text-center mb-12">
@@ -195,7 +195,7 @@ export default function HomePage(): JSX.Element {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4"
           >
             <ToolCard
               icon={<ImageIcon size={24} />}

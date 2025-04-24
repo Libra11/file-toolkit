@@ -302,6 +302,7 @@ const ImageOrganizeTool = (): JSX.Element => {
             <CardContent className="space-y-5 pt-5">
               <AnimatePresence>
                 <motion.div
+                  key="rootDir"
                   className="space-y-2"
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -340,6 +341,7 @@ const ImageOrganizeTool = (): JSX.Element => {
                 </motion.div>
 
                 <motion.div
+                  key="sourceDir"
                   className="space-y-2"
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -378,6 +380,7 @@ const ImageOrganizeTool = (): JSX.Element => {
                 </motion.div>
 
                 <motion.div
+                  key="excelPath"
                   className="space-y-2"
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -416,6 +419,7 @@ const ImageOrganizeTool = (): JSX.Element => {
                 </motion.div>
 
                 <motion.div
+                  key="nameRule"
                   className="space-y-2"
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -444,6 +448,7 @@ const ImageOrganizeTool = (): JSX.Element => {
                 </motion.div>
 
                 <motion.div
+                  key="startProcess"
                   className="pt-3"
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
