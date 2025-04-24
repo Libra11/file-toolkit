@@ -330,5 +330,24 @@
   "select": "选择",
   "selectNameRule": "选择命名规则",
   "idCardName": "身份证号_姓名",
-  "nameIdCard": "姓名_身份证号"
+  "nameIdCard": "姓名_身份证号",
+
+  "wordToExcel": "Word转Excel",
+  "wordToExcelDescription": "将Word文档中的试题转换为Excel格式，支持选择题、判断题和填空题",
+  "generateFileName": "生成文件名",
+  "answerMatching": "参考答案匹配",
+  "fileNamePlaceholder": "生成文件名，默认为 试卷",
+  "answerMatchingPlaceholder": "仅限选择题和判断题,填空题自动匹配答案, 不填默认没有参考答案",
+  "originalData": "原始数据",
+  "multipleChoice": "选择题",
+  "trueFalse": "判断题",
+  "fillBlank": "填空题",
+  "previewResult": "预览结果",
+  "totalQuestions": "共检测到",
+  "questionCount": "道题目，请确认是否正确！！",
+  "copyTable": "复制表格",
+  "export": "导出",
+  "cancel": "取消",
+  "tableCopied": "表格已复制到剪贴板",
+  "tableNotReady": "表格尚未准备好，请稍后再试"
 }
