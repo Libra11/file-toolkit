@@ -21,7 +21,8 @@ import {
   Video,
   Music,
   Archive,
-  School
+  School,
+  Images
 } from 'lucide-react'
 import ToolCard from '@renderer/components/ui/card/ToolCard'
 import FileConversionTool from '@renderer/components/FileConversionTool'
@@ -30,6 +31,7 @@ import AudioCompressionTool from '@renderer/components/AudioCompressionTool'
 import VideoCompressionTool from '@renderer/components/VideoCompressionTool'
 import ArchiveCompressionTool from '@renderer/components/ArchiveCompressionTool'
 import ExamCreationTool from '@renderer/components/ExamCreationTool'
+import ImageOrganizeTool from '@renderer/components/ImageOrganizeTool'
 
 enum ActiveTool {
   None,
@@ -39,7 +41,8 @@ enum ActiveTool {
   AudioCompression,
   VideoCompression,
   ArchiveCompression,
-  ExamCreation
+  ExamCreation,
+  ImageOrganize
 }
 
 export default function HomePage(): JSX.Element {
@@ -81,7 +84,7 @@ export default function HomePage(): JSX.Element {
 
           <motion.div
             variants={itemVariants}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8"
           >
             <ToolCard
               icon={<FileType2 size={24} />}
@@ -110,6 +113,13 @@ export default function HomePage(): JSX.Element {
               description={t('examCreationDescription')}
               onClick={() => setActiveTool(ActiveTool.ExamCreation)}
               iconColor="text-amber-500"
+            />
+            <ToolCard
+              icon={<Images size={24} />}
+              title={t('imageOrganize')}
+              description={t('imageOrganizeDescription')}
+              onClick={() => setActiveTool(ActiveTool.ImageOrganize)}
+              iconColor="text-cyan-500"
             />
           </motion.div>
         </motion.div>
@@ -349,6 +359,36 @@ export default function HomePage(): JSX.Element {
             </button>
           </div>
           <ExamCreationTool />
+        </>
+      ) : activeTool === ActiveTool.ImageOrganize ? (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
+              <Images className="mr-2 h-5 w-5 text-cyan-500" />
+              {t('imageOrganize')}
+            </h2>
+            <button
+              onClick={() => setActiveTool(ActiveTool.None)}
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-900/30 dark:hover:bg-cyan-800/40 rounded-full transition-colors"
+            >
+              <svg
+                className="w-3.5 h-3.5 mr-1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 12H5M5 12L12 19M5 12L12 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {t('backToHome')}
+            </button>
+          </div>
+          <ImageOrganizeTool />
         </>
       ) : null}
     </div>

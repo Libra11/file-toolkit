@@ -9,6 +9,7 @@ import './assets/index.css'
 import AppLayout from './components/ui/layout/AppLayout'
 import HomePage from './components/HomePage'
 import UpdateNotification from './components/UpdateNotification'
+import { ToastProvider } from './components/ui/toast'
 
 function App(): JSX.Element {
   // 注册窗口最小化和关闭事件处理器
@@ -33,10 +34,12 @@ function App(): JSX.Element {
   }, [])
 
   return (
-    <AppLayout>
-      <HomePage />
-      <UpdateNotification />
-    </AppLayout>
+    <ToastProvider>
+      <AppLayout>
+        <HomePage />
+        <UpdateNotification />
+      </AppLayout>
+    </ToastProvider>
   )
 }
 

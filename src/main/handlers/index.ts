@@ -17,6 +17,7 @@ import { registerAudioCompressionHandlers } from './compression/audio'
 import { registerConversionHandlers } from './conversion'
 import { registerArchiveHandlers } from './compression/archive'
 import { registerCreateExamHandlers } from './createExamHandlers'
+import { registerImageOrganizeHandlers } from './imageOrganizeHandlers'
 /**
  * 注册所有IPC处理程序
  */
@@ -41,6 +42,9 @@ export function registerAllHandlers(): void {
 
   // 注册考试创建处理程序
   registerCreateExamHandlers()
+
+  // 注册图片整理工具处理程序
+  registerImageOrganizeHandlers()
 }
 
 // 导出所有处理程序
@@ -59,3 +63,6 @@ export * from './fileSystemHandlers'
 
 // 考试创建处理程序
 export * from './createExamHandlers'
+
+// 图片整理工具处理程序
+export * from './imageOrganizeHandlers'

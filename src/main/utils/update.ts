@@ -64,7 +64,7 @@ export default function checkUpdate(win: BrowserWindow | null): void {
       error: '更新出错',
       checking: '正在检查更新',
       updateAvailable: '检测到新版本',
-      downloadProgress: '下载中',
+      downloadProgress: '新版本下载中',
       updateNotAvailable: '无新版本',
       updateDownloaded: '更新下载完成，即将重启应用'
     }
