@@ -11,6 +11,7 @@ import { system } from './api/system'
 import { compression } from './api/compression'
 import { archiveCompression } from './api/archiveCompression'
 import { exam } from './api/exam'
+import { m3u8Download } from './api/m3u8Download'
 
 if (process.contextIsolated) {
   try {
@@ -20,6 +21,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('compression', compression)
     contextBridge.exposeInMainWorld('archiveCompression', archiveCompression)
     contextBridge.exposeInMainWorld('exam', exam)
+    contextBridge.exposeInMainWorld('m3u8Download', m3u8Download)
   } catch (error) {
     console.error(error)
   }
@@ -36,4 +38,6 @@ if (process.contextIsolated) {
   window.archiveCompression = archiveCompression
   // @ts-ignore (define in dts)
   window.exam = exam
+  // @ts-ignore (define in dts)
+  window.m3u8Download = m3u8Download
 }

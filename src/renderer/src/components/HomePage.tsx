@@ -23,7 +23,8 @@ import {
   Archive,
   School,
   Images,
-  FileText
+  FileText,
+  Download
 } from 'lucide-react'
 import ToolCard from '@renderer/components/ui/card/ToolCard'
 import FileConversionTool from '@renderer/components/FileConversionTool'
@@ -34,6 +35,7 @@ import ArchiveCompressionTool from '@renderer/components/ArchiveCompressionTool'
 import ExamCreationTool from '@renderer/components/ExamCreationTool'
 import ImageOrganizeTool from '@renderer/components/ImageOrganizeTool'
 import WordToExcelTool from '@renderer/components/WordToExcelTool/index'
+import M3u8DownloadTool from '@renderer/components/M3u8DownloadTool'
 
 enum ActiveTool {
   None,
@@ -45,7 +47,8 @@ enum ActiveTool {
   ArchiveCompression,
   ExamCreation,
   ImageOrganize,
-  WordToExcel
+  WordToExcel,
+  M3u8Download
 }
 
 export default function HomePage(): JSX.Element {
@@ -130,6 +133,13 @@ export default function HomePage(): JSX.Element {
               description={t('wordToExcelDescription')}
               onClick={() => setActiveTool(ActiveTool.WordToExcel)}
               iconColor="text-rose-500"
+            />
+            <ToolCard
+              icon={<Download size={24} />}
+              title={t('m3u8Download')}
+              description={t('m3u8DownloadDescription')}
+              onClick={() => setActiveTool(ActiveTool.M3u8Download)}
+              iconColor="text-indigo-500"
             />
           </motion.div>
         </motion.div>
@@ -429,6 +439,36 @@ export default function HomePage(): JSX.Element {
             </button>
           </div>
           <WordToExcelTool />
+        </>
+      ) : activeTool === ActiveTool.M3u8Download ? (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
+              <Download className="mr-2 h-5 w-5 text-indigo-500" />
+              {t('m3u8Download')}
+            </h2>
+            <button
+              onClick={() => setActiveTool(ActiveTool.None)}
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 rounded-full transition-colors"
+            >
+              <svg
+                className="w-3.5 h-3.5 mr-1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 12H5M5 12L12 19M5 12L12 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {t('backToHome')}
+            </button>
+          </div>
+          <M3u8DownloadTool />
         </>
       ) : null}
     </div>

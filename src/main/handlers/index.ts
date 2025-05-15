@@ -18,6 +18,7 @@ import { registerConversionHandlers } from './conversion'
 import { registerArchiveHandlers } from './compression/archive'
 import { registerCreateExamHandlers } from './createExamHandlers'
 import { registerImageOrganizeHandlers } from './imageOrganizeHandlers'
+import { registerM3u8DownloadHandlers } from './m3u8DownloadHandlers'
 /**
  * 注册所有IPC处理程序
  */
@@ -45,6 +46,9 @@ export function registerAllHandlers(): void {
 
   // 注册图片整理工具处理程序
   registerImageOrganizeHandlers()
+
+  // 注册m3u8下载处理程序
+  registerM3u8DownloadHandlers()
 }
 
 // 导出所有处理程序
@@ -66,3 +70,6 @@ export * from './createExamHandlers'
 
 // 图片整理工具处理程序
 export * from './imageOrganizeHandlers'
+
+// m3u8下载处理程序
+export * from './m3u8DownloadHandlers'

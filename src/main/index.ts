@@ -10,15 +10,17 @@ import { electronApp, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import '@main/ffmpeg'
 import checkUpdate from './utils/update'
+import { registerAllHandlers } from './handlers'
 
 let mainWindow: BrowserWindow | null = null
 
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 950,
+    width: 660,
     height: 950,
     show: false,
+    resizable: false,
     autoHideMenuBar: true,
     frame: false, // Add this line to remove the default frame
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -80,6 +82,9 @@ app.whenReady().then(() => {
   })
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
+
+  // 注册所有IPC处理程序
+  registerAllHandlers()
 
   createWindow()
   checkUpdate(mainWindow)

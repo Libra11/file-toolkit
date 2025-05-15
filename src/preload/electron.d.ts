@@ -9,6 +9,8 @@ import { Ffmpeg } from './types/ffmpeg'
 import { System } from './types/system'
 import { Compression } from './types/compression'
 import { ArchiveCompression } from './types/archiveCompression'
+import { M3u8Download } from './types/m3u8Download'
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -16,5 +18,6 @@ declare global {
     system: System
     compression: Compression
     archiveCompression: ArchiveCompression
+    m3u8Download: M3u8Download
   }
 }

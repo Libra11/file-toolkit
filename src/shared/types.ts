@@ -23,3 +23,15 @@ export type JpgToPngOptions = BaseOptions
 export type WebpToJpgOptions = BaseOptions & QualityOption
 
 export type ConversionOptions = BaseOptions & Partial<FpsOption & QualityOption>
+
+/**
+ * 下载状态枚举
+ */
+export enum DownloadStatus {
+  WAITING = 'waiting',
+  DOWNLOADING = 'downloading',
+  PAUSED = 'paused',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled'
+}
