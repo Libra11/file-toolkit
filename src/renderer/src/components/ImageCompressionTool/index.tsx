@@ -67,6 +67,7 @@ export default function ImageCompressionTool(): JSX.Element {
   const [maintainAspectRatio, setMaintainAspectRatio] = useState(true)
   const [webpPreset, setWebpPreset] = useState<WebpPreset>(WEBP_PRESETS.DEFAULT)
   const [webpLossless, setWebpLossless] = useState(false)
+  const [enableBatchResize, setEnableBatchResize] = useState(false)
 
   // 重置所有状态
   const resetState = (): void => {
@@ -85,6 +86,7 @@ export default function ImageCompressionTool(): JSX.Element {
     setMaintainAspectRatio(true)
     setWebpPreset(WEBP_PRESETS.DEFAULT)
     setWebpLossless(false)
+    setEnableBatchResize(false) // Reset new state
     setImageInfo({})
     if (fileInputRef.current) {
       fileInputRef.current.value = '' // 重置文件输入
@@ -199,7 +201,7 @@ export default function ImageCompressionTool(): JSX.Element {
   }
 
   // 创建压缩选项
-  const createCompressionOptions = (): CompressionOptions => {
+  const createCompressionOptions = (isBatch: boolean = false): CompressionOptions => {
     // 确保传递的format值符合后端期望的类型
     let formatToUse: 'jpg' | 'png' | 'webp' | undefined = undefined
     if (outputFormat === IMAGE_FORMATS.JPG) formatToUse = 'jpg'
@@ -229,8 +231,18 @@ export default function ImageCompressionTool(): JSX.Element {
     }
 
     // 添加尺寸设置
-    if (outputWidth) options.width = Number(outputWidth)
-    if (outputHeight) options.height = Number(outputHeight)
+    if (isBatch) {
+      if (enableBatchResize) {
+        if (outputWidth && Number(outputWidth) > 0) options.width = Number(outputWidth)
+        if (outputHeight && Number(outputHeight) > 0) options.height = Number(outputHeight)
+        // maintainAspectRatio is implicitly handled by providing width/height or not
+      }
+      // If enableBatchResize is false, width and height are omitted for batch mode
+    } else {
+      // Single file mode: always include dimensions if set
+      if (outputWidth && Number(outputWidth) > 0) options.width = Number(outputWidth)
+      if (outputHeight && Number(outputHeight) > 0) options.height = Number(outputHeight)
+    }
 
     return options
   }
@@ -242,7 +254,7 @@ export default function ImageCompressionTool(): JSX.Element {
     setIsCompressing(true)
 
     try {
-      const options = createCompressionOptions()
+      const options = createCompressionOptions(false) // Not batch mode
 
       // 获取原始文件扩展名
       const originalExt = selectedFile.name.split('.').pop()?.toLowerCase() || ''
@@ -323,7 +335,7 @@ export default function ImageCompressionTool(): JSX.Element {
     setCurrentProcessingFile(null)
 
     try {
-      const options = createCompressionOptions()
+      const options = createCompressionOptions(true) // Batch mode
 
       // 为每个文件选择输出目录
       const outputDir = await window.system.selectDirectory()
@@ -544,6 +556,8 @@ export default function ImageCompressionTool(): JSX.Element {
                         showAdvanced={showAdvanced}
                         imageInfo={imageInfo}
                         isBatchMode={true}
+                        enableBatchResize={enableBatchResize}
+                        onEnableBatchResizeChange={setEnableBatchResize}
                         onQualityPresetChange={handlePresetChange}
                         onFormatChange={handleFormatChange}
                         onQualityChange={handleQualityChange}

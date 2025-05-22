@@ -20,6 +20,7 @@ import { IMAGE_FORMATS, IMAGE_QUALITY_PRESETS, WEBP_PRESETS } from './types'
 import { Input } from '@renderer/components/ui/input'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Button } from '@renderer/components/ui/button'
+// import { useState } from 'react' // No longer used here
 
 interface CompressionSettingsProps {
   qualityPreset: ImageQualityPreset
@@ -34,6 +35,8 @@ interface CompressionSettingsProps {
   showAdvanced: boolean
   imageInfo: ImageInfo
   isBatchMode?: boolean
+  enableBatchResize?: boolean // New prop
+  onEnableBatchResizeChange?: (value: boolean) => void // New prop
   onQualityPresetChange: (value: ImageQualityPreset) => void
   onFormatChange: (value: ImageFormat) => void
   onQualityChange: (value: number) => void
@@ -59,6 +62,8 @@ export function CompressionSettings({
   showAdvanced,
   imageInfo,
   isBatchMode = false,
+  enableBatchResize = false, // Default value for the new prop
+  onEnableBatchResizeChange,
   onQualityPresetChange,
   onFormatChange,
   onQualityChange,
@@ -71,6 +76,7 @@ export function CompressionSettings({
   onShowAdvancedChange
 }: CompressionSettingsProps): JSX.Element {
   const { t } = useTranslation()
+  // const [enableBatchResize, setEnableBatchResize] = useState(false) // Removed internal state
 
   // 创建组件
   return (
@@ -192,8 +198,29 @@ export function CompressionSettings({
             />
           </div>
 
-          {/* 尺寸设置 - 只在非批量模式下显示 */}
-          {!isBatchMode && (
+          {/* 批量模式下的尺寸统一设置 */}
+          {isBatchMode && (
+            <div className="flex items-center space-x-2 mt-4">
+              <Checkbox
+                id="enable-batch-resize"
+                checked={enableBatchResize}
+                onCheckedChange={(checked) => {
+                  if (onEnableBatchResizeChange) {
+                    onEnableBatchResizeChange(checked === true)
+                  }
+                }}
+              />
+              <Label
+                htmlFor="enable-batch-resize"
+                className="text-sm cursor-pointer"
+              >
+                是否都选择压缩成同一尺寸
+              </Label>
+            </div>
+          )}
+
+          {/* 尺寸设置 */}
+          {(!isBatchMode || (isBatchMode && enableBatchResize)) && (
             <div className="space-y-3">
               <Label className="text-sm">{t('dimensions')}</Label>
 
