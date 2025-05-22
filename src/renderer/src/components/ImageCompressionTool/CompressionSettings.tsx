@@ -214,7 +214,7 @@ export function CompressionSettings({
                 htmlFor="enable-batch-resize"
                 className="text-sm cursor-pointer"
               >
-                是否都选择压缩成同一尺寸
+                {t('imageCompression.batchResizeToSameDimensionsLabel')}
               </Label>
             </div>
           )}

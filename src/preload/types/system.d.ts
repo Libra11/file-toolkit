@@ -52,4 +52,9 @@ export interface System {
    * @returns 无
    */
   ipcRendererOff: (channel: string) => void
+  /**
+   * 获取应用版本号
+   * @returns 版本号
+   */
+  getAppVersion: () => Promise<string>
 }

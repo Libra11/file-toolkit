@@ -89,7 +89,6 @@
   "audioConverted": "音频已转换",
   "videoConverted": "视频已转换",
   "fileConverted": "文件已转换",
-
   "imageCompression": "图片压缩",
   "imageCompressionDescription": "压缩图像文件，减小文件大小，同时保持良好的图像质量",
   "imageCompressionTool": "图片压缩工具",
@@ -143,7 +142,6 @@
   "text": "文本",
   "compressedImageSaved": "图片已保存",
   "processing": "处理中",
-
   "audioCompressionTool": "音频压缩工具",
   "audioCompressionDescription": "压缩音频文件，减小文件大小，同时保持良好的音质",
   "audioCompressionComingSoon": "音频压缩功能正在开发中，即将推出",
@@ -166,7 +164,6 @@
   "videoCompressionComingSoon": "视频压缩功能正在开发中，即将推出",
   "duration": "时长",
   "format": "格式",
-
   "dropVideoHere": "将视频拖放到此处",
   "selectVideo": "选择视频",
   "processingVideo": "处理视频中",
@@ -209,7 +206,6 @@
   "totalOriginalSize": "总原始大小",
   "totalCompressedSize": "总压缩大小",
   "processingFile": "处理文件 {{current}}/{{total}}: {{filename}}",
-
   "archiveCompression": "文件归档压缩",
   "archiveCompressionDescription": "压缩和解压ZIP、TAR、GZIP等格式的文件",
   "extract": "解压",
@@ -306,7 +302,6 @@
   "submit": "提交",
   "company": "公司",
   "companyId": "公司ID",
-
   "imageOrganize": "图片整理工具（仅支持 Mac）",
   "imageOrganizeDescription": "整理并分类批量图片文件，根据Excel表格自动处理",
   "rootDir": "结果保存目录（*确保里面内容为空，每次生成会清空目录）",
@@ -331,7 +326,6 @@
   "selectNameRule": "选择命名规则",
   "idCardName": "身份证号_姓名",
   "nameIdCard": "姓名_身份证号",
-
   "wordToExcel": "Word转Excel",
   "wordToExcelDescription": "将Word文档中的试题转换为Excel格式，支持选择题、判断题和填空题",
   "generateFileName": "生成文件名",
@@ -350,7 +344,6 @@
   "cancel": "取消",
   "tableCopied": "表格已复制到剪贴板",
   "tableNotReady": "表格尚未准备好，请稍后再试",
-
   "m3u8Download": "M3U8 视频下载",
   "m3u8DownloadDescription": "支持单个或批量下载M3U8格式的流媒体视频",
   "m3u8Url": "M3U8 链接",
@@ -383,47 +376,41 @@
   "batchDownloadError": "批量下载错误",
   "openFileLocationError": "打开文件位置错误",
   "successCount": "成功数量：{{count}}/{{total}}",
-
   "maxRetries": "最大重试次数",
   "maxConcurrentDownloads": "最大并发下载数",
   "continueOnError": "出错时继续下载",
   "retryDelay": "重试延迟 (毫秒)",
   "segmentTimeout": "分段超时 (毫秒)",
-
   "activeTasks": "活动任务",
   "activeTasksDescription": "查看和管理当前下载任务",
   "segmentsProgress": "已下载分段：{{downloaded}}/{{total}}",
   "estimatedTimeRemaining": "预计剩余时间",
   "downloadSpeed": "下载速度",
-
   "taskStatusDownloading": "下载中",
   "taskStatusPaused": "已暂停",
   "taskStatusCompleted": "已完成",
   "taskStatusFailed": "失败",
   "taskStatusCancelled": "已取消",
   "taskStatusWaiting": "等待中",
-
   "pauseTask": "暂停",
   "resumeTask": "恢复",
   "cancelTask": "取消",
   "retryTask": "重试",
   "retryCount": "已重试 {{count}} 次",
-
   "pauseTaskError": "暂停任务错误",
   "resumeTaskError": "恢复任务错误",
   "cancelTaskError": "取消任务错误",
   "retryTaskError": "重试任务错误",
-
   "createDownload": "创建下载",
   "downloadTasks": "下载任务",
   "clearCompleted": "清除已完成",
   "clearCompletedTasks": "清除所有已完成的任务",
-
   "filterTasks": "任务筛选",
   "allTasks": "所有",
   "completedTasks": "已完成",
   "downloadingTasks": "下载中",
   "waitingTasks": "未开始",
   "failedTasks": "下载失败",
-  "noTasksInThisCategory": "该分类下没有任务"
+  "noTasksInThisCategory": "该分类下没有任务",
+  "imageCompression.batchResizeToSameDimensionsLabel": "是否都选择压缩成同一尺寸"
 }

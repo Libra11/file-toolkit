@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
+import { useEffect, useState } from 'react' // Import useEffect and useState
 import { Button } from '@renderer/components/ui/button'
-import { Settings } from 'lucide-react'
+import { Settings as SettingsIcon } from 'lucide-react' // Renamed to avoid conflict
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,20 @@ const languages = [
 export function SettingsMenu(): JSX.Element {
   const { t } = useTranslation()
   const { settings, updateSettings } = useSettings()
+  const [appVersion, setAppVersion] = useState('')
+
+  useEffect(() => {
+    async function fetchVersion() {
+      try {
+        const version = await window.system.getAppVersion()
+        setAppVersion(version)
+      } catch (error) {
+        console.error('Failed to get app version:', error)
+        setAppVersion('N/A')
+      }
+    }
+    fetchVersion()
+  }, [])
 
   const toggleDarkMode = (): void => {
     updateSettings({ isDarkMode: !settings.isDarkMode })
@@ -38,7 +53,7 @@ export function SettingsMenu(): JSX.Element {
       <Dialog>
         <DialogTrigger asChild>
           <Button variant="outline" size="icon">
-            <Settings className="h-[1.2rem] w-[1.2rem]" />
+            <SettingsIcon className="h-[1.2rem] w-[1.2rem]" />
             <span className="sr-only">{t('openSettings')}</span>
           </Button>
         </DialogTrigger>
@@ -78,6 +93,14 @@ export function SettingsMenu(): JSX.Element {
                 className="col-span-3"
               />
             </div>
+            {/* Display App Version */}
+            {appVersion && (
+              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-center text-slate-500 dark:text-slate-400">
+                  {t('versionLabel', { version: appVersion })}
+                </p>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

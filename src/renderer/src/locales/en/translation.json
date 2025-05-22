@@ -89,7 +89,6 @@
   "audioConverted": "Audio Converted",
   "videoConverted": "Video Converted",
   "fileConverted": "File Converted",
-
   "imageCompression": "Image Compression",
   "imageCompressionDescription": "Compress image files to reduce file size while maintaining good image quality",
   "imageCompressionTool": "Image Compression Tool",
@@ -312,7 +311,6 @@
   "cancel": "Cancel",
   "tableCopied": "Table copied to clipboard",
   "tableNotReady": "Table is not ready yet, please try again later",
-
   "m3u8Download": "M3U8 Downloader",
   "m3u8DownloadDescription": "Download streaming videos from M3U8 links in single or batch mode",
   "m3u8Url": "M3U8 URL",
@@ -372,12 +370,12 @@
   "downloadTasks": "Download Tasks",
   "clearCompleted": "Clear Completed",
   "clearCompletedTasks": "Clear all completed tasks",
-
   "filterTasks": "Filter Tasks",
   "allTasks": "All",
   "completedTasks": "Completed",
   "downloadingTasks": "Downloading",
   "waitingTasks": "Waiting",
   "failedTasks": "Failed",
-  "noTasksInThisCategory": "No Tasks in this category"
+  "noTasksInThisCategory": "No Tasks in this category",
+  "imageCompression.batchResizeToSameDimensionsLabel": "Resize all to same dimensions?"
 }

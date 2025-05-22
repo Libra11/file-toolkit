@@ -83,6 +83,11 @@ app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
+  // Add IPC handler for getting app version
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion()
+  })
+
   // 注册所有IPC处理程序
   registerAllHandlers()
 

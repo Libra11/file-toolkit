@@ -27,5 +27,6 @@ export const system: System = {
       ipcRendererMap.delete(channel)
     }
     return ipcRenderer
-  }
+  },
+  getAppVersion: () => ipcRenderer.invoke('get-app-version')
 }

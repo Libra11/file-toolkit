@@ -3,20 +3,67 @@ import '@testing-library/jest-dom'
 import { CompressionSettings } from './CompressionSettings'
 import { IMAGE_QUALITY_PRESETS, IMAGE_FORMATS, WEBP_PRESETS } from './types'
 
-// Mock useTranslation
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      // Simple mock for translation keys
-      if (key === 'dimensions') return 'Dimensions'
-      if (key === 'width') return 'Width'
-      if (key === 'height') return 'Height'
-      if (key === 'maintainAspectRatio') return 'Maintain aspect ratio'
-      if (key === 'advancedOptions') return 'Advanced Options' // Used for the button that shows/hides dimensions
-      return key
-    }
-  })
+// Enhanced Mock for useTranslation
+const mockTranslations = {
+  en: {
+    dimensions: 'Dimensions',
+    width: 'Width',
+    height: 'Height',
+    maintainAspectRatio: 'Maintain aspect ratio',
+    advancedOptions: 'Advanced Options',
+    'imageCompression.batchResizeToSameDimensionsLabel': 'Resize all to same dimensions?'
+  },
+  'zh-CN': {
+    dimensions: '尺寸', // Example, actual value might differ
+    width: '宽度', // Example
+    height: '高度', // Example
+    maintainAspectRatio: '保持宽高比', // Example
+    advancedOptions: '高级选项', // Example
+    'imageCompression.batchResizeToSameDimensionsLabel': '是否都选择压缩成同一尺寸'
+  }
+}
+
+let currentLanguage = 'en' // Default language for tests
+
+const mockUseTranslation = jest.fn(() => ({
+  t: (key: string) => {
+    // @ts-ignore
+    return mockTranslations[currentLanguage]?.[key] || key
+  },
+  i18n: {
+    changeLanguage: (lang: string) => {
+      currentLanguage = lang
+      // Potentially trigger a re-render if components are subscribed to i18n language changes.
+      // For these tests, re-rendering the component after changing language should suffice.
+      return Promise.resolve()
+    },
+    language: currentLanguage
+  }
 }))
+
+jest.mock('react-i18next', () => ({
+  useTranslation: () => mockUseTranslation()
+}))
+
+// Helper to set language for tests
+const setTestLanguage = (lang: 'en' | 'zh-CN') => {
+  currentLanguage = lang
+  // Update the mock implementation to reflect the new language in subsequent calls
+  mockUseTranslation.mockImplementation(() => ({
+    t: (key: string) => {
+      // @ts-ignore
+      return mockTranslations[currentLanguage]?.[key] || key;
+    },
+    i18n: {
+      changeLanguage: (newLang: string) => {
+        currentLanguage = newLang;
+        return Promise.resolve();
+      },
+      language: currentLanguage,
+    },
+  }));
+}
+
 
 const mockOnQualityPresetChange = jest.fn()
 const mockOnFormatChange = jest.fn()
@@ -75,19 +122,33 @@ describe('CompressionSettings Component', () => {
   beforeEach(() => {
     // Reset mocks before each test
     jest.clearAllMocks()
+    // Default to English for most tests, can be overridden
+    setTestLanguage('en') 
   })
 
-  const batchResizeCheckboxLabel = '是否都选择压缩成同一尺寸' // This is the Chinese label from the component
+  // Note: The original batchResizeCheckboxLabel might need adjustment if tests depend on a specific language.
+  // For new i18n tests, we will set the language explicitly.
+  // const batchResizeCheckboxLabel = '是否都选择压缩成同一尺寸'; 
 
   describe('Batch Resize Checkbox Visibility', () => {
-    it('should be visible when isBatchMode is true', () => {
+    it('should be visible when isBatchMode is true (checking with default English label)', () => {
+      setTestLanguage('en') // Explicitly set for this test or rely on beforeEach
       render(<CompressionSettings {...defaultProps} isBatchMode={true} />)
-      expect(screen.getByLabelText(batchResizeCheckboxLabel)).toBeInTheDocument()
+      // Since the label text now comes from t(), we find it by the English text when lang is 'en'
+      expect(screen.getByLabelText(mockTranslations.en['imageCompression.batchResizeToSameDimensionsLabel'])).toBeInTheDocument()
+    })
+    
+    it('should be visible when isBatchMode is true (checking with Chinese label)', () => {
+      setTestLanguage('zh-CN')
+      render(<CompressionSettings {...defaultProps} isBatchMode={true} />)
+      expect(screen.getByLabelText(mockTranslations['zh-CN']['imageCompression.batchResizeToSameDimensionsLabel'])).toBeInTheDocument()
     })
 
     it('should not be visible when isBatchMode is false', () => {
       render(<CompressionSettings {...defaultProps} isBatchMode={false} />)
-      expect(screen.queryByLabelText(batchResizeCheckboxLabel)).not.toBeInTheDocument()
+      // Check against both possible labels or a more generic query if the element shouldn't exist
+      expect(screen.queryByLabelText(mockTranslations.en['imageCompression.batchResizeToSameDimensionsLabel'])).not.toBeInTheDocument()
+      expect(screen.queryByLabelText(mockTranslations['zh-CN']['imageCompression.batchResizeToSameDimensionsLabel'])).not.toBeInTheDocument()
     })
   })
 
@@ -134,15 +195,17 @@ describe('CompressionSettings Component', () => {
   })
 
   describe('State Changes for Batch Resize Checkbox', () => {
-    it('should call onEnableBatchResizeChange with true when checked', () => {
+    it('should call onEnableBatchResizeChange with true when checked (using Chinese label for test)', () => {
+      setTestLanguage('zh-CN') // Set language to Chinese for this specific test
       render(<CompressionSettings {...defaultProps} isBatchMode={true} />)
-      const checkbox = screen.getByLabelText(batchResizeCheckboxLabel)
+      const checkbox = screen.getByLabelText(mockTranslations['zh-CN']['imageCompression.batchResizeToSameDimensionsLabel'])
       fireEvent.click(checkbox)
       expect(mockOnEnableBatchResizeChange).toHaveBeenCalledTimes(1)
       expect(mockOnEnableBatchResizeChange).toHaveBeenCalledWith(true)
     })
 
-    it('should call onEnableBatchResizeChange with false when unchecked after being checked', () => {
+    it('should call onEnableBatchResizeChange with false when unchecked after being checked (using English label for test)', () => {
+      setTestLanguage('en') // Set language to English
       // Render with checkbox initially checked
       render(
         <CompressionSettings
@@ -151,10 +214,28 @@ describe('CompressionSettings Component', () => {
           enableBatchResize={true} 
         />
       )
-      const checkbox = screen.getByLabelText(batchResizeCheckboxLabel)
+      const checkbox = screen.getByLabelText(mockTranslations.en['imageCompression.batchResizeToSameDimensionsLabel'])
       fireEvent.click(checkbox) // This will uncheck it
       expect(mockOnEnableBatchResizeChange).toHaveBeenCalledTimes(1)
       expect(mockOnEnableBatchResizeChange).toHaveBeenCalledWith(false)
+    })
+  })
+
+  describe('Internationalization for Batch Resize Label', () => {
+    it('displays the English translation when language is set to en', () => {
+      setTestLanguage('en')
+      render(<CompressionSettings {...defaultProps} isBatchMode={true} />)
+      expect(screen.getByLabelText(mockTranslations.en['imageCompression.batchResizeToSameDimensionsLabel'])).toBeInTheDocument()
+      // Also check it's not the Chinese one, just to be sure
+      expect(screen.queryByLabelText(mockTranslations['zh-CN']['imageCompression.batchResizeToSameDimensionsLabel'])).not.toBeInTheDocument()
+    })
+
+    it('displays the Chinese translation when language is set to zh-CN', () => {
+      setTestLanguage('zh-CN')
+      render(<CompressionSettings {...defaultProps} isBatchMode={true} />)
+      expect(screen.getByLabelText(mockTranslations['zh-CN']['imageCompression.batchResizeToSameDimensionsLabel'])).toBeInTheDocument()
+      // Also check it's not the English one
+      expect(screen.queryByLabelText(mockTranslations.en['imageCompression.batchResizeToSameDimensionsLabel'])).not.toBeInTheDocument()
     })
   })
 })
