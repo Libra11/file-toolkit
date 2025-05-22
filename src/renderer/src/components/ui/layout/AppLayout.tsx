@@ -25,6 +25,7 @@ export default function AppLayout({ children }: AppLayoutProps): JSX.Element {
     localStorage.getItem('darkMode') === 'true' ||
       window.matchMedia('(prefers-color-scheme: dark)').matches
   )
+  const [version, setVersion] = useState<string>('')
 
   // 监听颜色模式变化
   useEffect(() => {
@@ -38,6 +39,20 @@ export default function AppLayout({ children }: AppLayoutProps): JSX.Element {
       localStorage.setItem('darkMode', 'false')
     }
   }, [isDarkMode])
+
+  useEffect(() => {
+    async function fetchVersion(): Promise<void> {
+      try {
+        const version = await window.system.getAppVersion()
+        console.log(version)
+        setVersion(version)
+      } catch (error) {
+        console.error('Failed to get version:', error)
+        setVersion('N/A')
+      }
+    }
+    fetchVersion()
+  }, [])
 
   // 切换暗黑模式
   const toggleDarkMode = (): void => {
@@ -79,7 +94,9 @@ export default function AppLayout({ children }: AppLayoutProps): JSX.Element {
         >
           <div className="flex items-center">
             <FileCog className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
-            <span className="text-sm font-medium">{t('appName')}</span>
+            <span className="text-sm font-medium">
+              {t('appName')}《{version}》
+            </span>
           </div>
         </div>
         <div

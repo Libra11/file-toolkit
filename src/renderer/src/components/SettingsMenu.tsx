@@ -1,3 +1,9 @@
+/**
+ * Author: Libra
+ * Date: 2025-05-22 14:08:33
+ * LastEditors: Libra
+ * Description:
+ */
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react' // Import useEffect and useState
 import { Button } from '@renderer/components/ui/button'
@@ -32,9 +38,10 @@ export function SettingsMenu(): JSX.Element {
   const [appVersion, setAppVersion] = useState('')
 
   useEffect(() => {
-    async function fetchVersion() {
+    async function fetchVersion(): Promise<void> {
       try {
         const version = await window.system.getAppVersion()
+        console.log(version)
         setAppVersion(version)
       } catch (error) {
         console.error('Failed to get app version:', error)
