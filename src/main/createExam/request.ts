@@ -8,7 +8,7 @@
  * @Author: Libra 97220040@qq.com
  * @Date: 2024-12-04 16:29:16
  * @LastEditors: Libra 97220040@qq.com
- * @LastEditTime: 2025-04-23 10:21:57
+ * @LastEditTime: 2025-05-30 14:49:12
  * @Description: 请求工具
  */
 import axios, { AxiosInstance, AxiosResponse } from 'axios'
@@ -18,6 +18,8 @@ let instance: AxiosInstance | null = null
 const createInstance = async (): Promise<AxiosInstance> => {
   if (instance) return instance
 
+  console.log(store.get('apiBaseUrl'))
+  console.log(store.get('token'))
   // 创建axios实例
   instance = axios.create({
     baseURL: store.get('apiBaseUrl'),

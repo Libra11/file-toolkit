@@ -106,7 +106,8 @@ const store = new ConfigStore<ExamConfig>({
       submitSecond: 600,
       requirement: '',
       admissionCardRequirement: '',
-      note: ''
+      note: '',
+      type: 1 // 1: regular exam, 2: three-tier architecture exam
     },
     periods: [
       {

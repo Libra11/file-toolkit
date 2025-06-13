@@ -327,6 +327,24 @@ export default function ExamCreationTool(): JSX.Element {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="project-type" className="text-indigo-700 dark:text-indigo-400">
+                  考试类型
+                </Label>
+                <Select
+                  value={String(config.project.type || 1)}
+                  onValueChange={(value) => handleInputChange('project.type', parseInt(value))}
+                >
+                  <SelectTrigger className="w-full border-indigo-200 dark:border-indigo-800/40 focus:border-indigo-500 focus:ring-indigo-500">
+                    <SelectValue placeholder="选择考试类型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">普通考试</SelectItem>
+                    <SelectItem value="2">三级架构考试</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="project-startAt" className="text-indigo-700 dark:text-indigo-400">
                   开始时间
                 </Label>

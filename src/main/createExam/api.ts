@@ -49,8 +49,10 @@ export async function createProject(projectData: ProjectData): Promise<string> {
   try {
     console.log(projectData)
     const result = (await post('/project/add', projectData)) as ApiResponse<string>
+    console.log(result)
     return result.data
   } catch (error: unknown) {
+    console.error('创建项目失败:', error)
     const err = error as AxiosError<ApiErrorResponse>
     if (err.response?.data?.message) {
       throw new Error(err.response.data.message)

@@ -32,6 +32,7 @@ export interface ProjectConfig {
   requirement: string
   admissionCardRequirement: string
   note: string
+  type: number // 1: regular exam, 2: three-tier architecture exam
 }
 
 export interface PeriodConfig {
