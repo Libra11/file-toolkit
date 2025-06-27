@@ -9,6 +9,7 @@ import {
   convertAviToMp4,
   convertMovToMp4,
   convertMp4ToGif,
+  convertMp4ToGifWithSettings,
   convertWebmToMp4
 } from '../../converters/index'
 
@@ -28,6 +29,25 @@ export function registerVideoConversionHandlers(): void {
       throw error
     }
   })
+
+  // MP4转GIF（带设置参数）
+  ipcMain.handle(
+    'convert-mp4-to-gif-with-settings',
+    async (_, inputPath: string, outputPath: string, settings: any) => {
+      try {
+        console.log(
+          `IPC调用: convert-mp4-to-gif-with-settings ${inputPath} -> ${outputPath}`,
+          settings
+        )
+        const result = await convertMp4ToGifWithSettings(inputPath, outputPath, settings)
+        console.log(`转换成功: ${result}`)
+        return result
+      } catch (error) {
+        console.error('MP4转GIF（带设置）失败:', error)
+        throw error
+      }
+    }
+  )
 
   // AVI转MP4
   ipcMain.handle('convert-avi-to-mp4', async (_, inputPath: string, outputPath: string) => {

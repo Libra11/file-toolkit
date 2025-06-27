@@ -88,6 +88,29 @@ const videoConversion = {
       throw error
     }
   },
+  convertMp4ToGifWithSettings: async (
+    inputPath: string,
+    outputPath: string,
+    settings: any
+  ): Promise<string> => {
+    try {
+      console.log(
+        `预加载脚本: 调用convertMp4ToGifWithSettings, 输入:${inputPath}, 输出:${outputPath}, 设置:`,
+        settings
+      )
+      const result = await ipcRenderer.invoke(
+        'convert-mp4-to-gif-with-settings',
+        inputPath,
+        outputPath,
+        settings
+      )
+      console.log(`预加载脚本: convertMp4ToGifWithSettings成功, 结果:${result}`)
+      return result
+    } catch (error) {
+      console.error('预加载脚本: convertMp4ToGifWithSettings错误:', error)
+      throw error
+    }
+  },
   convertAviToMp4: async (inputPath: string, outputPath: string): Promise<string> => {
     try {
       console.log(`预加载脚本: 调用convertAviToMp4, 输入:${inputPath}, 输出:${outputPath}`)

@@ -41,6 +41,15 @@ import {
 import { Badge } from '@renderer/components/ui/badge'
 import { cn } from '@renderer/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@renderer/components/ui/select'
+import { Label } from '@renderer/components/ui/label'
+import { Settings } from 'lucide-react'
 
 interface ConversionFormProps {
   categories: ConversionCategory[]
@@ -58,6 +67,11 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
   const [isBatchConverting, setIsBatchConverting] = useState(false)
   const [batchResults, setBatchResults] = useState<string[]>([])
   const [batchProgress, setBatchProgress] = useState(0)
+  const [gifSettings, setGifSettings] = useState({
+    size: 'medium', // small, medium, large, original
+    quality: 'normal', // low, normal, high
+    frameRate: 10 // fps
+  })
 
   const saveOutputFile = async (conversionType: ConversionType): Promise<string> => {
     const extension = getDefaultOutputExtension(conversionType)
@@ -69,7 +83,14 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
     return outputPath
   }
 
-  const convertMp4ToGif = async (inputPath: string, outputPath: string): Promise<string> => {
+  const convertMp4ToGif = async (
+    inputPath: string,
+    outputPath: string,
+    settings?: any
+  ): Promise<string> => {
+    if (settings) {
+      return await window.ffmpeg.convertMp4ToGifWithSettings(inputPath, outputPath, settings)
+    }
     return await window.ffmpeg.convertMp4ToGif(inputPath, outputPath)
   }
 
@@ -141,7 +162,11 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
 
       // 视频转换
       case CONVERSION_TYPES.MP4_TO_GIF:
-        return await convertMp4ToGif(inputPath, outputPath)
+        return await convertMp4ToGif(
+          inputPath,
+          outputPath,
+          selectedConversion === CONVERSION_TYPES.MP4_TO_GIF ? gifSettings : undefined
+        )
       case CONVERSION_TYPES.AVI_TO_MP4:
         return await convertAviToMp4(inputPath, outputPath)
       case CONVERSION_TYPES.MOV_TO_MP4:
@@ -557,6 +582,119 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
               </div>
             </motion.div>
 
+            {/* GIF Settings Panel - Only show for MP4 to GIF conversion */}
+            {selectedConversion === CONVERSION_TYPES.MP4_TO_GIF && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="rounded-xl border border-purple-100 dark:border-purple-800/30 overflow-hidden bg-white dark:bg-slate-800 shadow-md"
+              >
+                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 p-3 border-b border-purple-100/80 dark:border-purple-800/30">
+                  <div className="flex items-center">
+                    <div className="bg-purple-500 text-white h-7 w-7 rounded-full flex items-center justify-center shadow-sm mr-3">
+                      <Settings className="h-4 w-4" />
+                    </div>
+                    <h3 className="font-medium text-purple-800 dark:text-purple-300">
+                      {t('gifSettings')}
+                    </h3>
+                  </div>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* GIF Size Selection */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {t('gifSize')}
+                      </Label>
+                      <Select
+                        value={gifSettings.size}
+                        onValueChange={(value) =>
+                          setGifSettings((prev) => ({ ...prev, size: value }))
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('gifSize')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="small">{t('small')}</SelectItem>
+                          <SelectItem value="medium">{t('medium')}</SelectItem>
+                          <SelectItem value="large">{t('large')}</SelectItem>
+                          <SelectItem value="original">{t('original')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Quality Selection */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {t('gifQuality')}
+                      </Label>
+                      <Select
+                        value={gifSettings.quality}
+                        onValueChange={(value) =>
+                          setGifSettings((prev) => ({ ...prev, quality: value }))
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('gifQuality')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">{t('low')}</SelectItem>
+                          <SelectItem value="normal">{t('normal')}</SelectItem>
+                          <SelectItem value="high">{t('high')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Frame Rate Selection */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {t('gifFrameRate')}
+                      </Label>
+                      <Select
+                        value={gifSettings.frameRate.toString()}
+                        onValueChange={(value) =>
+                          setGifSettings((prev) => ({ ...prev, frameRate: parseInt(value) }))
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('gifFrameRate')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5 {t('fps')}</SelectItem>
+                          <SelectItem value="10">10 {t('fps')}</SelectItem>
+                          <SelectItem value="15">15 {t('fps')}</SelectItem>
+                          <SelectItem value="24">24 {t('fps')}</SelectItem>
+                          <SelectItem value="30">30 {t('fps')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Settings Preview */}
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                    <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
+                      <div className="flex justify-between">
+                        <span>{t('gifSize')}:</span>
+                        <span>{t(gifSettings.size)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{t('gifQuality')}:</span>
+                        <span>{t(gifSettings.quality)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{t('gifFrameRate')}:</span>
+                        <span>
+                          {gifSettings.frameRate} {t('fps')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -644,7 +782,10 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
                         </h3>
                       </div>
                       <div className="text-xs px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-800/40 text-green-800 dark:text-green-300 font-medium border border-green-200 dark:border-green-700/30">
-                        {t('successCount', { count: batchResults.length, total: selectedFiles.length })}
+                        {t('successCount', {
+                          count: batchResults.length,
+                          total: selectedFiles.length
+                        })}
                       </div>
                     </div>
                   </div>

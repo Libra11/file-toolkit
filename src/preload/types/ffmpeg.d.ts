@@ -13,6 +13,18 @@ export interface Ffmpeg {
    */
   convertMp4ToGif: (inputPath: string, outputPath: string) => Promise<string>
   /**
+   * 将mp4转换为gif（带设置参数）
+   * @param inputPath 输入路径
+   * @param outputPath 输出路径
+   * @param settings GIF设置参数
+   * @returns 输出路径
+   */
+  convertMp4ToGifWithSettings: (
+    inputPath: string,
+    outputPath: string,
+    settings: any
+  ) => Promise<string>
+  /**
    * 将avi转换为mp4
    * @param inputPath 输入路径
    * @param outputPath 输出路径
