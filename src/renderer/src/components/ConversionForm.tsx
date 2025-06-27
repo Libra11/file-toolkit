@@ -644,7 +644,7 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
                         </h3>
                       </div>
                       <div className="text-xs px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-800/40 text-green-800 dark:text-green-300 font-medium border border-green-200 dark:border-green-700/30">
-                        {t('successCount')}: {batchResults.length} / {selectedFiles.length}
+                        {t('successCount', { count: batchResults.length, total: selectedFiles.length })}
                       </div>
                     </div>
                   </div>
