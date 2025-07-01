@@ -17,10 +17,10 @@ let mainWindow: BrowserWindow | null = null
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 660,
-    height: 950,
+    width: 450,
+    height: 660,
     show: false,
-    resizable: false,
+    resizable: true,
     autoHideMenuBar: true,
     frame: false, // Add this line to remove the default frame
     ...(process.platform === 'linux' ? { icon } : {}),
