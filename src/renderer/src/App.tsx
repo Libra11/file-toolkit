@@ -9,8 +9,11 @@ import './assets/index.css'
 import AppLayout from './components/ui/layout/AppLayout'
 import HomePage from './components/HomePage'
 import UpdateNotification from './components/UpdateNotification'
+import ChangelogPopup, { useChangelogPopup } from './components/ChangelogPopup'
 
 function App(): JSX.Element {
+  const { isOpen, currentVersion, hideChangelog, checkForNewChangelog, showChangelog } = useChangelogPopup()
+
   // 注册窗口最小化和关闭事件处理器
   useEffect(() => {
     const handleMinimize = (): void => {
@@ -30,10 +33,26 @@ function App(): JSX.Element {
     }
   }, [])
 
+  // 检查是否有新的更新日志需要显示
+  useEffect(() => {
+    checkForNewChangelog()
+  }, [checkForNewChangelog])
+
+  // 处理版本号点击事件
+  const handleVersionClick = async (): Promise<void> => {
+    try {
+      const version = await window.system.getAppVersion()
+      showChangelog(version)
+    } catch (error) {
+      console.error('Failed to get version for changelog:', error)
+    }
+  }
+
   return (
-    <AppLayout>
+    <AppLayout onVersionClick={handleVersionClick}>
       <HomePage />
       <UpdateNotification />
+      <ChangelogPopup isOpen={isOpen} onClose={hideChangelog} version={currentVersion} />
     </AppLayout>
   )
 }

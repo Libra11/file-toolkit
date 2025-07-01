@@ -17,9 +17,10 @@ import i18n from '@renderer/i18n'
 
 interface AppLayoutProps {
   children: ReactNode
+  onVersionClick?: () => void
 }
 
-export default function AppLayout({ children }: AppLayoutProps): JSX.Element {
+export default function AppLayout({ children, onVersionClick }: AppLayoutProps): JSX.Element {
   const { t } = useTranslation()
   const [isDarkMode, setIsDarkMode] = useState<boolean>(
     localStorage.getItem('darkMode') === 'true' ||
@@ -95,7 +96,19 @@ export default function AppLayout({ children }: AppLayoutProps): JSX.Element {
           <div className="flex items-center">
             <FileCog className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
             <span className="text-sm font-medium">
-              {t('appName')}《{version}》
+              {t('appName')}《
+              {onVersionClick ? (
+                <button
+                  onClick={onVersionClick}
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-colors duration-200 cursor-pointer bg-transparent border-none p-0 font-medium"
+                  title={t('clickToViewChangelog')}
+                >
+                  {version}
+                </button>
+              ) : (
+                version
+              )}
+              》
             </span>
           </div>
         </div>
