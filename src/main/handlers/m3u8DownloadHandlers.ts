@@ -356,7 +356,7 @@ export function registerM3u8DownloadHandlers(): void {
         )
 
         // 过滤掉添加失败的任务
-        const validTaskIds = taskIds.filter(id => id !== null) as string[]
+        const validTaskIds = taskIds.filter((id) => id !== null) as string[]
 
         console.log(`已提交 ${validTaskIds.length} 个下载任务`)
         return validTaskIds

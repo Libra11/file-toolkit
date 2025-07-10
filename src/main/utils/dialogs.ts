@@ -19,6 +19,25 @@ export async function selectDirectory(): Promise<string | undefined> {
 }
 
 /**
+ * 选择文件
+ * @param options 文件选择选项
+ * @returns 选择的文件路径
+ */
+export async function selectFiles(options: {
+  properties?: ('openFile' | 'openDirectory' | 'multiSelections' | 'showHiddenFiles' | 'createDirectory' | 'promptToCreate' | 'noResolveAliases' | 'treatPackageAsDirectory' | 'dontAddToRecent')[]
+  filters?: FileFilter[]
+}): Promise<{ canceled: boolean; filePaths: string[] }> {
+  const result = await dialog.showOpenDialog({
+    properties: options.properties || ['openFile'],
+    filters: options.filters || [{ name: 'All Files', extensions: ['*'] }]
+  })
+  return {
+    canceled: result.canceled,
+    filePaths: result.filePaths
+  }
+}
+
+/**
  * 保存文件对话框
  * @param filePath 默认文件路径
  * @returns 选择的文件保存路径

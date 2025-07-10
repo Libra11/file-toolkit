@@ -17,6 +17,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.1.0',
+    date: '2025-01-09',
+    changes: {
+      features: [
+        '新增批量重命名工具，支持序号命名、文本替换、正则表达式等多种重命名规则',
+        'Added batch rename tool with support for sequence naming, text replacement, regex, and more'
+      ],
+      improvements: [
+        '优化首页布局为小屏幕友好的垂直分组单列布局',
+        'Optimized homepage layout to mobile-friendly vertical grouped single-column layout',
+        '使用紧凑型工具卡片设计，节省空间的同时保持美观',
+        'Implemented compact tool card design to save space while maintaining aesthetics',
+        '分类标题图标统一使用 Lucide 图标库，提升视觉一致性',
+        'Unified category title icons using Lucide icon library for better visual consistency'
+      ]
+    }
+  },
+  {
     version: '1.0.9',
     date: '2025-07-01',
     changes: {

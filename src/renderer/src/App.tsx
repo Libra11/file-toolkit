@@ -12,7 +12,8 @@ import UpdateNotification from './components/UpdateNotification'
 import ChangelogPopup, { useChangelogPopup } from './components/ChangelogPopup'
 
 function App(): JSX.Element {
-  const { isOpen, currentVersion, hideChangelog, checkForNewChangelog, showChangelog } = useChangelogPopup()
+  const { isOpen, currentVersion, hideChangelog, checkForNewChangelog, showChangelog } =
+    useChangelogPopup()
 
   // 注册窗口最小化和关闭事件处理器
   useEffect(() => {

@@ -24,9 +24,14 @@ import {
   School,
   Images,
   FileText,
-  Download
+  Download,
+  Edit3,
+  Star,
+  Wrench,
+  Target
 } from 'lucide-react'
 import ToolCard from '@renderer/components/ui/card/ToolCard'
+import CompactToolCard from '@renderer/components/ui/card/CompactToolCard'
 import FileConversionTool from '@renderer/components/FileConversionTool'
 import ImageCompressionTool from '@renderer/components/ImageCompressionTool'
 import AudioCompressionTool from '@renderer/components/AudioCompressionTool'
@@ -36,6 +41,7 @@ import ExamCreationTool from '@renderer/components/ExamCreationTool'
 import ImageOrganizeTool from '@renderer/components/ImageOrganizeTool'
 import WordToExcelTool from '@renderer/components/WordToExcelTool/index'
 import M3u8DownloadTool from '@renderer/components/M3u8DownloadTool'
+import BatchRenameTool from '@renderer/components/BatchRenameTool'
 
 enum ActiveTool {
   None,
@@ -48,7 +54,8 @@ enum ActiveTool {
   ExamCreation,
   ImageOrganize,
   WordToExcel,
-  M3u8Download
+  M3u8Download,
+  BatchRename
 }
 
 export default function HomePage(): JSX.Element {
@@ -72,78 +79,112 @@ export default function HomePage(): JSX.Element {
   }
 
   return (
-    <div className="px-4 py-8 w-full">
+    <div className="px-4 py-4 w-full">
+      <div className="max-w-md mx-auto">
       {activeTool === ActiveTool.None ? (
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
-          <motion.div variants={itemVariants} className="text-center mb-12">
-            <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 mb-4">
-              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              {t('newFeatures')}
-            </div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-3">
+          <motion.div variants={itemVariants} className="text-center mb-4">
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white mb-1 flex items-center justify-center">
+              <Sparkles className="h-4 w-4 mr-2 text-blue-500" />
               {t('powerfulFileTools')}
             </h1>
-            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
-              {t('homeDescription')}
-            </p>
           </motion.div>
 
-          <motion.div
-            variants={itemVariants}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8"
-          >
-            <ToolCard
-              icon={<FileType2 size={24} />}
-              title={t('fileConversion')}
-              description={t('fileConversionDescription')}
-              onClick={() => setActiveTool(ActiveTool.Conversion)}
-              iconColor="text-blue-500"
-            />
-            <ToolCard
-              icon={<FileDown size={24} />}
-              title={t('fileCompression')}
-              description={t('fileCompressionDescription')}
-              onClick={() => setActiveTool(ActiveTool.Compression)}
-              iconColor="text-emerald-500"
-            />
-            <ToolCard
-              icon={<Archive size={24} />}
-              title={t('archiveCompression')}
-              description={t('archiveCompressionDescription')}
-              onClick={() => setActiveTool(ActiveTool.ArchiveCompression)}
-              iconColor="text-purple-500"
-            />
-            <ToolCard
-              icon={<School size={24} />}
-              title={t('examCreation')}
-              description={t('examCreationDescription')}
-              onClick={() => setActiveTool(ActiveTool.ExamCreation)}
-              iconColor="text-amber-500"
-            />
-            <ToolCard
-              icon={<Images size={24} />}
-              title={t('imageOrganize')}
-              description={t('imageOrganizeDescription')}
-              onClick={() => setActiveTool(ActiveTool.ImageOrganize)}
-              iconColor="text-cyan-500"
-            />
-            <ToolCard
-              icon={<FileText size={24} />}
-              title={t('wordToExcel')}
-              description={t('wordToExcelDescription')}
-              onClick={() => setActiveTool(ActiveTool.WordToExcel)}
-              iconColor="text-rose-500"
-            />
-            <ToolCard
-              icon={<Download size={24} />}
-              title={t('m3u8Download')}
-              description={t('m3u8DownloadDescription')}
-              onClick={() => setActiveTool(ActiveTool.M3u8Download)}
-              iconColor="text-indigo-500"
-            />
+          {/* 常用工具分组 */}
+          <motion.div variants={itemVariants} className="mb-4">
+            <div className="flex items-center mb-2">
+              <Star className="h-4 w-4 mr-2 text-yellow-500" />
+              <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                {t('frequentTools')}
+              </h2>
+            </div>
+            <div className="space-y-2">
+              <CompactToolCard
+                icon={<FileType2 size={20} />}
+                title={t('fileConversion')}
+                description={t('fileConversionDescription')}
+                onClick={() => setActiveTool(ActiveTool.Conversion)}
+                iconColor="text-blue-500"
+              />
+              <CompactToolCard
+                icon={<FileDown size={20} />}
+                title={t('fileCompression')}
+                description={t('fileCompressionDescription')}
+                onClick={() => setActiveTool(ActiveTool.Compression)}
+                iconColor="text-emerald-500"
+              />
+            </div>
+          </motion.div>
+
+          {/* 实用工具分组 */}
+          <motion.div variants={itemVariants} className="mb-4">
+            <div className="flex items-center mb-2">
+              <Wrench className="h-4 w-4 mr-2 text-blue-500" />
+              <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                {t('practicalTools')}
+              </h2>
+            </div>
+            <div className="space-y-2">
+              <CompactToolCard
+                icon={<Edit3 size={20} />}
+                title={t('batchRename')}
+                description={t('batchRenameDescription')}
+                onClick={() => setActiveTool(ActiveTool.BatchRename)}
+                iconColor="text-teal-500"
+              />
+              <CompactToolCard
+                icon={<Archive size={20} />}
+                title={t('archiveCompression')}
+                description={t('archiveCompressionDescription')}
+                onClick={() => setActiveTool(ActiveTool.ArchiveCompression)}
+                iconColor="text-purple-500"
+              />
+              <CompactToolCard
+                icon={<FileText size={20} />}
+                title={t('wordToExcel')}
+                description={t('wordToExcelDescription')}
+                onClick={() => setActiveTool(ActiveTool.WordToExcel)}
+                iconColor="text-rose-500"
+              />
+            </div>
+          </motion.div>
+
+          {/* 专业工具分组 */}
+          <motion.div variants={itemVariants} className="mb-4">
+            <div className="flex items-center mb-2">
+              <Target className="h-4 w-4 mr-2 text-purple-500" />
+              <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                {t('professionalTools')}
+              </h2>
+            </div>
+            <div className="space-y-2">
+              <CompactToolCard
+                icon={<School size={20} />}
+                title={t('examCreation')}
+                description={t('examCreationDescription')}
+                onClick={() => setActiveTool(ActiveTool.ExamCreation)}
+                iconColor="text-amber-500"
+              />
+              <CompactToolCard
+                icon={<Images size={20} />}
+                title={t('imageOrganize')}
+                description={t('imageOrganizeDescription')}
+                onClick={() => setActiveTool(ActiveTool.ImageOrganize)}
+                iconColor="text-cyan-500"
+              />
+              <CompactToolCard
+                icon={<Download size={20} />}
+                title={t('m3u8Download')}
+                description={t('m3u8DownloadDescription')}
+                onClick={() => setActiveTool(ActiveTool.M3u8Download)}
+                iconColor="text-indigo-500"
+              />
+            </div>
           </motion.div>
         </motion.div>
-      ) : activeTool === ActiveTool.Conversion ? (
+      ) : (
+        <div className="max-w-2xl mx-auto">
+      {activeTool === ActiveTool.Conversion ? (
         <>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
@@ -470,7 +511,40 @@ export default function HomePage(): JSX.Element {
           </div>
           <M3u8DownloadTool />
         </>
+      ) : activeTool === ActiveTool.BatchRename ? (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
+              <Edit3 className="mr-2 h-5 w-5 text-teal-500" />
+              {t('batchRename')}
+            </h2>
+            <button
+              onClick={() => setActiveTool(ActiveTool.None)}
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:hover:bg-teal-800/40 rounded-full transition-colors"
+            >
+              <svg
+                className="w-3.5 h-3.5 mr-1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 12H5M5 12L12 19M5 12L12 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {t('backToHome')}
+            </button>
+          </div>
+          <BatchRenameTool />
+        </>
       ) : null}
+        </div>
+      )}
+      </div>
     </div>
   )
 }

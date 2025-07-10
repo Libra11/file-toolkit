@@ -5,7 +5,7 @@
  * @Description: 文件系统相关IPC处理程序
  */
 import { ipcMain, shell } from 'electron'
-import { selectDirectory, saveFileDialog } from '../utils/dialogs'
+import { selectDirectory, saveFileDialog, selectFiles } from '../utils/dialogs'
 import { isFileExists } from '../utils/fileSystem'
 /**
  * 注册文件系统相关的IPC处理程序
@@ -19,6 +19,18 @@ export function registerFileSystemHandlers(): void {
       return result
     } catch (error) {
       console.error('选择目录错误:', error)
+      throw error
+    }
+  })
+
+  // 文件选择处理程序
+  ipcMain.handle('dialog:openFile', async (_, options) => {
+    try {
+      const result = await selectFiles(options)
+      console.log(`选择文件: ${result.filePaths}`)
+      return result
+    } catch (error) {
+      console.error('选择文件错误:', error)
       throw error
     }
   })

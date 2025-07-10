@@ -42,7 +42,9 @@ export function BatchCompressionResult({
 
       <div className="grid grid-cols-2 gap-4 mb-4 text-center">
         <div className="bg-white dark:bg-slate-900/30 p-3 rounded-lg">
-          <div className="text-sm text-slate-600 dark:text-slate-400">{t('successCount', { count: results.length, total: results.length })}</div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">
+            {t('successCount', { count: results.length, total: results.length })}
+          </div>
           <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{results.length}</div>
         </div>
         <div className="bg-white dark:bg-slate-900/30 p-3 rounded-lg">

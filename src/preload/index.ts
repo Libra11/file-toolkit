@@ -12,6 +12,7 @@ import { compression } from './api/compression'
 import { archiveCompression } from './api/archiveCompression'
 import { exam } from './api/exam'
 import { m3u8Download } from './api/m3u8Download'
+import { batchRename } from './api/batchRename'
 
 if (process.contextIsolated) {
   try {
@@ -22,6 +23,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('archiveCompression', archiveCompression)
     contextBridge.exposeInMainWorld('exam', exam)
     contextBridge.exposeInMainWorld('m3u8Download', m3u8Download)
+    contextBridge.exposeInMainWorld('batchRename', batchRename)
   } catch (error) {
     console.error(error)
   }
@@ -40,4 +42,6 @@ if (process.contextIsolated) {
   window.exam = exam
   // @ts-ignore (define in dts)
   window.m3u8Download = m3u8Download
+  // @ts-ignore (define in dts)
+  window.batchRename = batchRename
 }

@@ -210,10 +210,7 @@ export function CompressionSettings({
                   }
                 }}
               />
-              <Label
-                htmlFor="enable-batch-resize"
-                className="text-sm cursor-pointer"
-              >
+              <Label htmlFor="enable-batch-resize" className="text-sm cursor-pointer">
                 {t('imageCompression.batchResizeToSameDimensionsLabel')}
               </Label>
             </div>

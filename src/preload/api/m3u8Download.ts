@@ -35,7 +35,12 @@ const m3u8Download: M3u8Download = {
   },
 
   // 下载单个M3U8
-  downloadM3u8: async (url: string, outputPath: string, fileName: string, options?: any): Promise<string> => {
+  downloadM3u8: async (
+    url: string,
+    outputPath: string,
+    fileName: string,
+    options?: any
+  ): Promise<string> => {
     try {
       console.log(`预加载脚本: 调用download-m3u8, url:${url}, 输出:${outputPath}/${fileName}`)
       const result = await ipcRenderer.invoke('download-m3u8', url, outputPath, fileName, options)
@@ -48,10 +53,21 @@ const m3u8Download: M3u8Download = {
   },
 
   // 批量下载M3U8
-  batchDownloadM3u8: async (urlFileNamePairs: string[], outputPath: string, options?: any): Promise<string[]> => {
+  batchDownloadM3u8: async (
+    urlFileNamePairs: string[],
+    outputPath: string,
+    options?: any
+  ): Promise<string[]> => {
     try {
-      console.log(`预加载脚本: 调用batch-download-m3u8, 数量:${urlFileNamePairs.length}, 输出:${outputPath}`)
-      const result = await ipcRenderer.invoke('batch-download-m3u8', urlFileNamePairs, outputPath, options)
+      console.log(
+        `预加载脚本: 调用batch-download-m3u8, 数量:${urlFileNamePairs.length}, 输出:${outputPath}`
+      )
+      const result = await ipcRenderer.invoke(
+        'batch-download-m3u8',
+        urlFileNamePairs,
+        outputPath,
+        options
+      )
       console.log(`预加载脚本: batch-download-m3u8成功, 任务数:${result.length}`)
       return result
     } catch (error) {
@@ -146,4 +162,4 @@ const m3u8Download: M3u8Download = {
   }
 }
 
-export { m3u8Download } 
+export { m3u8Download }

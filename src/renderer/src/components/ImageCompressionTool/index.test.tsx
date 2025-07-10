@@ -115,10 +115,9 @@ describe('ImageCompressionTool Component', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     // Ensure CompressionSettings mock is reset for prop checking
-    const { CompressionSettings } = require('./CompressionSettings');
+    const { CompressionSettings } = require('./CompressionSettings')
     // @ts-ignore
-    CompressionSettings.mockClear();
-
+    CompressionSettings.mockClear()
   })
 
   const switchToBatchMode = () => {
@@ -128,7 +127,7 @@ describe('ImageCompressionTool Component', () => {
   const switchToSingleMode = () => {
     fireEvent.click(screen.getByText('singleFileMode'))
   }
-  
+
   const triggerFileUpload = () => {
     fireEvent.click(screen.getByTestId('mock-file-uploader'))
   }
@@ -138,13 +137,12 @@ describe('ImageCompressionTool Component', () => {
       fireEvent.click(screen.getByText('compress')) // Assumes button text is 'compress' for single
     })
   }
-  
+
   const triggerBatchCompression = async () => {
     await act(async () => {
-     fireEvent.click(screen.getByText('compressAll')) // Assumes button text is 'compressAll' for batch
+      fireEvent.click(screen.getByText('compressAll')) // Assumes button text is 'compressAll' for batch
     })
   }
-
 
   test('1. Initial state: enableBatchResize is initially false for CompressionSettings in batch mode', () => {
     render(<ImageCompressionTool />)
@@ -166,7 +164,7 @@ describe('ImageCompressionTool Component', () => {
       act(() => {
         props.onEnableBatchResizeChange(true)
       })
-      
+
       props = getMockCompressionSettingsProps()
       expect(props.enableBatchResize).toBe(true)
 
@@ -191,21 +189,21 @@ describe('ImageCompressionTool Component', () => {
       const settingsProps = getMockCompressionSettingsProps()
       if (!settingsProps.showAdvanced) {
         act(() => {
-            settingsProps.onShowAdvancedChange(true)
-        });
+          settingsProps.onShowAdvancedChange(true)
+        })
       }
     })
 
     test('Scenario 1: Batch resize enabled - includes width/height in options', async () => {
-      let settingsProps = getMockCompressionSettingsProps()
+      const settingsProps = getMockCompressionSettingsProps()
       act(() => {
         settingsProps.onEnableBatchResizeChange(true)
         settingsProps.onWidthChange(800)
         settingsProps.onHeightChange(600)
         // Assuming onMaintainAspectRatioChange is also a prop if it affects options directly
-        // settingsProps.onMaintainAspectRatioChange(true); 
+        // settingsProps.onMaintainAspectRatioChange(true);
       })
-      
+
       await triggerBatchCompression()
 
       expect(mockSelectDirectory).toHaveBeenCalled() // Pre-requisite for batch
@@ -221,7 +219,7 @@ describe('ImageCompressionTool Component', () => {
     })
 
     test('Scenario 2: Batch resize disabled - does not include width/height in options', async () => {
-      let settingsProps = getMockCompressionSettingsProps()
+      const settingsProps = getMockCompressionSettingsProps()
       act(() => {
         settingsProps.onEnableBatchResizeChange(false)
         // Set some dimensions to ensure they are NOT passed
@@ -238,9 +236,9 @@ describe('ImageCompressionTool Component', () => {
         expect.not.objectContaining({ width: expect.any(Number), height: expect.any(Number) })
       )
       // Also check that they are undefined or not present
-       const options = mockCompressImage.mock.calls[0][2];
-       expect(options.width).toBeUndefined();
-       expect(options.height).toBeUndefined();
+      const options = mockCompressImage.mock.calls[0][2]
+      expect(options.width).toBeUndefined()
+      expect(options.height).toBeUndefined()
     })
   })
 
@@ -254,22 +252,22 @@ describe('ImageCompressionTool Component', () => {
       })
       // Open advanced settings
       const settingsProps = getMockCompressionSettingsProps()
-       if (!settingsProps.showAdvanced) {
+      if (!settingsProps.showAdvanced) {
         act(() => {
-            settingsProps.onShowAdvancedChange(true)
-        });
+          settingsProps.onShowAdvancedChange(true)
+        })
       }
     })
 
     test('includes width/height in options when set', async () => {
-      let settingsProps = getMockCompressionSettingsProps()
+      const settingsProps = getMockCompressionSettingsProps()
       act(() => {
         settingsProps.onWidthChange(1024)
         settingsProps.onHeightChange(768)
       })
 
       await triggerCompression()
-      
+
       expect(mockSaveFile).toHaveBeenCalled() // Pre-requisite for single
       expect(mockCompressImage).toHaveBeenCalledWith(
         expect.any(String), // filePath
@@ -281,24 +279,24 @@ describe('ImageCompressionTool Component', () => {
       )
     })
 
-     test('does not include width/height in options when not set', async () => {
-      let settingsProps = getMockCompressionSettingsProps()
+    test('does not include width/height in options when not set', async () => {
+      const settingsProps = getMockCompressionSettingsProps()
       act(() => {
         settingsProps.onWidthChange('') // Clear dimensions
         settingsProps.onHeightChange('')
       })
-      
+
       await triggerCompression()
-      
+
       expect(mockSaveFile).toHaveBeenCalled()
       expect(mockCompressImage).toHaveBeenCalledWith(
         expect.any(String),
         'path/to/output.jpg',
         expect.not.objectContaining({ width: expect.any(Number), height: expect.any(Number) })
       )
-       const options = mockCompressImage.mock.calls[0][2];
-       expect(options.width).toBeUndefined();
-       expect(options.height).toBeUndefined();
+      const options = mockCompressImage.mock.calls[0][2]
+      expect(options.width).toBeUndefined()
+      expect(options.height).toBeUndefined()
     })
   })
 
@@ -318,16 +316,16 @@ describe('ImageCompressionTool Component', () => {
       // Switch to single and back to batch to trigger reset
       switchToSingleMode()
       switchToBatchMode()
-      
+
       props = getMockCompressionSettingsProps()
       expect(props.enableBatchResize).toBe(false)
     })
 
-     test('enableBatchResize is reset to false when a reset button in a child is clicked', async () => {
+    test('enableBatchResize is reset to false when a reset button in a child is clicked', async () => {
       render(<ImageCompressionTool />)
       switchToBatchMode()
-      await act(async () => triggerFileUpload()); // Upload files to show FileList then batch compress
-      
+      await act(async () => triggerFileUpload()) // Upload files to show FileList then batch compress
+
       let props = getMockCompressionSettingsProps()
       act(() => {
         props.onEnableBatchResizeChange(true)
@@ -336,21 +334,21 @@ describe('ImageCompressionTool Component', () => {
       expect(props.enableBatchResize).toBe(true) // Confirm it's true
 
       // Simulate batch compression to show BatchCompressionResult which has a reset
-      await triggerBatchCompression();
-      
+      await triggerBatchCompression()
+
       // At this point, BatchCompressionResult should be visible
       // Its mock contains a button that calls onReset
-      const resetButton = screen.getByText('Reset from BatchResult');
+      const resetButton = screen.getByText('Reset from BatchResult')
       act(() => {
-        fireEvent.click(resetButton);
-      });
-      
+        fireEvent.click(resetButton)
+      })
+
       // After reset, it should be back to the FileUploader state in batch mode
       // We need to check the props of CompressionSettings again.
       // Since resetState clears selectedFiles, FileUploader is shown.
       // To see CompressionSettings, we need to upload files again.
-      await act(async () => triggerFileUpload());
-      
+      await act(async () => triggerFileUpload())
+
       props = getMockCompressionSettingsProps()
       expect(props.enableBatchResize).toBe(false)
     })

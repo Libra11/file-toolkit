@@ -9,6 +9,8 @@ import type { Ffmpeg } from './types/ffmpeg'
 import type { System } from './types/system'
 import type { Exam } from './types/exam'
 import type { IpcRendererEvent } from 'electron'
+import type { batchRename } from './api/batchRename'
+import type { RenameRule, RenameTask, RenamePreviewResult } from '../main/handlers/batchRenameHandlers'
 
 export type IpcListener = (event: IpcRendererEvent, ...args: unknown[]) => void
 
@@ -19,6 +21,12 @@ export interface ImageOrganize {
   invoke(channel: string, ...args: any[]): Promise<any>
 }
 
+// 批量重命名API接口
+export interface BatchRename {
+  preview: (filePaths: string[], rules: RenameRule[]) => Promise<RenamePreviewResult>
+  execute: (tasks: RenameTask[]) => Promise<RenameTask[]>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -26,5 +34,6 @@ declare global {
     system: System
     exam: Exam
     imageOrganize: ImageOrganize
+    batchRename: BatchRename
   }
 }
