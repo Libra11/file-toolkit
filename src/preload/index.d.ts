@@ -10,7 +10,13 @@ import type { System } from './types/system'
 import type { Exam } from './types/exam'
 import type { IpcRendererEvent } from 'electron'
 import type { batchRename } from './api/batchRename'
-import type { RenameRule, RenameTask, RenamePreviewResult } from '../main/handlers/batchRenameHandlers'
+import type {
+  RenameRule,
+  RenameTask,
+  RenamePreviewResult
+} from '../main/handlers/batchRenameHandlers'
+import type { gifExportAPI } from './api/gifExport'
+import type { GifExportOptions, CardInfo } from '../shared/types'
 
 export type IpcListener = (event: IpcRendererEvent, ...args: unknown[]) => void
 
@@ -27,6 +33,20 @@ export interface BatchRename {
   execute: (tasks: RenameTask[]) => Promise<RenameTask[]>
 }
 
+// GIF 导出API接口
+export interface GifExport {
+  selectOutputDir: () => Promise<string | null>
+  exportAll: (htmlString: string, options: GifExportOptions) => Promise<string[]>
+  exportSingle: (
+    htmlString: string,
+    cardIndex: number,
+    options: GifExportOptions
+  ) => Promise<string>
+  getCardInfo: (htmlString: string) => Promise<CardInfo[]>
+  onProgress: (callback: (progress: any) => void) => void
+  removeProgressListener: () => void
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -35,5 +55,6 @@ declare global {
     exam: Exam
     imageOrganize: ImageOrganize
     batchRename: BatchRename
+    gifExport: GifExport
   }
 }

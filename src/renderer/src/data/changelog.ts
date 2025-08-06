@@ -17,6 +17,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.1.1',
+    date: '2025-08-06',
+    changes: {
+      features: [
+        '新增 HTML 卡片 GIF 导出工具，支持将 HTML 字符串中的卡片元素导出为动画 GIF 或静态 PNG',
+        'Added HTML card GIF export tool with support for exporting card elements from HTML strings as animated GIF or static PNG files',
+        '支持批量导出多个卡片，可自定义输出质量和动画设置',
+        'Support batch export of multiple cards with customizable output quality and animation settings'
+      ],
+      improvements: [
+        '完善了 GIF 导出功能的用户界面和交互体验',
+        'Enhanced user interface and interaction experience for GIF export functionality',
+        '添加了导出进度显示和状态反馈',
+        'Added export progress display and status feedback'
+      ]
+    }
+  },
+  {
     version: '1.1.0',
     date: '2025-01-09',
     changes: {

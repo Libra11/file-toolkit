@@ -20,6 +20,7 @@ import { registerCreateExamHandlers } from './createExamHandlers'
 import { registerImageOrganizeHandlers } from './imageOrganizeHandlers'
 import { registerM3u8DownloadHandlers } from './m3u8DownloadHandlers'
 import { registerBatchRenameHandlers } from './batchRenameHandlers'
+import { registerGifExportHandlers } from './gifExportHandlers'
 /**
  * 注册所有IPC处理程序
  */
@@ -50,9 +51,12 @@ export function registerAllHandlers(): void {
 
   // 注册m3u8下载处理程序
   registerM3u8DownloadHandlers()
-  
+
   // 注册批量重命名处理程序
   registerBatchRenameHandlers()
+
+  // 注册 GIF 导出处理程序
+  registerGifExportHandlers()
 }
 
 // 导出所有处理程序
@@ -80,3 +84,6 @@ export * from './m3u8DownloadHandlers'
 
 // 批量重命名处理程序
 export * from './batchRenameHandlers'
+
+// GIF 导出处理程序
+export * from './gifExportHandlers'

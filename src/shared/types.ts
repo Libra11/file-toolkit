@@ -35,3 +35,28 @@ export enum DownloadStatus {
   FAILED = 'failed',
   CANCELLED = 'cancelled'
 }
+
+/**
+ * GIF 导出选项
+ */
+export interface GifExportOptions {
+  frameRate?: number
+  duration?: number
+  quality?: 'high' | 'medium' | 'low'
+  outputDir?: string
+  singleFrame?: boolean // 新增：是否导出单帧PNG
+}
+
+/**
+ * 卡片信息
+ */
+export interface CardInfo {
+  index: number
+  title: string
+  boundingBox: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }
+}
