@@ -49,9 +49,7 @@ export default function CompactToolCard({
 
         {/* 内容 */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-slate-900 dark:text-white text-sm truncate">
-            {title}
-          </h3>
+          <h3 className="font-medium text-slate-900 dark:text-white text-sm truncate">{title}</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
             {description}
           </p>

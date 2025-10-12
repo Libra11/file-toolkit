@@ -22,7 +22,6 @@ export interface ProjectConfig {
   faceDiff: number
   fixedPosition: boolean
   lateSecond: number
-  submitSecond: number
   requirement: string
   admissionCardRequirement: string
   note: string
@@ -40,6 +39,7 @@ export interface SubjectConfig {
   name: string
   companyId: string
   duration: number
+  submitSecond: number
   calculatorEnabled: boolean
   showScore: boolean
   note: string
@@ -70,7 +70,6 @@ export interface ProjectData {
   faceDiff: number
   fixedPosition: boolean
   lateSecond: number
-  submitSecond: number
   requirement: string
   admissionCardRequirement: string
   note: string

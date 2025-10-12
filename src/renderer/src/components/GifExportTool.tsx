@@ -47,7 +47,8 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
     frameRate: 30,
     duration: 8000,
     quality: 'high',
-    singleFrame: false
+    singleFrame: false,
+    outputDir: ''
   })
 
   // 监听进度事件
@@ -101,9 +102,17 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
   const handleSelectOutputDir = useCallback(async () => {
     try {
       const dir = await window.gifExport.selectOutputDir()
+      console.log('选择的目录:', dir)
       if (dir) {
+        console.log('设置目录为:', dir)
         setOutputDir(dir)
-        setOptions((prev) => ({ ...prev, outputDir: dir }))
+        setOptions((prev) => {
+          const newOptions = { ...prev, outputDir: dir }
+          console.log('更新后的 options:', newOptions)
+          return newOptions
+        })
+      } else {
+        console.log('用户取消了目录选择')
       }
     } catch (error) {
       console.error('选择输出目录失败:', error)
@@ -120,7 +129,9 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
 
     setIsAnalyzing(true)
     try {
-      const cards = await window.gifExport.getCardInfo(htmlString)
+      const currentOptions = { ...options, outputDir }
+      console.log('options', currentOptions)
+      const cards = await window.gifExport.getCardInfo(htmlString, currentOptions)
       setCardInfo(cards)
       console.log('发现卡片:', cards)
     } catch (error) {
@@ -129,7 +140,7 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
     } finally {
       setIsAnalyzing(false)
     }
-  }, [htmlString, t])
+  }, [htmlString, options, outputDir, t])
 
   // 导出所有卡片
   const handleExportAll = useCallback(async () => {
@@ -148,7 +159,9 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
     setProgressMessage(t('exportStarting'))
 
     try {
-      const outputPaths = await window.gifExport.exportAll(htmlString, options)
+      const currentOptions = { ...options, outputDir }
+      console.log('导出选项:', currentOptions)
+      const outputPaths = await window.gifExport.exportAll(htmlString, currentOptions)
 
       console.log('导出完成:', outputPaths)
       const fileType = options.singleFrame ? 'PNG' : 'GIF'
@@ -165,7 +178,7 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
         setTotalCards(0)
       }, 2000)
     }
-  }, [htmlString, cardInfo, options, t])
+  }, [htmlString, cardInfo, options, outputDir, t])
 
   // 导出单张卡片
   const handleExportSingle = useCallback(
@@ -179,7 +192,12 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
       setSelectedCardIndex(cardIndex)
 
       try {
-        const outputPath = await window.gifExport.exportSingle(htmlString, cardIndex, options)
+        const currentOptions = { ...options, outputDir }
+        const outputPath = await window.gifExport.exportSingle(
+          htmlString,
+          cardIndex,
+          currentOptions
+        )
         console.log('单张导出完成:', outputPath)
         const fileType = options.singleFrame ? 'PNG' : 'GIF'
         alert(t('singleExportCompleted', { type: fileType }))
@@ -191,7 +209,7 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
         setSelectedCardIndex(null)
       }
     },
-    [htmlString, options, t]
+    [htmlString, options, outputDir, t]
   )
 
   return (

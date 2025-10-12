@@ -17,6 +17,7 @@ import type {
 } from '../main/handlers/batchRenameHandlers'
 import type { gifExportAPI } from './api/gifExport'
 import type { GifExportOptions, CardInfo } from '../shared/types'
+import type { FileHash } from './types/hash'
 
 export type IpcListener = (event: IpcRendererEvent, ...args: unknown[]) => void
 
@@ -42,7 +43,7 @@ export interface GifExport {
     cardIndex: number,
     options: GifExportOptions
   ) => Promise<string>
-  getCardInfo: (htmlString: string) => Promise<CardInfo[]>
+  getCardInfo: (htmlString: string, options?: GifExportOptions) => Promise<CardInfo[]>
   onProgress: (callback: (progress: any) => void) => void
   removeProgressListener: () => void
 }
@@ -56,5 +57,6 @@ declare global {
     imageOrganize: ImageOrganize
     batchRename: BatchRename
     gifExport: GifExport
+    hash: FileHash
   }
 }

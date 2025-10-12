@@ -24,7 +24,17 @@ export async function selectDirectory(): Promise<string | undefined> {
  * @returns 选择的文件路径
  */
 export async function selectFiles(options: {
-  properties?: ('openFile' | 'openDirectory' | 'multiSelections' | 'showHiddenFiles' | 'createDirectory' | 'promptToCreate' | 'noResolveAliases' | 'treatPackageAsDirectory' | 'dontAddToRecent')[]
+  properties?: (
+    | 'openFile'
+    | 'openDirectory'
+    | 'multiSelections'
+    | 'showHiddenFiles'
+    | 'createDirectory'
+    | 'promptToCreate'
+    | 'noResolveAliases'
+    | 'treatPackageAsDirectory'
+    | 'dontAddToRecent'
+  )[]
   filters?: FileFilter[]
 }): Promise<{ canceled: boolean; filePaths: string[] }> {
   const result = await dialog.showOpenDialog({

@@ -12,7 +12,7 @@
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self' https://supernova-api.iguokao.com; media-src 'self' blob: myapp:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: myapp: blob:;"
+      content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://supernova-api.iguokao.com; connect-src 'self' https://supernova-api.iguokao.com wss://livekit.penlibra.xin https://livekit.penlibra.xin ws: wss:; media-src 'self' blob: myapp: mediastream: https: data:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: myapp: blob: https:;"
     />
   </head>
 

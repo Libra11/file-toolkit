@@ -17,6 +17,22 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.1.2',
+    date: '2025-09-15',
+    changes: {
+      features: [
+        '新增文件校验工具，支持快速计算 MD5、SHA-1、SHA-256、SHA-512 等哈希值',
+        'Added File Hash tool with quick checksum calculation for MD5, SHA-1, SHA-256, and SHA-512',
+        '支持多文件批量生成哈希值并复制结果，方便校验与比对',
+        'Supports batch hash generation with one-click copy for easy verification and comparison'
+      ],
+      improvements: [
+        '首页常用工具区新增文件校验入口，快速打开新功能',
+        'Home page frequent tools section now includes a shortcut to the File Hash tool for faster access'
+      ]
+    }
+  },
+  {
     version: '1.1.1',
     date: '2025-08-06',
     changes: {

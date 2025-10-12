@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(rm:*)",
+      "Bash(node:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run:*)",
+      "Bash(sudo rm:*)",
+      "Bash(chmod:*)",
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx eslint:*)",
+      "Bash(sed:*)",
+      "Bash(npx tsc:*)"
+    ],
+    "deny": []
+  }
+}

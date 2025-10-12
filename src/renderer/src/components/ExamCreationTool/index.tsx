@@ -503,24 +503,6 @@ export default function ExamCreationTool(): JSX.Element {
                         className="border-indigo-200 dark:border-indigo-800/40 focus:border-indigo-500 focus:ring-indigo-500"
                       />
                     </div>
-
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="project-submitSecond"
-                        className="text-indigo-700 dark:text-indigo-400"
-                      >
-                        允许交卷时间（秒）
-                      </Label>
-                      <Input
-                        id="project-submitSecond"
-                        type="number"
-                        value={config.project.submitSecond}
-                        onChange={(e) =>
-                          handleInputChange('project.submitSecond', parseInt(e.target.value))
-                        }
-                        className="border-indigo-200 dark:border-indigo-800/40 focus:border-indigo-500 focus:ring-indigo-500"
-                      />
-                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -821,6 +803,27 @@ export default function ExamCreationTool(): JSX.Element {
                                         显示分数
                                       </Label>
                                     </div>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label
+                                      htmlFor={`subject-submitSecond-${periodIndex}-${subjectIndex}`}
+                                      className="text-blue-700 dark:text-blue-400"
+                                    >
+                                      允许交卷时间（秒）
+                                    </Label>
+                                    <Input
+                                      id={`subject-submitSecond-${periodIndex}-${subjectIndex}`}
+                                      type="number"
+                                      value={subject.submitSecond}
+                                      onChange={(e) =>
+                                        handleInputChange(
+                                          `periods[${periodIndex}].subjects[${subjectIndex}].submitSecond`,
+                                          parseInt(e.target.value)
+                                        )
+                                      }
+                                      className="border-blue-200 dark:border-blue-800/40 focus:border-blue-500 focus:ring-blue-500"
+                                    />
                                   </div>
 
                                   <div className="space-y-2">

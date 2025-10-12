@@ -28,8 +28,10 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       contextIsolation: true,
-      webSecurity: true,
-      allowRunningInsecureContent: false
+      webSecurity: false, // 允许访问媒体设备
+      allowRunningInsecureContent: true, // 允许不安全内容以支持媒体访问
+      nodeIntegration: false,
+      experimentalFeatures: true // 启用实验性功能
     }
   })
 
@@ -57,6 +59,41 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
+  // Handle media permissions for camera and microphone
+  mainWindow.webContents.session.setPermissionRequestHandler((_, permission, callback, details) => {
+    console.log('权限请求:', permission, details)
+    // 允许所有媒体相关权限
+    if (
+      permission === 'media' ||
+      permission === 'camera' ||
+      permission === 'microphone' ||
+      permission === 'display-capture'
+    ) {
+      console.log('✅ 允许权限:', permission)
+      callback(true)
+    } else {
+      console.log('❌ 拒绝权限:', permission)
+      callback(false)
+    }
+  })
+
+  // Handle permission check requests
+  mainWindow.webContents.session.setPermissionCheckHandler(
+    (_, permission, requestingOrigin, details) => {
+      console.log('权限检查:', permission, requestingOrigin, details)
+      if (
+        permission === 'media' ||
+        permission === 'videoCapture' ||
+        permission === 'audioCapture'
+      ) {
+        console.log('✅ 权限检查通过:', permission)
+        return true
+      }
+      console.log('❌ 权限检查失败:', permission)
+      return false
+    }
+  )
+
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -70,6 +107,14 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  // 设置应用权限，确保媒体设备访问
+  app.commandLine.appendSwitch('enable-media-stream')
+  app.commandLine.appendSwitch('enable-usermedia-screen-capturing')
+  app.commandLine.appendSwitch('auto-select-desktop-capture-source', 'Electron')
+
+  // 忽略证书错误（对于本地开发）
+  app.commandLine.appendSwitch('ignore-certificate-errors')
+  app.commandLine.appendSwitch('disable-web-security')
   // Register custom protocol
   protocol.registerFileProtocol('myapp', (request, callback) => {
     const url = request.url.slice('myapp://'.length)

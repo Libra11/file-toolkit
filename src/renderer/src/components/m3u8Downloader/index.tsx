@@ -1,3 +1,9 @@
+/**
+ * Author: Libra
+ * Date: 2025-07-03 17:08:54
+ * LastEditors: Libra
+ * Description:
+ */
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
@@ -204,7 +210,7 @@ export default function M3u8DownloadTool(): JSX.Element {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="mx-auto py-6">
       <Tabs defaultValue="create" value={mainTab} onValueChange={setMainTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-6">
           <TabsTrigger value="create">{t('createDownload') || '创建下载'}</TabsTrigger>

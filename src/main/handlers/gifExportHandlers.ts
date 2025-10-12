@@ -580,16 +580,19 @@ export function registerGifExportHandlers(): void {
   )
 
   // 获取卡片信息
-  ipcMain.handle('gif-export:get-card-info', async (_, htmlString: string) => {
-    const exporter = new GifExporter()
-    try {
-      await exporter.init()
-      await exporter.loadPageFromHtml(htmlString)
-      return await exporter.getCardInfo()
-    } finally {
-      if (exporter['browser']) {
-        await exporter['browser'].close()
+  ipcMain.handle(
+    'gif-export:get-card-info',
+    async (_, htmlString: string, options: GifExportOptions = {}) => {
+      const exporter = new GifExporter(options)
+      try {
+        await exporter.init()
+        await exporter.loadPageFromHtml(htmlString)
+        return await exporter.getCardInfo()
+      } finally {
+        if (exporter['browser']) {
+          await exporter['browser'].close()
+        }
       }
     }
-  })
+  )
 }

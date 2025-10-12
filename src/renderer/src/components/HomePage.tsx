@@ -29,7 +29,9 @@ import {
   Star,
   Wrench,
   Target,
-  FileImage
+  FileImage,
+  VideoIcon,
+  Fingerprint
 } from 'lucide-react'
 import ToolCard from '@renderer/components/ui/card/ToolCard'
 import CompactToolCard from '@renderer/components/ui/card/CompactToolCard'
@@ -44,6 +46,8 @@ import WordToExcelTool from '@renderer/components/WordToExcelTool/index'
 import M3u8DownloadTool from '@renderer/components/M3u8DownloadTool'
 import BatchRenameTool from '@renderer/components/BatchRenameTool'
 import { GifExportTool } from '@renderer/components/GifExportTool'
+import { WebRTCTool } from '@renderer/components/WebRTCTool'
+import FileHashTool from '@renderer/components/FileHashTool'
 
 enum ActiveTool {
   None,
@@ -58,7 +62,9 @@ enum ActiveTool {
   WordToExcel,
   M3u8Download,
   BatchRename,
-  GifExport
+  GifExport,
+  WebRTC,
+  FileHash
 }
 
 export default function HomePage(): JSX.Element {
@@ -83,7 +89,7 @@ export default function HomePage(): JSX.Element {
 
   return (
     <div className="px-4 py-4 w-full">
-      <div className="max-w-md mx-auto">
+      <div className="w-full mx-auto">
         {activeTool === ActiveTool.None ? (
           <motion.div variants={containerVariants} initial="hidden" animate="visible">
             <motion.div variants={itemVariants} className="text-center mb-4">
@@ -115,6 +121,13 @@ export default function HomePage(): JSX.Element {
                   description={t('fileCompressionDescription')}
                   onClick={() => setActiveTool(ActiveTool.Compression)}
                   iconColor="text-emerald-500"
+                />
+                <CompactToolCard
+                  icon={<Fingerprint size={20} />}
+                  title={t('fileHashTool')}
+                  description={t('fileHashDescription')}
+                  onClick={() => setActiveTool(ActiveTool.FileHash)}
+                  iconColor="text-indigo-500"
                 />
               </div>
             </motion.div>
@@ -189,11 +202,18 @@ export default function HomePage(): JSX.Element {
                   onClick={() => setActiveTool(ActiveTool.GifExport)}
                   iconColor="text-pink-500"
                 />
+                <CompactToolCard
+                  icon={<VideoIcon size={20} />}
+                  title="WebRTC 音视频"
+                  description="基于 WebRTC 的实时音视频通信工具"
+                  onClick={() => setActiveTool(ActiveTool.WebRTC)}
+                  iconColor="text-orange-500"
+                />
               </div>
             </motion.div>
           </motion.div>
         ) : (
-          <div className="max-w-2xl mx-auto">
+          <div className="w-full mx-auto">
             {activeTool === ActiveTool.Conversion ? (
               <>
                 <div className="flex items-center justify-between mb-6">
@@ -521,6 +541,36 @@ export default function HomePage(): JSX.Element {
                 </div>
                 <M3u8DownloadTool />
               </>
+            ) : activeTool === ActiveTool.FileHash ? (
+              <>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
+                    <Fingerprint className="mr-2 h-5 w-5 text-indigo-500" />
+                    {t('fileHashTool')}
+                  </h2>
+                  <button
+                    onClick={() => setActiveTool(ActiveTool.None)}
+                    className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 rounded-full transition-colors"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5 mr-1.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M19 12H5M5 12L12 19M5 12L12 5"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    {t('backToHome')}
+                  </button>
+                </div>
+                <FileHashTool />
+              </>
             ) : activeTool === ActiveTool.BatchRename ? (
               <>
                 <div className="flex items-center justify-between mb-6">
@@ -581,6 +631,36 @@ export default function HomePage(): JSX.Element {
                   </button>
                 </div>
                 <GifExportTool />
+              </>
+            ) : activeTool === ActiveTool.WebRTC ? (
+              <>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
+                    <VideoIcon className="mr-2 h-5 w-5 text-orange-500" />
+                    WebRTC 音视频
+                  </h2>
+                  <button
+                    onClick={() => setActiveTool(ActiveTool.None)}
+                    className="flex items-center px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/30 dark:hover:bg-orange-800/40 rounded-full transition-colors"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5 mr-1.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M19 12H5M5 12L12 19M5 12L12 5"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    {t('backToHome')}
+                  </button>
+                </div>
+                <WebRTCTool />
               </>
             ) : null}
           </div>

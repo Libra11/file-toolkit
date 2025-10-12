@@ -103,7 +103,6 @@ const store = new ConfigStore<ExamConfig>({
       faceDiff: 4,
       fixedPosition: true,
       lateSecond: 600,
-      submitSecond: 600,
       requirement: '',
       admissionCardRequirement: '',
       note: '',
@@ -118,6 +117,7 @@ const store = new ConfigStore<ExamConfig>({
           {
             name: '科目1',
             duration: 6000,
+            submitSecond: 600,
             calculatorEnabled: true,
             showScore: true,
             note: '科目1备注',

@@ -36,8 +36,8 @@ export const gifExportAPI = {
   /**
    * 获取卡片信息
    */
-  getCardInfo: (htmlString: string): Promise<CardInfo[]> => {
-    return ipcRenderer.invoke('gif-export:get-card-info', htmlString)
+  getCardInfo: (htmlString: string, options: GifExportOptions = {}): Promise<CardInfo[]> => {
+    return ipcRenderer.invoke('gif-export:get-card-info', htmlString, options)
   },
 
   /**
