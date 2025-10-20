@@ -24,7 +24,8 @@ interface ChangelogPopupProps {
 const ChangelogPopup: React.FC<ChangelogPopupProps> = ({ isOpen, onClose, version }) => {
   const { t, i18n } = useTranslation()
   const [changelogEntry, setChangelogEntry] = useState<ChangelogEntry | null>(null)
-  const isChineseLocale = i18n.language === 'zh-CN'
+  const language = (i18n.language || '').toLowerCase()
+  const isChineseLocale = language.startsWith('zh')
 
   useEffect(() => {
     if (version && isOpen) {
@@ -58,27 +59,21 @@ const ChangelogPopup: React.FC<ChangelogPopupProps> = ({ isOpen, onClose, versio
     return labels[type] || type
   }
 
-  const renderChangeItems = (items: string[]): (JSX.Element | null)[] => {
-    return items.map((item, idx) => {
-      const isOdd = idx % 2 === 1
-      if (isChineseLocale && !isOdd) {
-        return (
-          <li key={idx} className="flex items-start gap-2 text-sm">
-            <span className="text-muted-foreground">•</span>
-            <span>{item}</span>
-          </li>
-        )
-      }
-      if (!isChineseLocale && isOdd) {
-        return (
-          <li key={idx} className="flex items-start gap-2 text-sm">
-            <span className="text-muted-foreground">•</span>
-            <span>{item}</span>
-          </li>
-        )
-      }
-      return null
-    })
+  const renderChangeItems = (items: string[]): JSX.Element[] => {
+    const containsChinese = (text: string): boolean => /[\u4e00-\u9fff]/.test(text)
+
+    const filtered = items.filter(item =>
+      isChineseLocale ? containsChinese(item) : !containsChinese(item)
+    )
+
+    const displayItems = filtered.length > 0 ? filtered : items
+
+    return displayItems.map((item, idx) => (
+      <li key={`${item}-${idx}`} className="flex items-start gap-2 text-sm">
+        <span className="text-muted-foreground">•</span>
+        <span>{item}</span>
+      </li>
+    ))
   }
 
   const handleDontShowAgain = (): void => {

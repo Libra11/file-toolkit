@@ -215,24 +215,24 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
   return (
     <div className={className}>
       <Card>
-        <CardHeader>
+        {/* <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileImage className="h-5 w-5" />
             {t('htmlCardGifExportTool')}
           </CardTitle>
           <CardDescription>{t('htmlCardGifExportDescription')}</CardDescription>
-        </CardHeader>
+        </CardHeader> */}
         <CardContent className="space-y-6">
           {/* HTML 输入区域 */}
           <div className="space-y-2">
-            <Label htmlFor="html-input">{t('htmlString')}</Label>
+            {/* <Label htmlFor="html-input">{t('htmlString')}</Label> */}
             <Textarea
               id="html-input"
               placeholder={t('htmlStringPlaceholder')}
               value={htmlString}
               onChange={(e) => setHtmlString(e.target.value)}
               rows={8}
-              className="font-mono text-sm"
+              className="font-mono text-sm mt-6"
             />
           </div>
 

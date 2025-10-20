@@ -357,10 +357,8 @@ export default function AudioCompressionTool(): JSX.Element {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.3 }}
-      className="max-w-5xl mx-auto p-4"
+      className="max-w-5xl mx-auto"
     >
-      <h1 className="text-2xl font-bold mb-6 text-center">{t('audioCompressionTool')}</h1>
-
       <Card>
         <CardContent className="p-6">
           <Tabs defaultValue="single" onValueChange={handleModeToggle}>

@@ -17,6 +17,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.1.3',
+    date: '2025-10-08',
+    changes: {
+      features: [
+        '文件压缩功能改为标签切换，一次点击即可访问图片、音频和视频压缩',
+        'File compression view now uses tabs so image, audio, and video compression are one click away',
+        '首页常用工具支持自定义收藏，最多可固定 6 个常用工具',
+        'Home page frequent tools are now customizable with up to six pinned utilities'
+      ],
+      improvements: [
+        '优化常用工具的空状态与提示信息，帮助快速完成配置',
+        'Improved frequent tool empty states and helper text to streamline setup'
+      ],
+      fixes: [
+        '修复更新日志在中文环境下不显示中文内容的问题',
+        'Fixed changelog entries not showing Chinese text in zh locales'
+      ]
+    }
+  },
+  {
     version: '1.1.2',
     date: '2025-09-15',
     changes: {

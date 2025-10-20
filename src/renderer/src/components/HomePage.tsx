@@ -10,7 +10,7 @@
  * @LastEditors: Libra
  * @Description:
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import {
@@ -31,9 +31,11 @@ import {
   Target,
   FileImage,
   VideoIcon,
-  Fingerprint
+  Fingerprint,
+  Settings2,
+  Check
 } from 'lucide-react'
-import ToolCard from '@renderer/components/ui/card/ToolCard'
+import type { LucideIcon } from 'lucide-react'
 import CompactToolCard from '@renderer/components/ui/card/CompactToolCard'
 import FileConversionTool from '@renderer/components/FileConversionTool'
 import ImageCompressionTool from '@renderer/components/ImageCompressionTool'
@@ -48,14 +50,21 @@ import BatchRenameTool from '@renderer/components/BatchRenameTool'
 import { GifExportTool } from '@renderer/components/GifExportTool'
 import { WebRTCTool } from '@renderer/components/WebRTCTool'
 import FileHashTool from '@renderer/components/FileHashTool'
+import { Button } from '@renderer/components/ui/button'
+import { cn } from '@renderer/lib/utils'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@renderer/components/ui/dialog'
 
 enum ActiveTool {
   None,
   Conversion,
   Compression,
-  ImageCompression,
-  AudioCompression,
-  VideoCompression,
   ArchiveCompression,
   ExamCreation,
   ImageOrganize,
@@ -67,9 +76,268 @@ enum ActiveTool {
   FileHash
 }
 
+type ToolKey = Exclude<ActiveTool, ActiveTool.None>
+
+type ToolConfig = {
+  id: ToolKey
+  icon: LucideIcon
+  iconColor: string
+  titleKey?: string
+  title?: string
+  descriptionKey?: string
+  description?: string
+}
+
+const DEFAULT_FAVORITE_TOOLS: ToolKey[] = [
+  ActiveTool.Conversion,
+  ActiveTool.Compression,
+  ActiveTool.FileHash
+]
+
+const MAX_FAVORITES = 6
+const FAVORITE_TOOLS_STORAGE_KEY = 'fileToolkit.favoriteTools'
+
+const toolConfigs: Record<ToolKey, ToolConfig> = {
+  [ActiveTool.Conversion]: {
+    id: ActiveTool.Conversion,
+    icon: FileType2,
+    iconColor: 'text-blue-500',
+    titleKey: 'fileConversion',
+    descriptionKey: 'fileConversionDescription'
+  },
+  [ActiveTool.Compression]: {
+    id: ActiveTool.Compression,
+    icon: FileDown,
+    iconColor: 'text-emerald-500',
+    titleKey: 'fileCompression',
+    descriptionKey: 'fileCompressionDescription'
+  },
+  [ActiveTool.ArchiveCompression]: {
+    id: ActiveTool.ArchiveCompression,
+    icon: Archive,
+    iconColor: 'text-purple-500',
+    titleKey: 'archiveCompression',
+    descriptionKey: 'archiveCompressionDescription'
+  },
+  [ActiveTool.ExamCreation]: {
+    id: ActiveTool.ExamCreation,
+    icon: School,
+    iconColor: 'text-amber-500',
+    titleKey: 'examCreation',
+    descriptionKey: 'examCreationDescription'
+  },
+  [ActiveTool.ImageOrganize]: {
+    id: ActiveTool.ImageOrganize,
+    icon: Images,
+    iconColor: 'text-cyan-500',
+    titleKey: 'imageOrganize',
+    descriptionKey: 'imageOrganizeDescription'
+  },
+  [ActiveTool.WordToExcel]: {
+    id: ActiveTool.WordToExcel,
+    icon: FileText,
+    iconColor: 'text-rose-500',
+    titleKey: 'wordToExcel',
+    descriptionKey: 'wordToExcelDescription'
+  },
+  [ActiveTool.M3u8Download]: {
+    id: ActiveTool.M3u8Download,
+    icon: Download,
+    iconColor: 'text-indigo-500',
+    titleKey: 'm3u8Download',
+    descriptionKey: 'm3u8DownloadDescription'
+  },
+  [ActiveTool.BatchRename]: {
+    id: ActiveTool.BatchRename,
+    icon: Edit3,
+    iconColor: 'text-teal-500',
+    titleKey: 'batchRename',
+    descriptionKey: 'batchRenameDescription'
+  },
+  [ActiveTool.GifExport]: {
+    id: ActiveTool.GifExport,
+    icon: FileImage,
+    iconColor: 'text-pink-500',
+    titleKey: 'htmlCardGifExportTool',
+    descriptionKey: 'htmlCardGifExportDescription'
+  },
+  [ActiveTool.WebRTC]: {
+    id: ActiveTool.WebRTC,
+    icon: VideoIcon,
+    iconColor: 'text-orange-500',
+    titleKey: 'webrtcTool',
+    descriptionKey: 'webrtcToolDescription'
+  },
+  [ActiveTool.FileHash]: {
+    id: ActiveTool.FileHash,
+    icon: Fingerprint,
+    iconColor: 'text-indigo-500',
+    titleKey: 'fileHashTool',
+    descriptionKey: 'fileHashDescription'
+  }
+}
+
+const practicalTools: ToolKey[] = [
+  ActiveTool.BatchRename,
+  ActiveTool.ArchiveCompression,
+  ActiveTool.WordToExcel
+]
+
+const professionalTools: ToolKey[] = [
+  ActiveTool.ExamCreation,
+  ActiveTool.ImageOrganize,
+  ActiveTool.M3u8Download,
+  ActiveTool.GifExport,
+  ActiveTool.WebRTC
+]
+
+const availableToolIds = Object.values(toolConfigs).map(config => config.id)
+const availableToolIdSet = new Set<ToolKey>(availableToolIds)
+
+enum CompressionTab {
+  Image = 'image',
+  Audio = 'audio',
+  Video = 'video'
+}
+
 export default function HomePage(): JSX.Element {
   const { t } = useTranslation()
   const [activeTool, setActiveTool] = useState<ActiveTool>(ActiveTool.None)
+  const [compressionTab, setCompressionTab] = useState<CompressionTab>(CompressionTab.Image)
+  const [favoriteTools, setFavoriteTools] = useState<ToolKey[]>(DEFAULT_FAVORITE_TOOLS)
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false)
+  const [isFavoritesDialogOpen, setFavoritesDialogOpen] = useState(false)
+  const [pendingFavorites, setPendingFavorites] = useState<ToolKey[]>(DEFAULT_FAVORITE_TOOLS)
+
+  useEffect(() => {
+    if (activeTool === ActiveTool.Compression) {
+      setCompressionTab(CompressionTab.Image)
+    }
+  }, [activeTool])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      setFavoritesLoaded(true)
+      return
+    }
+
+    try {
+      const stored = window.localStorage.getItem(FAVORITE_TOOLS_STORAGE_KEY)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed)) {
+          const valid = parsed.reduce<ToolKey[]>((acc, value) => {
+            const numericValue = Number(value)
+            if (availableToolIdSet.has(numericValue as ToolKey)) {
+              acc.push(numericValue as ToolKey)
+            }
+            return acc
+          }, [])
+          setFavoriteTools(valid)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load favorite tools', error)
+    } finally {
+      setFavoritesLoaded(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!favoritesLoaded || typeof window === 'undefined') {
+      return
+    }
+
+    try {
+      window.localStorage.setItem(
+        FAVORITE_TOOLS_STORAGE_KEY,
+        JSON.stringify(favoriteTools.map(tool => Number(tool)))
+      )
+    } catch (error) {
+      console.error('Failed to save favorite tools', error)
+    }
+  }, [favoriteTools, favoritesLoaded])
+
+  const compressionTabsConfig = [
+    {
+      key: CompressionTab.Image,
+      labelKey: 'imageCompression',
+      descriptionKey: 'imageCompressionDescription',
+      icon: ImageIcon,
+      activeTextClass: 'text-blue-600 dark:text-blue-400',
+      activeIconClass: 'text-blue-500'
+    },
+    {
+      key: CompressionTab.Audio,
+      labelKey: 'audioCompression',
+      descriptionKey: 'audioCompressionDescription',
+      icon: Music,
+      activeTextClass: 'text-purple-600 dark:text-purple-400',
+      activeIconClass: 'text-purple-500'
+    },
+    {
+      key: CompressionTab.Video,
+      labelKey: 'videoCompression',
+      descriptionKey: 'videoCompressionDescription',
+      icon: Video,
+      activeTextClass: 'text-red-600 dark:text-red-400',
+      activeIconClass: 'text-red-500'
+    }
+  ]
+
+  const activeCompressionTab =
+    compressionTabsConfig.find(tab => tab.key === compressionTab) ?? compressionTabsConfig[0]
+
+  const handleFavoritesDialogOpen = (open: boolean): void => {
+    if (open) {
+      setPendingFavorites(favoriteTools)
+    }
+    setFavoritesDialogOpen(open)
+  }
+
+  const togglePendingFavorite = (toolId: ToolKey): void => {
+    setPendingFavorites(prev => {
+      if (prev.includes(toolId)) {
+        return prev.filter(id => id !== toolId)
+      }
+
+      if (prev.length >= MAX_FAVORITES) {
+        return prev
+      }
+
+      return [...prev, toolId]
+    })
+  }
+
+  const handleSaveFavorites = (): void => {
+    setFavoriteTools(pendingFavorites)
+    setFavoritesDialogOpen(false)
+  }
+
+  const renderCompactToolCard = (toolId: ToolKey): JSX.Element | null => {
+    const config = toolConfigs[toolId]
+    if (!config) {
+      return null
+    }
+
+    const Icon = config.icon
+    const title = config.titleKey ? t(config.titleKey) : config.title ?? ''
+    const description = config.descriptionKey ? t(config.descriptionKey) : config.description ?? ''
+
+    return (
+      <CompactToolCard
+        key={toolId}
+        icon={<Icon size={20} />}
+        title={title}
+        description={description}
+        onClick={() => setActiveTool(toolId)}
+        iconColor={config.iconColor}
+      />
+    )
+  }
+
+  const toolOptions = Object.values(toolConfigs)
+  const selectionLimitReached = pendingFavorites.length >= MAX_FAVORITES
 
   // 动画变体
   const containerVariants = {
@@ -88,8 +356,89 @@ export default function HomePage(): JSX.Element {
   }
 
   return (
-    <div className="px-4 py-4 w-full">
-      <div className="w-full mx-auto">
+    <>
+      <Dialog open={isFavoritesDialogOpen} onOpenChange={handleFavoritesDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('customizeFrequentTools')}</DialogTitle>
+            <DialogDescription>{t('customizeFrequentToolsDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 pr-1 max-h-[60vh] overflow-y-auto sm:grid-cols-2">
+              {toolOptions.map(config => {
+                const Icon = config.icon
+                const isSelected = pendingFavorites.includes(config.id)
+                const isDisabled = !isSelected && selectionLimitReached
+                const title = config.titleKey ? t(config.titleKey) : config.title ?? ''
+                const description = config.descriptionKey
+                  ? t(config.descriptionKey)
+                  : config.description ?? ''
+
+                return (
+                  <button
+                    key={config.id}
+                    type="button"
+                    onClick={() => togglePendingFavorite(config.id)}
+                    disabled={isDisabled}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900',
+                      'bg-white dark:bg-slate-900/50 shadow-sm hover:shadow',
+                      isSelected
+                        ? 'border-emerald-400 dark:border-emerald-500/60 ring-1 ring-emerald-500/40 dark:ring-emerald-500/40'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500/60 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20',
+                      isDisabled && 'cursor-not-allowed opacity-60 hover:border-slate-200 hover:bg-transparent dark:hover:border-slate-700'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'flex h-10 w-10 items-center justify-center rounded-lg',
+                        isSelected
+                          ? 'bg-emerald-100 dark:bg-emerald-900/40'
+                          : 'bg-slate-100 dark:bg-slate-800/60',
+                        config.iconColor
+                      )}
+                    >
+                      <Icon size={20} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                        {title}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{description}</div>
+                    </div>
+                    {isSelected ? (
+                      <Check className="h-4 w-4 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
+                    ) : null}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex flex-col gap-2 text-xs text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+              <span>{t('favoriteToolsSelectionHint', { count: MAX_FAVORITES })}</span>
+              <span className="font-medium text-slate-600 dark:text-slate-300">
+                {t('favoriteToolsSelectionCount', {
+                  count: pendingFavorites.length,
+                  max: MAX_FAVORITES
+                })}
+              </span>
+            </div>
+            {selectionLimitReached ? (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                {t('favoriteToolsSelectionLimitReached', { count: MAX_FAVORITES })}
+              </p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => handleFavoritesDialogOpen(false)}>
+              {t('cancel')}
+            </Button>
+            <Button onClick={handleSaveFavorites}>{t('save')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div className="px-4 py-4 w-full">
+        <div className="w-full mx-auto">
         {activeTool === ActiveTool.None ? (
           <motion.div variants={containerVariants} initial="hidden" animate="visible">
             <motion.div variants={itemVariants} className="text-center mb-4">
@@ -101,34 +450,45 @@ export default function HomePage(): JSX.Element {
 
             {/* 常用工具分组 */}
             <motion.div variants={itemVariants} className="mb-4">
-              <div className="flex items-center mb-2">
-                <Star className="h-4 w-4 mr-2 text-yellow-500" />
-                <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  {t('frequentTools')}
-                </h2>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center">
+                  <Star className="h-4 w-4 mr-2 text-yellow-500" />
+                  <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    {t('frequentTools')}
+                  </h2>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                  onClick={() => handleFavoritesDialogOpen(true)}
+                >
+                  <Settings2 className="mr-1.5 h-4 w-4" />
+                  {t('customize')}
+                </Button>
               </div>
               <div className="space-y-2">
-                <CompactToolCard
-                  icon={<FileType2 size={20} />}
-                  title={t('fileConversion')}
-                  description={t('fileConversionDescription')}
-                  onClick={() => setActiveTool(ActiveTool.Conversion)}
-                  iconColor="text-blue-500"
-                />
-                <CompactToolCard
-                  icon={<FileDown size={20} />}
-                  title={t('fileCompression')}
-                  description={t('fileCompressionDescription')}
-                  onClick={() => setActiveTool(ActiveTool.Compression)}
-                  iconColor="text-emerald-500"
-                />
-                <CompactToolCard
-                  icon={<Fingerprint size={20} />}
-                  title={t('fileHashTool')}
-                  description={t('fileHashDescription')}
-                  onClick={() => setActiveTool(ActiveTool.FileHash)}
-                  iconColor="text-indigo-500"
-                />
+                {favoriteTools.length > 0 ? (
+                  favoriteTools.map(toolId => renderCompactToolCard(toolId))
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/40 px-4 py-6 text-center">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                      {t('noFrequentToolsSelected')}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">
+                      {t('noFrequentToolsSelectedDescription')}
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleFavoritesDialogOpen(true)}
+                      className="px-3"
+                    >
+                      {t('customize')}
+                    </Button>
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -140,29 +500,7 @@ export default function HomePage(): JSX.Element {
                   {t('practicalTools')}
                 </h2>
               </div>
-              <div className="space-y-2">
-                <CompactToolCard
-                  icon={<Edit3 size={20} />}
-                  title={t('batchRename')}
-                  description={t('batchRenameDescription')}
-                  onClick={() => setActiveTool(ActiveTool.BatchRename)}
-                  iconColor="text-teal-500"
-                />
-                <CompactToolCard
-                  icon={<Archive size={20} />}
-                  title={t('archiveCompression')}
-                  description={t('archiveCompressionDescription')}
-                  onClick={() => setActiveTool(ActiveTool.ArchiveCompression)}
-                  iconColor="text-purple-500"
-                />
-                <CompactToolCard
-                  icon={<FileText size={20} />}
-                  title={t('wordToExcel')}
-                  description={t('wordToExcelDescription')}
-                  onClick={() => setActiveTool(ActiveTool.WordToExcel)}
-                  iconColor="text-rose-500"
-                />
-              </div>
+              <div className="space-y-2">{practicalTools.map(renderCompactToolCard)}</div>
             </motion.div>
 
             {/* 专业工具分组 */}
@@ -173,43 +511,7 @@ export default function HomePage(): JSX.Element {
                   {t('professionalTools')}
                 </h2>
               </div>
-              <div className="space-y-2">
-                <CompactToolCard
-                  icon={<School size={20} />}
-                  title={t('examCreation')}
-                  description={t('examCreationDescription')}
-                  onClick={() => setActiveTool(ActiveTool.ExamCreation)}
-                  iconColor="text-amber-500"
-                />
-                <CompactToolCard
-                  icon={<Images size={20} />}
-                  title={t('imageOrganize')}
-                  description={t('imageOrganizeDescription')}
-                  onClick={() => setActiveTool(ActiveTool.ImageOrganize)}
-                  iconColor="text-cyan-500"
-                />
-                <CompactToolCard
-                  icon={<Download size={20} />}
-                  title={t('m3u8Download')}
-                  description={t('m3u8DownloadDescription')}
-                  onClick={() => setActiveTool(ActiveTool.M3u8Download)}
-                  iconColor="text-indigo-500"
-                />
-                <CompactToolCard
-                  icon={<FileImage size={20} />}
-                  title="HTML 卡片 GIF 导出"
-                  description="将 HTML 字符串中的卡片元素导出为动画 GIF"
-                  onClick={() => setActiveTool(ActiveTool.GifExport)}
-                  iconColor="text-pink-500"
-                />
-                <CompactToolCard
-                  icon={<VideoIcon size={20} />}
-                  title="WebRTC 音视频"
-                  description="基于 WebRTC 的实时音视频通信工具"
-                  onClick={() => setActiveTool(ActiveTool.WebRTC)}
-                  iconColor="text-orange-500"
-                />
-              </div>
+              <div className="space-y-2">{professionalTools.map(renderCompactToolCard)}</div>
             </motion.div>
           </motion.div>
         ) : (
@@ -272,124 +574,43 @@ export default function HomePage(): JSX.Element {
                     {t('backToHome')}
                   </button>
                 </div>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4"
-                >
-                  <ToolCard
-                    icon={<ImageIcon size={24} />}
-                    title={t('imageCompression')}
-                    description={t('imageCompressionDescription')}
-                    onClick={() => setActiveTool(ActiveTool.ImageCompression)}
-                    iconColor="text-blue-500"
-                  />
-                  <ToolCard
-                    icon={<Music size={24} />}
-                    title={t('audioCompression')}
-                    description={t('audioCompressionDescription')}
-                    onClick={() => setActiveTool(ActiveTool.AudioCompression)}
-                    iconColor="text-purple-500"
-                  />
-                  <ToolCard
-                    icon={<Video size={24} />}
-                    title={t('videoCompression')}
-                    description={t('videoCompressionDescription')}
-                    onClick={() => setActiveTool(ActiveTool.VideoCompression)}
-                    iconColor="text-red-500"
-                  />
-                </motion.div>
-              </>
-            ) : activeTool === ActiveTool.ImageCompression ? (
-              <>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                    <ImageIcon className="mr-2 h-5 w-5 text-blue-500" />
-                    {t('imageCompression')}
-                  </h2>
-                  <button
-                    onClick={() => setActiveTool(ActiveTool.Compression)}
-                    className="flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 rounded-full transition-colors"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5 mr-1.5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M19 12H5M5 12L12 19M5 12L12 5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    {t('backToHome')}
-                  </button>
+                <div className="mb-6">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 p-1 dark:bg-emerald-900/20">
+                    {compressionTabsConfig.map(tab => {
+                      const Icon = tab.icon
+                      const isActive = compressionTab === tab.key
+                      return (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          onClick={() => setCompressionTab(tab.key)}
+                          className={`flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                            isActive
+                              ? `bg-white shadow-sm dark:bg-slate-900 ${tab.activeTextClass}`
+                              : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                          }`}
+                        >
+                          <Icon
+                            className={`mr-1.5 h-4 w-4 ${
+                              isActive ? tab.activeIconClass : 'text-slate-400 dark:text-slate-500'
+                            }`}
+                          />
+                          {t(tab.labelKey)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                    {t(activeCompressionTab.descriptionKey)}
+                  </p>
                 </div>
-                <ImageCompressionTool />
-              </>
-            ) : activeTool === ActiveTool.AudioCompression ? (
-              <>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                    <Music className="mr-2 h-5 w-5 text-purple-500" />
-                    {t('audioCompression')}
-                  </h2>
-                  <button
-                    onClick={() => setActiveTool(ActiveTool.Compression)}
-                    className="flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-800/40 rounded-full transition-colors"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5 mr-1.5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M19 12H5M5 12L12 19M5 12L12 5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    {t('backToHome')}
-                  </button>
-                </div>
-                <AudioCompressionTool />
-              </>
-            ) : activeTool === ActiveTool.VideoCompression ? (
-              <>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                    <Video className="mr-2 h-5 w-5 text-red-500" />
-                    {t('videoCompression')}
-                  </h2>
-                  <button
-                    onClick={() => setActiveTool(ActiveTool.Compression)}
-                    className="flex items-center px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-800/40 rounded-full transition-colors"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5 mr-1.5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M19 12H5M5 12L12 19M5 12L12 5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    {t('backToHome')}
-                  </button>
-                </div>
-                <VideoCompressionTool />
+                {compressionTab === CompressionTab.Image ? (
+                  <ImageCompressionTool />
+                ) : compressionTab === CompressionTab.Audio ? (
+                  <AudioCompressionTool />
+                ) : (
+                  <VideoCompressionTool />
+                )}
               </>
             ) : activeTool === ActiveTool.ArchiveCompression ? (
               <>
@@ -637,7 +858,7 @@ export default function HomePage(): JSX.Element {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
                     <VideoIcon className="mr-2 h-5 w-5 text-orange-500" />
-                    WebRTC 音视频
+                    {t('webrtcTool')}
                   </h2>
                   <button
                     onClick={() => setActiveTool(ActiveTool.None)}
@@ -667,5 +888,6 @@ export default function HomePage(): JSX.Element {
         )}
       </div>
     </div>
+    </>
   )
 }
