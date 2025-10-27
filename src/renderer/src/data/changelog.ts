@@ -17,6 +17,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.1.4',
+    date: '2025-10-12',
+    changes: {
+      features: [
+        '新增 JSON 格式化工具，支持快速格式化、压缩以及结构化预览折叠',
+        'Introduced JSON formatter tool with quick format/minify actions and a collapsible structured preview'
+      ],
+      improvements: [
+        'JSON 校验结果会持续展示，便于排查输入错误',
+        'Validation feedback for JSON input now persists to simplify troubleshooting'
+      ]
+    }
+  },
+  {
     version: '1.1.3',
     date: '2025-10-08',
     changes: {

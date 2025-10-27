@@ -33,7 +33,8 @@ import {
   VideoIcon,
   Fingerprint,
   Settings2,
-  Check
+  Check,
+  Code2
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import CompactToolCard from '@renderer/components/ui/card/CompactToolCard'
@@ -50,6 +51,7 @@ import BatchRenameTool from '@renderer/components/BatchRenameTool'
 import { GifExportTool } from '@renderer/components/GifExportTool'
 import { WebRTCTool } from '@renderer/components/WebRTCTool'
 import FileHashTool from '@renderer/components/FileHashTool'
+import JsonFormatterTool from '@renderer/components/JsonFormatterTool'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
 import {
@@ -70,6 +72,7 @@ enum ActiveTool {
   ImageOrganize,
   WordToExcel,
   M3u8Download,
+  JsonFormatter,
   BatchRename,
   GifExport,
   WebRTC,
@@ -147,6 +150,13 @@ const toolConfigs: Record<ToolKey, ToolConfig> = {
     titleKey: 'm3u8Download',
     descriptionKey: 'm3u8DownloadDescription'
   },
+  [ActiveTool.JsonFormatter]: {
+    id: ActiveTool.JsonFormatter,
+    icon: Code2,
+    iconColor: 'text-lime-500',
+    titleKey: 'jsonFormatter',
+    descriptionKey: 'jsonFormatterDescription'
+  },
   [ActiveTool.BatchRename]: {
     id: ActiveTool.BatchRename,
     icon: Edit3,
@@ -180,7 +190,8 @@ const toolConfigs: Record<ToolKey, ToolConfig> = {
 const practicalTools: ToolKey[] = [
   ActiveTool.BatchRename,
   ActiveTool.ArchiveCompression,
-  ActiveTool.WordToExcel
+  ActiveTool.WordToExcel,
+  ActiveTool.JsonFormatter
 ]
 
 const professionalTools: ToolKey[] = [
@@ -731,6 +742,36 @@ export default function HomePage(): JSX.Element {
                   </button>
                 </div>
                 <WordToExcelTool />
+              </>
+            ) : activeTool === ActiveTool.JsonFormatter ? (
+              <>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
+                    <Code2 className="mr-2 h-5 w-5 text-lime-500" />
+                    {t('jsonFormatter')}
+                  </h2>
+                  <button
+                    onClick={() => setActiveTool(ActiveTool.None)}
+                    className="flex items-center px-3 py-1.5 text-sm font-medium text-lime-600 hover:text-lime-700 dark:text-lime-400 dark:hover:text-lime-300 bg-lime-50 hover:bg-lime-100 dark:bg-lime-900/30 dark:hover:bg-lime-800/40 rounded-full transition-colors"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5 mr-1.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M19 12H5M5 12L12 19M5 12L12 5"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    {t('backToHome')}
+                  </button>
+                </div>
+                <JsonFormatterTool />
               </>
             ) : activeTool === ActiveTool.M3u8Download ? (
               <>
