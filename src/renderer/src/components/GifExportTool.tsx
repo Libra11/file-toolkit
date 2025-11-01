@@ -11,7 +11,7 @@
  * @Description: GIF 导出工具组件
  */
 import { useState, useCallback, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { Card, CardContent } from './ui/card'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { Label } from './ui/label'
@@ -21,7 +21,7 @@ import { Progress } from './ui/progress'
 import { Badge } from './ui/badge'
 import { Separator } from './ui/separator'
 import { Switch } from './ui/switch'
-import { FolderOpen, Download, Eye, Settings, FileImage } from 'lucide-react'
+import { FolderOpen, Download, Eye, Settings } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { GifExportOptions, CardInfo } from '../../../shared/types'
 

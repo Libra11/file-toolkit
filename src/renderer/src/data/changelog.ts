@@ -17,6 +17,30 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.1.6',
+    date: '2025-10-18',
+    changes: {
+      improvements: [
+        '首页常用、实用、专业工具分组支持折叠，默认展开常用工具，减少滚动距离',
+        'Home page frequent, practical, and professional tool groups are now collapsible with frequent tools expanded by default to reduce scrolling',
+        '调整常用工具操作按钮与卡片的布局和圆角比例，整体层次更紧凑一致',
+        'Refined customize button layout and section corner radius for a tighter, more consistent hierarchy'
+      ]
+    }
+  },
+  {
+    version: '1.1.5',
+    date: '2025-10-15',
+    changes: {
+      improvements: [
+        '文件转换工具支持一键切换分类，无需回到上一级页面',
+        'File conversion tool now offers quick category tabs, removing redundant navigation',
+        '转换类型和设置会根据选中分类自动刷新，减少重复操作',
+        'Selected conversion category now syncs across the UI to reduce repetitive steps'
+      ]
+    }
+  },
+  {
     version: '1.1.4',
     date: '2025-10-12',
     changes: {

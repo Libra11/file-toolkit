@@ -32,11 +32,11 @@ export default function CompactToolCard({
       whileTap={{ scale: 0.99 }}
       onClick={onClick}
       className={cn(
-        'bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-200 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer',
+        'cursor-pointer rounded-xl border border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-slate-50/90 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-slate-700/60 dark:bg-slate-800/60 dark:hover:bg-slate-700/60 dark:focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-slate-900',
         className
       )}
     >
-      <div className="p-4 flex items-center space-x-3">
+      <div className="flex items-center space-x-3 p-4">
         {/* 图标 */}
         <div
           className={cn(

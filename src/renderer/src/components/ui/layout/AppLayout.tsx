@@ -154,10 +154,10 @@ export default function AppLayout({ children, onVersionClick }: AppLayoutProps):
       {/* 内容区域，要留出顶部标题栏的空间 */}
       <div className="pt-10 overflow-auto w-full flex flex-col h-screen">
         {/* 主要内容 */}
-        <main className="flex-1 flex  justify-center py-8 px-4 md:px-6">{children}</main>
+        <main className="flex-1 flex  justify-center md:px-6">{children}</main>
 
         {/* 页脚 */}
-        <footer className="mt-auto py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+        {/* <footer className="mt-auto py-6 text-center text-sm text-slate-500 dark:text-slate-400">
           <div className="px-4">
             <p>
               &copy; {new Date().getFullYear()} File Toolkit. {t('allRightsReserved')}
@@ -176,7 +176,7 @@ export default function AppLayout({ children, onVersionClick }: AppLayoutProps):
               </a>
             </div>
           </div>
-        </footer>
+        </footer> */}
       </div>
     </div>
   )

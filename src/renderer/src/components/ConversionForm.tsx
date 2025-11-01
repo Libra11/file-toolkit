@@ -5,13 +5,12 @@
  * Description:
  */
 import { useTranslation } from 'react-i18next'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowRight,
   Loader2,
   CheckCircle2,
-  Zap,
   FileUp,
   Download,
   Files,
@@ -23,7 +22,6 @@ import {
   Music
 } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
-import CategorySelect from '@renderer/components/CategorySelect'
 import ConversionTypeSelect from '@renderer/components/ConversionTypeSelect'
 import FileInput from '@renderer/components/FileInput'
 import {
@@ -53,11 +51,17 @@ import { Settings } from 'lucide-react'
 
 interface ConversionFormProps {
   categories: ConversionCategory[]
+  activeCategory: string
 }
 
-export default function ConversionForm({ categories }: ConversionFormProps): JSX.Element {
+export default function ConversionForm({
+  categories,
+  activeCategory
+}: ConversionFormProps): JSX.Element {
   const { t } = useTranslation()
-  const [selectedCategory, setSelectedCategory] = useState('')
+  const defaultCategory =
+    (categories.find((category) => category.name === activeCategory) ?? categories[0])?.name ?? ''
+  const [selectedCategory, setSelectedCategory] = useState<string>(defaultCategory)
   const [selectedConversion, setSelectedConversion] = useState<ConversionType | ''>('')
   const [isConverting, setIsConverting] = useState(false)
   const [convertedFilePath, setConvertedFilePath] = useState<string | null>(null)
@@ -72,6 +76,18 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
     quality: 'normal', // low, normal, high
     frameRate: 10 // fps
   })
+
+  useEffect(() => {
+    const resolvedCategory =
+      (categories.find((category) => category.name === activeCategory) ?? categories[0])?.name ?? ''
+    setSelectedCategory(resolvedCategory)
+    setSelectedConversion('')
+    setConvertedFilePath(null)
+    setSelectedFile(null)
+    setSelectedFiles([])
+    setBatchResults([])
+    setBatchProgress(0)
+  }, [activeCategory, categories])
 
   const saveOutputFile = async (conversionType: ConversionType): Promise<string> => {
     const extension = getDefaultOutputExtension(conversionType)
@@ -310,7 +326,7 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
 
   return (
     <div className="space-y-8">
-      <motion.div
+      {/* <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 border border-blue-100/50 dark:border-blue-800/30 shadow-sm"
@@ -324,42 +340,22 @@ export default function ConversionForm({ categories }: ConversionFormProps): JSX
         <p className="text-sm text-slate-600 dark:text-slate-400 pl-10">
           {t('fileConversionDescription')}
         </p>
+      </motion.div> */}
+
+      <motion.div
+        initial={{ opacity: 0, x: 10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.1 }}
+        whileHover={{ scale: 1.02 }}
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-100 dark:border-slate-700 p-4 hover:shadow-lg transition-all duration-300"
+      >
+        <ConversionTypeSelect
+          categories={categories}
+          selectedCategory={selectedCategory}
+          selectedConversion={selectedConversion}
+          onConversionChange={handleConversionChange}
+        />
       </motion.div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          whileHover={{ scale: 1.02 }}
-          className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-100 dark:border-slate-700 p-4 hover:shadow-lg transition-all duration-300"
-        >
-          <CategorySelect
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onCategoryChange={(category) => {
-              setSelectedCategory(category)
-              setSelectedConversion('')
-              setConvertedFilePath(null)
-            }}
-          />
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          whileHover={{ scale: 1.02 }}
-          className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-100 dark:border-slate-700 p-4 hover:shadow-lg transition-all duration-300"
-        >
-          <ConversionTypeSelect
-            categories={categories}
-            selectedCategory={selectedCategory}
-            selectedConversion={selectedConversion}
-            onConversionChange={handleConversionChange}
-          />
-        </motion.div>
-      </div>
 
       <AnimatePresence mode="wait">
         {selectedConversion && (
