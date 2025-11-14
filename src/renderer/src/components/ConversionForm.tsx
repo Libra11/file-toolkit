@@ -22,6 +22,13 @@ import {
   Music
 } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from '@renderer/components/ui/card'
 import ConversionTypeSelect from '@renderer/components/ConversionTypeSelect'
 import FileInput from '@renderer/components/FileInput'
 import {
@@ -325,37 +332,25 @@ export default function ConversionForm({
   }
 
   return (
-    <div className="space-y-8">
-      {/* <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 border border-blue-100/50 dark:border-blue-800/30 shadow-sm"
-      >
-        <div className="flex items-center space-x-3 mb-3">
-          <div className="bg-blue-500 text-white p-2 rounded-lg shadow-md">
-            <Zap className="h-5 w-5" />
-          </div>
-          <h3 className="font-semibold text-blue-800 dark:text-blue-300">{t('convertYourFile')}</h3>
-        </div>
-        <p className="text-sm text-slate-600 dark:text-slate-400 pl-10">
-          {t('fileConversionDescription')}
-        </p>
-      </motion.div> */}
-
-      <motion.div
-        initial={{ opacity: 0, x: 10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.1 }}
-        whileHover={{ scale: 1.02 }}
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-100 dark:border-slate-700 p-4 hover:shadow-lg transition-all duration-300"
-      >
-        <ConversionTypeSelect
-          categories={categories}
-          selectedCategory={selectedCategory}
-          selectedConversion={selectedConversion}
-          onConversionChange={handleConversionChange}
-        />
-      </motion.div>
+    <div className="space-y-6">
+      <Card className="border border-blue-100/70 bg-white/90 shadow-xl shadow-blue-900/10 dark:border-blue-500/20 dark:bg-slate-900/70">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+            {t('conversionType')}
+          </CardTitle>
+          <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+            {t('selectConversion')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ConversionTypeSelect
+            categories={categories}
+            selectedCategory={selectedCategory}
+            selectedConversion={selectedConversion}
+            onConversionChange={handleConversionChange}
+          />
+        </CardContent>
+      </Card>
 
       <AnimatePresence mode="wait">
         {selectedConversion && (
@@ -367,28 +362,22 @@ export default function ConversionForm({
             transition={{ duration: 0.3 }}
             className="space-y-6"
           >
-            <motion.div
-              className="rounded-xl border border-indigo-100 dark:border-indigo-800/30 overflow-hidden bg-white dark:bg-slate-800 shadow-md"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 p-3 border-b border-indigo-100/80 dark:border-indigo-800/30">
+            <Card className="border border-slate-200/70 bg-white/95 shadow-xl shadow-blue-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
+              <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="bg-indigo-500 text-white h-7 w-7 rounded-full flex items-center justify-center shadow-sm mr-3">
-                      <FileUp className="h-4 w-4" />
-                    </div>
-                    <h3 className="font-medium text-indigo-800 dark:text-indigo-300">
+                  <div>
+                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
                       {t('selectSourceFile')}
-                    </h3>
+                    </CardTitle>
+                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                      {isBatchMode ? t('selectFilesToConvert') : t('selectFile')}
+                    </CardDescription>
                   </div>
-
                   {selectedConversion && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Badge className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white border-none shadow-sm">
+                          <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white border-none shadow-sm">
                             {t(selectedConversion)}
                           </Badge>
                         </TooltipTrigger>
@@ -401,8 +390,8 @@ export default function ConversionForm({
                     </TooltipProvider>
                   )}
                 </div>
-              </div>
-              <div className="p-4">
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <Tabs
                   defaultValue="single"
                   className="w-full"
@@ -421,20 +410,22 @@ export default function ConversionForm({
                     }
                   }}
                 >
-                  <TabsList className="grid w-full grid-cols-2 mb-4 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-lg">
-                    <TabsTrigger
-                      value="single"
-                      className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-md py-2"
-                    >
-                      {t('singleFileMode')}
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="batch"
-                      className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 rounded-md py-2"
-                    >
-                      {t('batchMode')}
-                    </TabsTrigger>
-                  </TabsList>
+                  <div className="flex justify-center">
+                    <TabsList className="mb-6 h-[3.2rem] grid w-full max-w-lg grid-cols-2 items-center overflow-hidden rounded-full bg-blue-100/60 p-1 text-sm font-medium dark:bg-blue-900/40">
+                      <TabsTrigger
+                        value="single"
+                        className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-blue-300"
+                      >
+                        {t('singleFileMode')}
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="batch"
+                        className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-blue-300"
+                      >
+                        {t('batchMode')}
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
 
                   <TabsContent value="single" className="space-y-4">
                     <div className="flex items-center space-x-2 mb-3">
@@ -575,28 +566,22 @@ export default function ConversionForm({
                     </div>
                   </TabsContent>
                 </Tabs>
-              </div>
-            </motion.div>
+              </CardContent>
+            </Card>
 
             {/* GIF Settings Panel - Only show for MP4 to GIF conversion */}
             {selectedConversion === CONVERSION_TYPES.MP4_TO_GIF && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="rounded-xl border border-purple-100 dark:border-purple-800/30 overflow-hidden bg-white dark:bg-slate-800 shadow-md"
-              >
-                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 p-3 border-b border-purple-100/80 dark:border-purple-800/30">
-                  <div className="flex items-center">
-                    <div className="bg-purple-500 text-white h-7 w-7 rounded-full flex items-center justify-center shadow-sm mr-3">
-                      <Settings className="h-4 w-4" />
-                    </div>
-                    <h3 className="font-medium text-purple-800 dark:text-purple-300">
-                      {t('gifSettings')}
-                    </h3>
-                  </div>
-                </div>
-                <div className="p-4 space-y-4">
+              <Card className="border border-purple-100/70 bg-white/95 shadow-xl shadow-purple-900/10 dark:border-purple-500/30 dark:bg-slate-900/70">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center">
+                    <Settings className="mr-2 h-5 w-5 text-purple-500" />
+                    {t('gifSettings')}
+                  </CardTitle>
+                  <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                    {t('gifSettingsDescription')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* GIF Size Selection */}
                     <div className="space-y-2">
@@ -687,8 +672,8 @@ export default function ConversionForm({
                       </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
+                </CardContent>
+              </Card>
             )}
 
             <motion.div
