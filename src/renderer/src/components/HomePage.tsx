@@ -4,7 +4,7 @@
  * LastEditors: Libra
  * Description:
  */
-import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import {
@@ -19,7 +19,8 @@ import {
   FileText,
   Download,
   Edit3,
-  Star,
+  ArrowUpRight,
+  Sparkles,
   Wrench,
   Target,
   FileImage,
@@ -27,8 +28,7 @@ import {
   Fingerprint,
   Settings2,
   Check,
-  Code2,
-  ChevronDown
+  Code2
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import CompactToolCard from '@renderer/components/ui/card/CompactToolCard'
@@ -75,8 +75,6 @@ enum ActiveTool {
 }
 
 type ToolKey = Exclude<ActiveTool, ActiveTool.None>
-
-type SectionKey = 'frequent' | 'practical' | 'professional'
 
 type ToolConfig = {
   id: ToolKey
@@ -219,22 +217,6 @@ export default function HomePage(): JSX.Element {
   const [favoritesLoaded, setFavoritesLoaded] = useState(false)
   const [isFavoritesDialogOpen, setFavoritesDialogOpen] = useState(false)
   const [pendingFavorites, setPendingFavorites] = useState<ToolKey[]>(DEFAULT_FAVORITE_TOOLS)
-  const [openSections, setOpenSections] = useState<SectionKey[]>(['frequent'])
-
-  const isSectionOpen = (section: SectionKey): boolean => openSections.includes(section)
-
-  const toggleSection = (section: SectionKey): void => {
-    setOpenSections((prev) =>
-      prev.includes(section) ? prev.filter((value) => value !== section) : [...prev, section]
-    )
-  }
-
-  const handleSectionKeyDown = (event: KeyboardEvent<HTMLDivElement>, section: SectionKey): void => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      toggleSection(section)
-    }
-  }
 
   useEffect(() => {
     if (activeTool === ActiveTool.Conversion) {
@@ -439,257 +421,244 @@ export default function HomePage(): JSX.Element {
   return (
     <>
       <Dialog open={isFavoritesDialogOpen} onOpenChange={handleFavoritesDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{t('customizeFrequentTools')}</DialogTitle>
-            <DialogDescription>{t('customizeFrequentToolsDescription')}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 pr-1 max-h-[45vh] overflow-y-auto sm:grid-cols-2">
-              {toolOptions.map((config) => {
-                const Icon = config.icon
-                const isSelected = pendingFavorites.includes(config.id)
-                const isDisabled = !isSelected && selectionLimitReached
-                const title = config.titleKey ? t(config.titleKey) : (config.title ?? '')
-                const description = config.descriptionKey
-                  ? t(config.descriptionKey)
-                  : (config.description ?? '')
+        <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none">
+          <div className="relative overflow-hidden rounded-[24px] border border-slate-200/70 bg-gradient-to-br from-white via-slate-50/80 to-white/70 shadow-2xl shadow-indigo-900/15  dark:border-white/15 dark:from-[#0f172a] dark:via-[#111a37] dark:to-[#0c1326]">
+            <div className="pointer-events-none absolute inset-0 opacity-70">
+              <div className="absolute -left-10 top-0 h-40 w-40 rounded-full bg-indigo-300/40 blur-3xl dark:bg-indigo-500/30" />
+              <div className="absolute bottom-0 right-0 h-48 w-48 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/25" />
+            </div>
+            <div className="relative px-6 py-6 sm:px-8 sm:py-8">
+              <DialogHeader className="space-y-3 text-left">
+                <DialogTitle className="text-2xl font-semibold text-slate-900 dark:text-white">
+                  {t('customizeFrequentTools')}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 dark:text-white/70">
+                  {t('customizeFrequentToolsDescription')}
+                </DialogDescription>
+              </DialogHeader>
 
-                return (
-                  <button
-                    key={config.id}
-                    type="button"
-                    onClick={() => togglePendingFavorite(config.id)}
-                    disabled={isDisabled}
-                    aria-pressed={isSelected}
-                    className={cn(
-                      'flex items-center gap-3 rounded-lg border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900',
-                      'bg-white dark:bg-slate-900/50 shadow-sm hover:shadow',
-                      isSelected
-                        ? 'border-emerald-400 dark:border-emerald-500/60 ring-1 ring-emerald-500/40 dark:ring-emerald-500/40'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500/60 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20',
-                      isDisabled &&
-                        'cursor-not-allowed opacity-60 hover:border-slate-200 hover:bg-transparent dark:hover:border-slate-700'
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        'flex h-10 w-10 items-center justify-center rounded-lg',
-                        isSelected
-                          ? 'bg-emerald-100 dark:bg-emerald-900/40'
-                          : 'bg-slate-100 dark:bg-slate-800/60',
-                        config.iconColor
-                      )}
-                    >
-                      <Icon size={20} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                        {title}
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        {description}
-                      </div>
-                    </div>
-                    {isSelected ? (
-                      <Check className="h-4 w-4 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
-                    ) : null}
-                  </button>
-                )
-              })}
+              <div className="mt-6 space-y-5">
+                <div className="grid max-h-[30vh] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+                  {toolOptions.map((config) => {
+                    const Icon = config.icon
+                    const isSelected = pendingFavorites.includes(config.id)
+                    const isDisabled = !isSelected && selectionLimitReached
+                    const title = config.titleKey ? t(config.titleKey) : (config.title ?? '')
+                    const description = config.descriptionKey
+                      ? t(config.descriptionKey)
+                      : (config.description ?? '')
+
+                    return (
+                      <button
+                        key={config.id}
+                        type="button"
+                        onClick={() => togglePendingFavorite(config.id)}
+                        disabled={isDisabled}
+                        aria-pressed={isSelected}
+                        className={cn(
+                          'group flex items-center gap-3 rounded-2xl border border-white/70 bg-white/80 p-3 text-left shadow-sm shadow-indigo-900/5 transition-all hover:border-white hover:bg-white dark:border-white/15 dark:bg-white/5 dark:hover:bg-white/10',
+                          'focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-emerald-400/70 dark:focus-visible:ring-offset-slate-900',
+                          isSelected &&
+                            'border-emerald-300 bg-emerald-50/70 shadow-emerald-200/40 dark:border-emerald-400/50 dark:bg-emerald-500/10',
+                          isDisabled && 'cursor-not-allowed opacity-50 hover:translate-y-0'
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white',
+                            config.iconColor
+                          )}
+                        >
+                          <Icon size={18} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                            {title}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-white/70">{description}</p>
+                        </div>
+                        {isSelected ? (
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-600 dark:bg-emerald-500/30 dark:text-emerald-200">
+                            <Check className="h-3.5 w-3.5" />
+                          </span>
+                        ) : null}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 text-xs text-slate-600 shadow-inner dark:border-white/15 dark:bg-white/5 dark:text-white/70 sm:flex sm:items-center sm:justify-between">
+                  <span>{t('favoriteToolsSelectionHint', { count: MAX_FAVORITES })}</span>
+                  <span className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 shadow-sm dark:bg-white/10 dark:text-white sm:mt-0">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                    {t('favoriteToolsSelectionCount', {
+                      count: pendingFavorites.length,
+                      max: MAX_FAVORITES
+                    })}
+                  </span>
+                </div>
+                {selectionLimitReached ? (
+                  <p className="text-xs font-medium text-emerald-600 dark:text-emerald-300">
+                    {t('favoriteToolsSelectionLimitReached', { count: MAX_FAVORITES })}
+                  </p>
+                ) : null}
+              </div>
+
+              <DialogFooter className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleFavoritesDialogOpen(false)}
+                  className="h-11 rounded-2xl border border-slate-200/80 bg-white/70 text-slate-700 shadow-sm hover:bg-white dark:border-white/20 dark:bg-transparent dark:text-white"
+                >
+                  {t('cancel')}
+                </Button>
+                <Button
+                  onClick={handleSaveFavorites}
+                  className="h-11 flex-1 rounded-2xl bg-slate-900 text-white shadow-lg shadow-indigo-900/20 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-white/90"
+                >
+                  {t('save')}
+                </Button>
+              </DialogFooter>
             </div>
-            <div className="flex flex-col gap-2 text-xs text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-              <span>{t('favoriteToolsSelectionHint', { count: MAX_FAVORITES })}</span>
-              <span className="font-medium text-slate-600 dark:text-slate-300">
-                {t('favoriteToolsSelectionCount', {
-                  count: pendingFavorites.length,
-                  max: MAX_FAVORITES
-                })}
-              </span>
-            </div>
-            {selectionLimitReached ? (
-              <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                {t('favoriteToolsSelectionLimitReached', { count: MAX_FAVORITES })}
-              </p>
-            ) : null}
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => handleFavoritesDialogOpen(false)}>
-              {t('cancel')}
-            </Button>
-            <Button onClick={handleSaveFavorites}>{t('save')}</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
       <div className="px-4 py-4 w-full">
         <div className="w-full mx-auto">
           {activeTool === ActiveTool.None ? (
             <motion.div variants={containerVariants} initial="hidden" animate="visible">
-              {/* <motion.div variants={itemVariants} className="text-center mb-4">
-                <h1 className="text-lg font-bold text-slate-900 dark:text-white mb-1 flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 mr-2 text-blue-500" />
-                  {t('powerfulFileTools')}
-                </h1>
-              </motion.div> */}
-
-              {/* 常用工具分组 */}
-              <motion.div variants={itemVariants} className="mb-5">
-                <div className="rounded-xl border border-slate-200/80 bg-white/80 shadow-sm backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/40">
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    aria-expanded={isSectionOpen('frequent')}
-                    onClick={() => toggleSection('frequent')}
-                    onKeyDown={(event) => handleSectionKeyDown(event, 'frequent')}
-                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-slate-100/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:hover:bg-slate-800/50 dark:focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-slate-900 sm:px-5 sm:py-5"
-                  >
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-300">
-                        <Star className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-                          {t('frequentTools')}
-                        </h2>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          {t('frequentToolsSubtitle', {
-                            defaultValue: 'Quick access to your go-to tools'
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 shrink-0 px-3 text-xs font-medium border-slate-200 text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-100/70 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-800/60"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          handleFavoritesDialogOpen(true)
-                        }}
-                        onKeyDown={(event) => event.stopPropagation()}
-                      >
-                        <Settings2 className="mr-1.5 h-4 w-4" />
-                        {t('customize')}
-                      </Button>
-                      <ChevronDown
-                        className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
-                          isSectionOpen('frequent') ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </div>
+              <motion.div variants={itemVariants} className="mb-6">
+                <div className="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-gradient-to-r from-[#eef2ff] via-[#f8f5ff] to-[#e2f7ff] text-slate-900 shadow-xl shadow-indigo-900/20 dark:border-slate-700/60 dark:from-[#13172b] dark:via-[#161c3a] dark:to-[#10172a] dark:text-white">
+                  <div className="pointer-events-none absolute inset-0 opacity-70">
+                    <div className="absolute -left-16 top-0 h-60 w-60 rounded-full bg-indigo-300/40 blur-3xl dark:bg-indigo-500/30" />
+                    <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-400/20" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.5),_transparent_60%)] dark:bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_60%)]" />
                   </div>
-                  {isSectionOpen('frequent') ? (
-                    <div className="border-t border-slate-200/60 px-4 pb-5 pt-4 dark:border-slate-700/40 sm:px-5">
-                      <div className="flex flex-col gap-3">
-                        {favoriteTools.length > 0 ? (
-                          favoriteTools.map((toolId) => renderCompactToolCard(toolId))
-                        ) : (
-                          <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200/90 bg-slate-50/90 px-4 py-6 text-center dark:border-slate-700/60 dark:bg-slate-800/50">
-                            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                              {t('noFrequentToolsSelected')}
+                  <div className="relative px-6 py-8 sm:px-8">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-slate-700 dark:border-white/20 dark:bg-white/10 dark:text-white/80">
+                      <Sparkles className="h-4 w-4 text-amber-500 dark:text-amber-200" />
+                      {t('newFeatures')}
+                      <span className="text-slate-500 dark:text-white/60">2025 · Q1</span>
+                    </span>
+                    <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                      <div className="max-w-3xl">
+                        <h1 className="text-3xl font-semibold leading-tight text-slate-900 dark:text-white sm:text-4xl">
+                          {t('powerfulFileTools')}
+                        </h1>
+                        <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-white/80 sm:text-base">
+                          {t('heroSubtitle')}
+                        </p>
+                        <div className="mt-6 flex flex-wrap gap-3">
+                          <Button
+                            type="button"
+                            onClick={() => setActiveTool(ActiveTool.Conversion)}
+                            className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-indigo-200/60 transition hover:-translate-y-0.5 hover:bg-white/90 dark:text-slate-900"
+                          >
+                            {t('fileConversion')}
+                            <ArrowUpRight className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setActiveTool(ActiveTool.Compression)}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300/60 bg-white/30 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-400 hover:bg-white/50 dark:border-white/30 dark:bg-transparent dark:text-white"
+                          >
+                            {t('fileCompression')}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-10 grid gap-5 lg:grid-cols-3">
+                      <div className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-2xl shadow-indigo-900/10  dark:border-white/10 dark:bg-white/5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">
+                              {t('frequentTools')}
                             </p>
-                            <p className="max-w-xs text-xs text-slate-500 dark:text-slate-400">
-                              {t('noFrequentToolsSelectedDescription')}
-                            </p>
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => handleFavoritesDialogOpen(true)}
-                              className="px-3"
-                            >
-                              {t('customize')}
-                            </Button>
+                            <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                              {t('frequentToolsSubtitle', {
+                                defaultValue: 'Quick access to your go-to tools'
+                              })}
+                            </h3>
                           </div>
-                        )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 shrink-0 rounded-full border-slate-200/80 bg-white/80 px-4 text-xs font-semibold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-white dark:border-white/30 dark:bg-transparent dark:text-white"
+                            onClick={() => handleFavoritesDialogOpen(true)}
+                          >
+                            <Settings2 className="mr-1.5 h-4 w-4" />
+                            {t('customize')}
+                          </Button>
+                        </div>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          {favoriteTools.length > 0 ? (
+                            favoriteTools.map((toolId) => renderCompactToolCard(toolId))
+                          ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300/80 bg-white/80 px-4 py-6 text-center shadow-inner dark:border-white/20 dark:bg-white/5">
+                              <p className="text-sm font-medium text-slate-700 dark:text-white">
+                                {t('noFrequentToolsSelected')}
+                              </p>
+                              <p className="max-w-xs text-xs text-slate-500 dark:text-white/70">
+                                {t('noFrequentToolsSelectedDescription')}
+                              </p>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => handleFavoritesDialogOpen(true)}
+                              >
+                                {t('customize')}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ) : null}
-                </div>
-              </motion.div>
 
-              {/* 实用工具分组 */}
-              <motion.div variants={itemVariants} className="mb-5">
-                <div className="rounded-xl border border-slate-200/80 bg-white/80 shadow-sm backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/40">
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    aria-expanded={isSectionOpen('practical')}
-                    onClick={() => toggleSection('practical')}
-                    onKeyDown={(event) => handleSectionKeyDown(event, 'practical')}
-                    className="flex items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-slate-100/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:hover:bg-slate-800/50 dark:focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-slate-900 sm:px-5 sm:py-5"
-                  >
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
-                        <Wrench className="h-4 w-4" />
+                      <div className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-2xl shadow-indigo-900/10  dark:border-white/10 dark:bg-white/5">
+                        <div className="mb-4 flex items-start gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 dark:bg-white/10 dark:text-white">
+                            <Wrench className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                              {t('practicalTools')}
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-500 dark:text-white/70">
+                              {t('practicalToolsSubtitle', {
+                                defaultValue: 'Everyday helpers for routine file tasks'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid gap-3">
+                          {practicalTools.map(renderCompactToolCard)}
+                        </div>
                       </div>
-                      <div>
-                        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-                          {t('practicalTools')}
-                        </h2>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          {t('practicalToolsSubtitle', {
-                            defaultValue: 'Everyday helpers for routine file tasks'
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronDown
-                      className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
-                        isSectionOpen('practical') ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </div>
-                  {isSectionOpen('practical') ? (
-                    <div className="border-t border-slate-200/60 px-4 pb-5 pt-4 dark:border-slate-700/40 sm:px-5">
-                      <div className="flex flex-col gap-3">
-                        {practicalTools.map(renderCompactToolCard)}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </motion.div>
 
-              {/* 专业工具分组 */}
-              <motion.div variants={itemVariants} className="mb-5">
-                <div className="rounded-xl border border-slate-200/80 bg-white/80 shadow-sm backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/40">
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    aria-expanded={isSectionOpen('professional')}
-                    onClick={() => toggleSection('professional')}
-                    onKeyDown={(event) => handleSectionKeyDown(event, 'professional')}
-                    className="flex items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-slate-100/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:hover:bg-slate-800/50 dark:focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-slate-900 sm:px-5 sm:py-5"
-                  >
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300">
-                        <Target className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-                          {t('professionalTools')}
-                        </h2>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          {t('professionalToolsSubtitle', {
-                            defaultValue: 'Advanced features for specialized workflows'
-                          })}
-                        </p>
+                      <div className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-2xl shadow-indigo-900/10  dark:border-white/10 dark:bg-white/5">
+                        <div className="mb-4 flex items-start gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-white/10 dark:text-white">
+                            <Target className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                              {t('professionalTools')}
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-500 dark:text-white/70">
+                              {t('professionalToolsSubtitle', {
+                                defaultValue: 'Advanced features for specialized workflows'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid gap-3">
+                          {professionalTools.map(renderCompactToolCard)}
+                        </div>
                       </div>
                     </div>
-                    <ChevronDown
-                      className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
-                        isSectionOpen('professional') ? 'rotate-180' : ''
-                      }`}
-                    />
                   </div>
-                  {isSectionOpen('professional') ? (
-                    <div className="border-t border-slate-200/60 px-4 pb-5 pt-4 dark:border-slate-700/40 sm:px-5">
-                      <div className="flex flex-col gap-3">
-                        {professionalTools.map(renderCompactToolCard)}
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               </motion.div>
             </motion.div>

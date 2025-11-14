@@ -6,7 +6,7 @@
  */
 import { ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import { cn } from '@renderer/lib/utils'
 
 interface CompactToolCardProps {
@@ -27,37 +27,32 @@ export default function CompactToolCard({
   iconColor = 'text-blue-500'
 }: CompactToolCardProps): JSX.Element {
   return (
-    <motion.div
+    <motion.button
+      type="button"
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
       onClick={onClick}
       className={cn(
-        'cursor-pointer rounded-xl border border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-slate-50/90 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-slate-700/60 dark:bg-slate-800/60 dark:hover:bg-slate-700/60 dark:focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-slate-900',
+        'group flex w-full items-center gap-4 rounded-2xl border border-white/70 bg-white/90 px-4 py-4 text-left shadow-md shadow-indigo-900/5 transition-all duration-200 hover:-translate-y-0.5 hover:border-white hover:bg-white/95 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-slate-900',
         className
       )}
     >
-      <div className="flex items-center space-x-3 p-4">
-        {/* 图标 */}
-        <div
-          className={cn(
-            'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
-            `bg-${iconColor.split('-')[1]}-100 dark:bg-${iconColor.split('-')[1]}-900/20 ${iconColor}`
-          )}
-        >
-          {icon}
-        </div>
-
-        {/* 内容 */}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-slate-900 dark:text-white text-sm truncate">{title}</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-            {description}
-          </p>
-        </div>
-
-        {/* 箭头 */}
-        <ArrowRight className="h-4 w-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+      <div
+        className={cn(
+          'flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white',
+          iconColor
+        )}
+      >
+        {icon}
       </div>
-    </motion.div>
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-300 line-clamp-2">
+          {description}
+        </p>
+      </div>
+      <ArrowUpRight className="h-4 w-4 flex-shrink-0 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300" />
+    </motion.button>
   )
 }
