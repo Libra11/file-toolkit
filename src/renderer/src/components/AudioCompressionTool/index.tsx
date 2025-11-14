@@ -6,10 +6,16 @@
  */
 
 import { motion } from 'framer-motion'
-import { Card, CardContent } from '@renderer/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from '@renderer/components/ui/card'
 import { useTranslation } from 'react-i18next'
 import { useState, useRef, useEffect } from 'react'
-import { Music, Loader2 } from 'lucide-react'
+import { Music, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Progress } from '@renderer/components/ui/progress'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
@@ -58,6 +64,17 @@ export default function AudioCompressionTool(): JSX.Element {
   const [bitrate, setBitrate] = useState('128k')
   const [sampleRate, setSampleRate] = useState<number | ''>('')
   const [channels, setChannels] = useState<number | ''>('')
+
+  const totalBatchOriginalSize = batchResults.reduce((sum, result) => sum + result.originalSize, 0)
+  const totalBatchCompressedSize = batchResults.reduce(
+    (sum, result) => sum + result.compressedSize,
+    0
+  )
+  const totalBatchSavedPercent = totalBatchOriginalSize
+    ? Math.round(
+        ((totalBatchOriginalSize - totalBatchCompressedSize) / totalBatchOriginalSize) * 100
+      )
+    : 0
 
   // 获取音频信息
   useEffect(() => {
@@ -357,118 +374,285 @@ export default function AudioCompressionTool(): JSX.Element {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.3 }}
-      className="max-w-5xl mx-auto"
     >
-      <Card>
-        <CardContent className="p-6">
-          <Tabs defaultValue="single" onValueChange={handleModeToggle}>
-            <TabsList className="grid grid-cols-2 mb-6">
-              <TabsTrigger value="single">{t('singleFileMode')}</TabsTrigger>
-              <TabsTrigger value="batch">{t('batchMode')}</TabsTrigger>
-            </TabsList>
+      <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-indigo-900/10 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/60 md:p-8">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-indigo-100/60 via-white to-transparent dark:from-indigo-900/25 dark:via-slate-900" />
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-indigo-100/70 px-3 py-1 text-sm font-medium text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-200">
+              <Music className="h-4 w-4" />
+              {t('audioCompressionTool')}
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+                {t('audioCompression')}
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {t('audioCompressionDescription')}
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 rounded-2xl border border-indigo-100/70 bg-indigo-50/60 p-4 text-sm text-indigo-700 shadow-inner dark:border-indigo-500/30 dark:bg-indigo-900/20 dark:text-indigo-100 md:flex-row md:items-start md:gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-indigo-500 shadow-sm dark:bg-white/10 dark:text-indigo-200">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-base font-semibold">{t('audioCompressionTipTitle')}</p>
+                <p className="text-xs leading-relaxed text-indigo-600/80 dark:text-indigo-100/80">
+                  {t('audioCompressionTipDescription')}
+                </p>
+              </div>
+            </div>
+          </div>
 
-            {/* 单文件模式 */}
-            <TabsContent value="single" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* 左侧：文件上传和预览 */}
-                <div className="space-y-4">
-                  <FileUploader onFileSelect={handleSingleFileSelect} fileInputRef={fileInputRef} />
+          <Tabs defaultValue="single" onValueChange={handleModeToggle} className="w-full">
+            <div className="flex justify-center">
+              <TabsList className="mb-6 h-[3.2rem] grid w-full max-w-lg grid-cols-2 items-center overflow-hidden rounded-full bg-indigo-100/60 p-1 text-sm font-medium dark:bg-indigo-900/40">
+                <TabsTrigger
+                  value="single"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-indigo-300"
+                >
+                  {t('singleFileMode')}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="batch"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-indigo-300"
+                >
+                  {t('batchMode')}
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-                  {selectedFile && originalAudioUrl && (
-                    <AudioPreview
-                      audioUrl={originalAudioUrl}
-                      fileName={selectedFile.name}
-                      fileSize={selectedFile.size}
-                      audioInfo={audioInfo}
+            <TabsContent value="single" className="mt-6">
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)]">
+                <Card className="border border-indigo-100/70 bg-white/90 shadow-xl shadow-indigo-900/10 dark:border-indigo-500/20 dark:bg-slate-900/70">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                      {t('selectFiles')}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                      {t('selectFile')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FileUploader
+                      onFileSelect={handleSingleFileSelect}
+                      fileInputRef={fileInputRef}
                     />
-                  )}
 
-                  {compressionResult && previewUrl && (
-                    <CompressedAudioPreview
-                      compressionResult={compressionResult}
-                      previewUrl={previewUrl}
-                    />
-                  )}
-                </div>
-
-                {/* 右侧：压缩设置 */}
-                <div className="space-y-4">
-                  {selectedFile && (
-                    <>
-                      <CompressionSettings
-                        originalSize={selectedFile.size}
-                        qualityPreset={qualityPreset}
-                        outputFormat={outputFormat}
-                        bitrate={bitrate}
-                        sampleRate={sampleRate}
-                        channels={channels}
-                        onQualityPresetChange={handlePresetChange}
-                        onFormatChange={handleFormatChange}
-                        onBitrateChange={handleBitrateChange}
-                        onSampleRateChange={handleSampleRateChange}
-                        onChannelsChange={handleChannelsChange}
+                    {selectedFile && originalAudioUrl && (
+                      <AudioPreview
+                        audioUrl={originalAudioUrl}
+                        fileName={selectedFile.name}
+                        fileSize={selectedFile.size}
+                        audioInfo={audioInfo}
+                        className="rounded-2xl border border-indigo-100/70 bg-white/95 shadow-sm shadow-indigo-900/5 dark:border-indigo-500/30 dark:bg-slate-900/70"
                       />
+                    )}
 
-                      <Button
-                        onClick={compressSingleAudio}
-                        disabled={isCompressing}
-                        className="w-full mt-4"
-                      >
-                        {isCompressing ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {t('compressing')}
-                          </>
-                        ) : (
-                          t('compressAudio')
-                        )}
-                      </Button>
-                    </>
-                  )}
-                </div>
+                    {compressionResult && previewUrl && (
+                      <CompressedAudioPreview
+                        compressionResult={compressionResult}
+                        previewUrl={previewUrl}
+                        className="rounded-2xl border border-emerald-100/70 bg-emerald-50/60 shadow-sm shadow-emerald-900/10 dark:border-emerald-500/30 dark:bg-emerald-900/30"
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border border-slate-200/70 bg-white/95 shadow-xl shadow-indigo-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                      {t('compressionSettings')}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                      {t('audioCompressionSettingsHint')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {selectedFile ? (
+                      <>
+                        <CompressionSettings
+                          originalSize={selectedFile.size}
+                          qualityPreset={qualityPreset}
+                          outputFormat={outputFormat}
+                          bitrate={bitrate}
+                          sampleRate={sampleRate}
+                          channels={channels}
+                          onQualityPresetChange={handlePresetChange}
+                          onFormatChange={handleFormatChange}
+                          onBitrateChange={handleBitrateChange}
+                          onSampleRateChange={handleSampleRateChange}
+                          onChannelsChange={handleChannelsChange}
+                        />
+
+                        <Button
+                          onClick={compressSingleAudio}
+                          disabled={isCompressing}
+                          className="mt-4 h-11 w-full rounded-xl bg-indigo-600 text-sm font-semibold shadow-lg shadow-indigo-900/20 transition hover:bg-indigo-700 disabled:bg-slate-300 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                        >
+                          {isCompressing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              {t('compressing')}
+                            </>
+                          ) : (
+                            <>
+                              <Music className="mr-2 h-4 w-4" />
+                              {t('compressAudio')}
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    ) : (
+                      <p className="rounded-xl border border-dashed border-slate-200/70 bg-slate-50/80 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400">
+                        {t('selectFile')}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 
-            {/* 批量模式 */}
-            <TabsContent value="batch" className="space-y-6">
-              <div className="grid grid-cols-1 gap-6">
-                {/* 文件上传和列表 */}
-                <div className="space-y-4">
-                  <FileUploader onFileSelect={handleBatchFileSelect} isBatchMode={true} />
+            <TabsContent value="batch" className="mt-6">
+              {selectedFiles.length === 0 && batchResults.length === 0 ? (
+                <Card className="border border-indigo-100/70 bg-white/95 shadow-xl shadow-indigo-900/10 dark:border-indigo-500/20 dark:bg-slate-900/70">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                      {t('selectFiles')}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                      {t('selectFilesToCompress')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FileUploader onFileSelect={handleBatchFileSelect} isBatchMode={true} />
+                  </CardContent>
+                </Card>
+              ) : batchResults.length > 0 ? (
+                <Card className="border border-emerald-200/70 bg-white/95 shadow-xl shadow-emerald-900/10 dark:border-emerald-500/30 dark:bg-emerald-900/30">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg font-semibold text-emerald-700 dark:text-emerald-200">
+                      {t('batchCompressionSuccess')}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-emerald-600/80 dark:text-emerald-200/80">
+                      {t('audioBatchSettingsHint')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-3 text-sm sm:grid-cols-3">
+                      <div className="rounded-xl bg-emerald-50/80 p-3 dark:bg-emerald-900/40">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+                          {t('successCount', {
+                            count: batchResults.length,
+                            total: batchResults.length
+                          })}
+                        </span>
+                      </div>
+                      <div className="rounded-xl bg-emerald-50/80 p-3 dark:bg-emerald-900/40">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+                          {t('originalSize')}
+                        </span>
+                        <span className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+                          {(totalBatchOriginalSize / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                      </div>
+                      <div className="rounded-xl bg-emerald-50/80 p-3 dark:bg-emerald-900/40">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+                          {t('saved')}
+                        </span>
+                        <p className="mt-1 text-base font-semibold text-emerald-600 dark:text-emerald-300">
+                          {totalBatchSavedPercent}%
+                        </p>
+                      </div>
+                    </div>
 
-                  {selectedFiles.length > 0 && (
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-medium mb-2">{t('fileList')}</h3>
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                    <div className="space-y-2">
+                      {batchResults.map((result, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between rounded-xl border border-emerald-100/70 bg-white/90 px-3 py-2 text-sm shadow-sm dark:border-emerald-500/30 dark:bg-emerald-900/40"
+                        >
+                          <span className="truncate font-medium text-slate-700 dark:text-slate-200">
+                            {selectedFiles[index]?.name || `${t('audio')} ${index + 1}`}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            {(result.originalSize / 1024 / 1024).toFixed(2)} MB →{' '}
+                            {(result.compressedSize / 1024 / 1024).toFixed(2)} MB
+                          </span>
+                          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-300">
+                            {Math.round(
+                              ((result.originalSize - result.compressedSize) / result.originalSize) *
+                                100
+                            )}
+                            %
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <Button
+                      onClick={handleModeToggle}
+                      className="h-10 w-full rounded-xl border border-emerald-200/70 bg-white text-sm font-semibold text-emerald-600 shadow-sm transition hover:bg-emerald-50 dark:border-emerald-500/30 dark:bg-transparent dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+                    >
+                      {t('compressMore')}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-6">
+                  <Card className="border border-indigo-100/70 bg-white/90 shadow-xl shadow-indigo-900/10 dark:border-indigo-500/20 dark:bg-slate-900/70">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {t('fileList')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="max-h-60 space-y-2 overflow-y-auto pr-1">
                         {selectedFiles.map((file, index) => (
                           <div
-                            key={index}
-                            className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-900 rounded"
+                            key={`${file.name}-${index}`}
+                            className="flex items-center justify-between rounded-xl border border-indigo-100/70 bg-white/90 px-3 py-2 text-sm shadow-sm dark:border-indigo-500/30 dark:bg-slate-900/70"
                           >
-                            <div className="flex items-center">
-                              <Music className="w-4 h-4 mr-2 text-gray-500" />
-                              <span className="text-sm truncate max-w-md">{file.name}</span>
-                              <span className="text-xs text-gray-500 ml-2">
-                                {(file.size / 1024 / 1024).toFixed(2)} MB
-                              </span>
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100/70 text-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-200">
+                                <Music className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p
+                                  className="truncate font-medium text-slate-700 dark:text-slate-200"
+                                  title={file.name}
+                                >
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              </div>
                             </div>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleRemoveFile(index)}
+                              className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
                             >
                               {t('remove')}
                             </Button>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    </CardContent>
+                  </Card>
 
-                  {/* 压缩设置 */}
-                  {selectedFiles.length > 0 && (
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-medium mb-2">{t('compressionSettings')}</h3>
+                  <Card className="border border-slate-200/70 bg-white/95 shadow-xl shadow-indigo-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {t('compressionSettings')}
+                      </CardTitle>
+                      <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                        {t('audioBatchSettingsHint')}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                       <CompressionSettings
                         originalSize={selectedFiles.reduce((sum, file) => sum + file.size, 0)}
                         qualityPreset={qualityPreset}
@@ -482,76 +666,42 @@ export default function AudioCompressionTool(): JSX.Element {
                         onSampleRateChange={handleSampleRateChange}
                         onChannelsChange={handleChannelsChange}
                       />
-                    </div>
-                  )}
 
-                  {/* 批量压缩按钮 */}
-                  {selectedFiles.length > 0 && (
-                    <Button
-                      onClick={batchCompressAudios}
-                      disabled={isCompressing}
-                      className="w-full mt-4"
-                    >
-                      {batchProgress > 0 && batchProgress < 100 ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          {t('batchCompressing')} {batchProgress}%
-                        </>
-                      ) : (
-                        t('batchCompression')
-                      )}
-                    </Button>
-                  )}
+                      <Button
+                        onClick={batchCompressAudios}
+                        disabled={isCompressing}
+                        className="mt-2 h-11 w-full rounded-xl bg-indigo-600 text-sm font-semibold shadow-lg shadow-indigo-900/20 transition hover:bg-indigo-700 disabled:bg-slate-300 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                      >
+                        {isCompressing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {t('batchCompressing')}
+                          </>
+                        ) : (
+                          <>
+                            <Music className="mr-2 h-4 w-4" />
+                            {t('batchCompression')}
+                          </>
+                        )}
+                      </Button>
 
-                  {/* 批量压缩进度 */}
-                  {batchProgress > 0 && (
-                    <div className="space-y-2">
-                      <Progress value={batchProgress} />
-                      {currentProcessingFile && (
-                        <p className="text-xs text-center text-gray-500">
-                          {t('processing')}: {currentProcessingFile}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 批量结果 */}
-                  {batchResults.length > 0 && (
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-medium mb-2">{t('batchCompressionSuccess')}</h3>
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {batchResults.map((result, index) => (
-                          <div
-                            key={index}
-                            className="grid grid-cols-3 gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded text-sm"
-                          >
-                            <div className="truncate">
-                              {selectedFiles[index]?.name || `${t('audio')} ${index + 1}`}
-                            </div>
-                            <div>
-                              {(result.originalSize / 1024 / 1024).toFixed(2)} MB →{' '}
-                              {(result.compressedSize / 1024 / 1024).toFixed(2)} MB
-                            </div>
-                            <div>
-                              {t('saved')}:{' '}
-                              {Math.round(
-                                ((result.originalSize - result.compressedSize) /
-                                  result.originalSize) *
-                                  100
-                              )}
-                              %
-                            </div>
+                      {batchProgress > 0 && (
+                        <div className="space-y-2 rounded-xl border border-indigo-100/70 bg-indigo-50/60 p-3 text-xs text-indigo-700 dark:border-indigo-500/30 dark:bg-indigo-900/20 dark:text-indigo-100">
+                          <div className="flex items-center justify-between font-medium">
+                            <span>{currentProcessingFile || t('processing')}</span>
+                            <span>{batchProgress}%</span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                          <Progress value={batchProgress} className="h-1.5 bg-indigo-100/60" />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
-              </div>
+              )}
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   )
 }

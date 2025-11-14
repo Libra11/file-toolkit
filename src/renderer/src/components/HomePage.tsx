@@ -276,29 +276,29 @@ export default function HomePage(): JSX.Element {
       labelKey: 'imageCompression',
       descriptionKey: 'imageCompressionDescription',
       icon: ImageIcon,
-      activeTextClass: 'text-blue-600 dark:text-blue-400',
-      activeIconClass: 'text-blue-500'
+      activeTextClass: 'text-sky-600 dark:text-sky-400',
+      activeIconClass: 'text-sky-500'
     },
     {
       key: CompressionTab.Audio,
       labelKey: 'audioCompression',
       descriptionKey: 'audioCompressionDescription',
       icon: Music,
-      activeTextClass: 'text-purple-600 dark:text-purple-400',
-      activeIconClass: 'text-purple-500'
+      activeTextClass: 'text-indigo-600 dark:text-indigo-400',
+      activeIconClass: 'text-indigo-500'
     },
     {
       key: CompressionTab.Video,
       labelKey: 'videoCompression',
       descriptionKey: 'videoCompressionDescription',
       icon: Video,
-      activeTextClass: 'text-red-600 dark:text-red-400',
-      activeIconClass: 'text-red-500'
+      activeTextClass: 'text-purple-600 dark:text-purple-400',
+      activeIconClass: 'text-purple-500'
     }
   ]
 
-  const activeCompressionTab =
-    compressionTabsConfig.find((tab) => tab.key === compressionTab) ?? compressionTabsConfig[0]
+  // const activeCompressionTab =
+  //   compressionTabsConfig.find((tab) => tab.key === compressionTab) ?? compressionTabsConfig[0]
 
   const conversionTabsConfig = conversionCategories.map((category) => {
     const baseConfig = {
@@ -754,37 +754,41 @@ export default function HomePage(): JSX.Element {
                       {t('backToHome')}
                     </button>
                   </div>
-                  <div className="mb-6">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 p-1 dark:bg-emerald-900/20">
-                      {compressionTabsConfig.map((tab) => {
-                        const Icon = tab.icon
-                        const isActive = compressionTab === tab.key
-                        return (
-                          <button
-                            key={tab.key}
-                            type="button"
-                            onClick={() => setCompressionTab(tab.key)}
-                            className={`flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                              isActive
-                                ? `bg-white shadow-sm dark:bg-slate-900 ${tab.activeTextClass}`
-                                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                            }`}
-                          >
-                            <Icon
-                              className={`mr-1.5 h-4 w-4 ${
+                  <div>
+                    <div className="flex justify-center">
+                      <div className="mb-6 h-[3.2rem] grid w-full max-w-lg grid-cols-3 items-center overflow-hidden rounded-full bg-emerald-100/60 p-1 text-sm font-medium dark:bg-emerald-900/40">
+                        {compressionTabsConfig.map((tab) => {
+                          const Icon = tab.icon
+                          const isActive = compressionTab === tab.key
+                          return (
+                            <button
+                              key={tab.key}
+                              type="button"
+                              onClick={() => setCompressionTab(tab.key)}
+                              className={`flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition-all ${
                                 isActive
-                                  ? tab.activeIconClass
-                                  : 'text-slate-400 dark:text-slate-500'
+                                  ? `bg-white shadow-sm dark:bg-slate-900/80 ${tab.activeTextClass}`
+                                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                               }`}
-                            />
-                            {t(tab.labelKey)}
-                          </button>
-                        )
-                      })}
+                            >
+                              <Icon
+                                className={`h-4 w-4 ${
+                                  isActive
+                                    ? tab.activeIconClass
+                                    : 'text-slate-400 dark:text-slate-500'
+                                }`}
+                              />
+                              {t(tab.labelKey)}
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
-                    <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                      {t(activeCompressionTab.descriptionKey)}
-                    </p>
+                    {/* <div className="text-center">
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {t(activeCompressionTab.descriptionKey)}
+                      </p>
+                    </div> */}
                   </div>
                   {compressionTab === CompressionTab.Image ? (
                     <ImageCompressionTool />

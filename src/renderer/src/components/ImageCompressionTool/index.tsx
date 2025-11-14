@@ -6,10 +6,16 @@
  */
 
 import { motion } from 'framer-motion'
-import { Card, CardContent } from '@renderer/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from '@renderer/components/ui/card'
 import { useTranslation } from 'react-i18next'
 import { useState, useRef, useEffect } from 'react'
-import { ImageIcon, Loader2 } from 'lucide-react'
+import { ImageIcon, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Progress } from '@renderer/components/ui/progress'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
@@ -424,125 +430,205 @@ export default function ImageCompressionTool(): JSX.Element {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="border border-slate-200/30 dark:border-slate-700/30 shadow-lg bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm">
-        <CardContent className="p-6 space-y-6">
-          <div className="space-y-6">
-            <Tabs defaultValue="single" onValueChange={handleModeToggle}>
-              <TabsList className="grid w-full grid-cols-2 mb-4 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-lg">
+      <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-blue-900/10 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/60 md:p-8">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-sky-100/60 via-white to-transparent dark:from-sky-900/25 dark:via-slate-900" />
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-sky-100/70 px-3 py-1 text-sm font-medium text-sky-600 dark:bg-sky-900/40 dark:text-sky-200">
+              <ImageIcon className="h-4 w-4" />
+              {t('imageCompressionTool')}
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+                {t('imageCompression')}
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {t('imageCompressionDescription')}
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 rounded-2xl border border-sky-100/70 bg-sky-50/60 p-4 text-sm text-sky-700 shadow-inner dark:border-sky-500/30 dark:bg-sky-900/20 dark:text-sky-100 md:flex-row md:items-start md:gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-sky-500 shadow-sm dark:bg-white/10 dark:text-sky-200">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-base font-semibold">{t('imageCompressionTipTitle')}</p>
+                <p className="text-xs leading-relaxed text-sky-600/80 dark:text-sky-100/80">
+                  {t('imageCompressionTipDescription')}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Tabs defaultValue="single" onValueChange={handleModeToggle} className="w-full">
+            <div className="flex justify-center">
+              <TabsList className="mb-6 h-[3.2rem] grid w-full max-w-lg grid-cols-2 items-center overflow-hidden rounded-full bg-sky-100/60 p-1 text-sm font-medium dark:bg-sky-900/40">
                 <TabsTrigger
                   value="single"
-                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-md py-2"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-sky-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-sky-300"
                 >
                   {t('singleFileMode')}
                 </TabsTrigger>
                 <TabsTrigger
                   value="batch"
-                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-md py-2"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-sky-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-sky-300"
                 >
                   {t('batchMode')}
                 </TabsTrigger>
               </TabsList>
+            </div>
 
-              <TabsContent value="single" className="space-y-6">
-                {/* 单个文件模式内容 */}
-                {!selectedFile ? (
-                  <FileUploader onFileSelect={handleSingleFileSelect} fileInputRef={fileInputRef} />
-                ) : (
-                  <div className="space-y-6">
-                    {/* 图片预览和信息 */}
-                    <div className="flex flex-col md:flex-row gap-6">
-                      {/* 原始图片预览 */}
-                      <div className="w-full md:w-1/2">
-                        <ImagePreview
-                          imageUrl={originalImageUrl}
-                          fileName={selectedFile.name}
-                          fileSize={selectedFile.size}
-                          imageInfo={imageInfo}
+            <TabsContent value="single" className="mt-6">
+              {!selectedFile ? (
+                <Card className="border border-sky-100/70 bg-white/95 shadow-xl shadow-sky-900/10 dark:border-sky-500/20 dark:bg-slate-900/70">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                      {t('selectFiles')}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                      {t('selectFile')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FileUploader
+                      onFileSelect={handleSingleFileSelect}
+                      fileInputRef={fileInputRef}
+                    />
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)]">
+                  <Card className="border border-sky-100/70 bg-white/90 shadow-xl shadow-sky-900/10 dark:border-sky-500/20 dark:bg-slate-900/70">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {t('selectedFiles')}
+                      </CardTitle>
+                      <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                        {selectedFile?.name}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-5">
+                      <ImagePreview
+                        imageUrl={originalImageUrl}
+                        fileName={selectedFile.name}
+                        fileSize={selectedFile.size}
+                        imageInfo={imageInfo}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border border-slate-200/70 bg-white/95 shadow-xl shadow-sky-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {t('compressionSettings')}
+                      </CardTitle>
+                      <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                        {t('imageCompressionSettingsHint')}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-5">
+                      {compressionResult ? (
+                        <CompressedPreview
+                          compressionResult={compressionResult}
+                          previewUrl={previewUrl}
+                          onReset={resetState}
                         />
-                      </div>
-
-                      {/* 压缩结果或压缩设置 */}
-                      <div className="w-full md:w-1/2">
-                        {compressionResult ? (
-                          <CompressedPreview
-                            compressionResult={compressionResult}
-                            previewUrl={previewUrl}
-                            onReset={resetState}
+                      ) : (
+                        <>
+                          <CompressionSettings
+                            qualityPreset={qualityPreset}
+                            outputFormat={outputFormat}
+                            qualityValue={qualityValue}
+                            compressionLevel={compressionLevel}
+                            outputWidth={outputWidth}
+                            outputHeight={outputHeight}
+                            maintainAspectRatio={maintainAspectRatio}
+                            webpPreset={webpPreset}
+                            webpLossless={webpLossless}
+                            showAdvanced={showAdvanced}
+                            imageInfo={imageInfo}
+                            onQualityPresetChange={handlePresetChange}
+                            onFormatChange={handleFormatChange}
+                            onQualityChange={handleQualityChange}
+                            onCompressionLevelChange={handleCompressionLevelChange}
+                            onWidthChange={setOutputWidth}
+                            onHeightChange={setOutputHeight}
+                            onMaintainAspectRatioChange={setMaintainAspectRatio}
+                            onWebpPresetChange={setWebpPreset}
+                            onWebpLosslessChange={setWebpLossless}
+                            onShowAdvancedChange={setShowAdvanced}
                           />
-                        ) : (
-                          <div>
-                            {/* 压缩设置 */}
-                            <CompressionSettings
-                              qualityPreset={qualityPreset}
-                              outputFormat={outputFormat}
-                              qualityValue={qualityValue}
-                              compressionLevel={compressionLevel}
-                              outputWidth={outputWidth}
-                              outputHeight={outputHeight}
-                              maintainAspectRatio={maintainAspectRatio}
-                              webpPreset={webpPreset}
-                              webpLossless={webpLossless}
-                              showAdvanced={showAdvanced}
-                              imageInfo={imageInfo}
-                              onQualityPresetChange={handlePresetChange}
-                              onFormatChange={handleFormatChange}
-                              onQualityChange={handleQualityChange}
-                              onCompressionLevelChange={handleCompressionLevelChange}
-                              onWidthChange={setOutputWidth}
-                              onHeightChange={setOutputHeight}
-                              onMaintainAspectRatioChange={setMaintainAspectRatio}
-                              onWebpPresetChange={setWebpPreset}
-                              onWebpLosslessChange={setWebpLossless}
-                              onShowAdvancedChange={setShowAdvanced}
-                            />
 
-                            <Button
-                              className="w-full mt-4"
-                              onClick={compressSingleImage}
-                              disabled={isCompressing}
-                            >
-                              {isCompressing ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  {t('compressing')}
-                                </>
-                              ) : (
-                                <>
-                                  <ImageIcon className="h-4 w-4 mr-2" />
-                                  {t('compress')}
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
+                          <Button
+                            className="mt-4 h-11 w-full rounded-xl bg-sky-600 text-sm font-semibold shadow-lg shadow-sky-900/20 transition hover:bg-sky-700 disabled:bg-slate-300 dark:bg-sky-500 dark:hover:bg-sky-400"
+                            onClick={compressSingleImage}
+                            disabled={isCompressing}
+                          >
+                            {isCompressing ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                {t('compressing')}
+                              </>
+                            ) : (
+                              <>
+                                <ImageIcon className="h-4 w-4 mr-2" />
+                                {t('compress')}
+                              </>
+                            )}
+                          </Button>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </TabsContent>
 
-              <TabsContent value="batch" className="space-y-6">
-                {/* 批量模式内容 */}
-                {selectedFiles.length === 0 || batchResults.length > 0 ? (
-                  <>
-                    {batchResults.length > 0 ? (
-                      <BatchCompressionResult results={batchResults} onReset={resetState} />
-                    ) : (
+            <TabsContent value="batch" className="mt-6">
+              {selectedFiles.length === 0 || batchResults.length > 0 ? (
+                batchResults.length > 0 ? (
+                  <BatchCompressionResult results={batchResults} onReset={resetState} />
+                ) : (
+                  <Card className="border border-sky-100/70 bg-white/95 shadow-xl shadow-sky-900/10 dark:border-sky-500/20 dark:bg-slate-900/70">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {t('selectFiles')}
+                      </CardTitle>
+                      <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                        {t('selectFilesToCompress')}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
                       <FileUploader
                         onFileSelect={handleBatchFileSelect}
                         fileInputRef={fileInputRef}
                         batchMode={true}
                       />
-                    )}
-                  </>
-                ) : (
-                  <div className="space-y-4">
-                    {/* 显示已选文件列表 */}
-                    <FileList files={selectedFiles} onRemoveFile={handleRemoveFile} />
+                    </CardContent>
+                  </Card>
+                )
+              ) : (
+                <div className="space-y-6">
+                  <Card className="border border-sky-100/70 bg-white/90 shadow-xl shadow-sky-900/10 dark:border-sky-500/20 dark:bg-slate-900/70">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {t('selectedFiles')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FileList files={selectedFiles} onRemoveFile={handleRemoveFile} />
+                    </CardContent>
+                  </Card>
 
-                    {/* 压缩设置 */}
-                    <div className="bg-slate-100 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700 mt-4">
-                      <h3 className="text-sm font-medium mb-3">{t('compressionSettings')}</h3>
+                  <Card className="border border-slate-200/70 bg-white/95 shadow-xl shadow-sky-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {t('compressionSettings')}
+                      </CardTitle>
+                      <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                        {t('imageBatchSettingsHint')}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                       <CompressionSettings
                         qualityPreset={qualityPreset}
                         outputFormat={outputFormat}
@@ -571,7 +657,7 @@ export default function ImageCompressionTool(): JSX.Element {
                       />
 
                       <Button
-                        className="w-full mt-4"
+                        className="mt-2 h-11 w-full rounded-xl bg-sky-600 text-sm font-semibold shadow-lg shadow-sky-900/20 transition hover:bg-sky-700 disabled:bg-slate-300 dark:bg-sky-500 dark:hover:bg-sky-400"
                         onClick={batchCompressImages}
                         disabled={isCompressing}
                       >
@@ -589,22 +675,22 @@ export default function ImageCompressionTool(): JSX.Element {
                       </Button>
 
                       {isCompressing && (
-                        <div className="mt-4 space-y-2">
-                          <div className="flex justify-between items-center text-xs text-slate-600 dark:text-slate-400">
+                        <div className="space-y-2 rounded-xl border border-sky-100/70 bg-sky-50/60 p-3 text-xs text-sky-700 dark:border-sky-500/30 dark:bg-sky-900/20 dark:text-sky-100">
+                          <div className="flex items-center justify-between font-medium">
                             <span>{currentProcessingFile || t('processing')}</span>
                             <span>{batchProgress}%</span>
                           </div>
-                          <Progress value={batchProgress} className="h-1.5" />
+                          <Progress value={batchProgress} className="h-1.5 bg-sky-100/60" />
                         </div>
                       )}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
-        </CardContent>
-      </Card>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
     </motion.div>
   )
 }

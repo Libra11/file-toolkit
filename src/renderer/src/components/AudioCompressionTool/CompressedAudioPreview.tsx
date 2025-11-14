@@ -33,26 +33,44 @@ export function CompressedAudioPreview({
   }, [previewUrl])
 
   return (
-    <div className={`border rounded-lg p-4 shadow-sm ${className || ''}`}>
-      <div className="flex items-center mb-2">
-        <Music className="w-5 h-5 text-green-500 mr-2" />
-        <h3 className="font-medium text-slate-900 dark:text-slate-100">{t('compressedAudio')}</h3>
+    <div
+      className={`space-y-3 rounded-2xl border border-emerald-200/70 bg-white/95 p-4 shadow-sm shadow-emerald-900/10 dark:border-emerald-500/30 dark:bg-emerald-900/30 ${className || ''}`}
+    >
+      <div className="flex items-center gap-2">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100/80 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
+          <Music className="h-4 w-4" />
+        </div>
+        <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-200">
+          {t('compressedAudio')}
+        </h3>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-        <div className="text-slate-500">{t('originalSize')}:</div>
-        <div className="text-slate-700 dark:text-slate-300">
-          {(originalSize / 1024 / 1024).toFixed(2)} MB
+      <div className="grid gap-2 rounded-xl bg-emerald-50/70 p-3 text-xs text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-100">
+        <div className="flex items-center justify-between">
+          <span className="font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+            {t('originalSize')}
+          </span>
+          <span>{(originalSize / 1024 / 1024).toFixed(2)} MB</span>
         </div>
-        <div className="text-slate-500">{t('compressedSize')}:</div>
-        <div className="text-slate-700 dark:text-slate-300">
-          {(compressedSize / 1024 / 1024).toFixed(2)} MB
+        <div className="flex items-center justify-between">
+          <span className="font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+            {t('compressedSize')}
+          </span>
+          <span>{(compressedSize / 1024 / 1024).toFixed(2)} MB</span>
         </div>
-        <div className="text-slate-500">{t('compressionRatio')}:</div>
-        <div className="text-slate-700 dark:text-slate-300">{compressionRatio.toFixed(2)}x</div>
-        <div className="text-slate-500">{t('saved')}:</div>
-        <div className="text-green-600 dark:text-green-400 font-medium">
-          {Math.round(((originalSize - compressedSize) / originalSize) * 100)}%
+        <div className="flex items-center justify-between">
+          <span className="font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+            {t('compressionRatio')}
+          </span>
+          <span>{compressionRatio.toFixed(2)}x</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+            {t('saved')}
+          </span>
+          <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-300">
+            {Math.round(((originalSize - compressedSize) / originalSize) * 100)}%
+          </span>
         </div>
       </div>
 
@@ -60,7 +78,7 @@ export function CompressedAudioPreview({
         ref={audioRef}
         src={previewUrl}
         controls
-        className="w-full"
+        className="w-full rounded-lg border border-emerald-100/60 bg-white/90 p-2 text-slate-700 shadow-inner dark:border-emerald-500/30 dark:bg-emerald-900/40 dark:text-emerald-100"
         controlsList="nodownload"
       />
     </div>

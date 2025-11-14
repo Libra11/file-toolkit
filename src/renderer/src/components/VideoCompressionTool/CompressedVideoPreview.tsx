@@ -6,7 +6,7 @@
  */
 import { useRef, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircle, Download, ExternalLink, Clock, FileVideo } from 'lucide-react'
+import { CheckCircle, Download, ExternalLink, Clock, FileVideo, Play, Pause } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { CompressionResult } from './types'
 import { formatFileSize, formatTime, calculateCompressionPercentage } from './utils'
@@ -93,142 +93,114 @@ export function CompressedVideoPreview({
   )
 
   return (
-    <div className={`bg-slate-100 dark:bg-slate-800/50 rounded-lg overflow-hidden ${className}`}>
-      <div className="p-3">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium">{t('compressionResult')}</h3>
-          <div className="flex items-center bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
-            <CheckCircle className="h-3 w-3 mr-1 text-green-600 dark:text-green-400" />
-            <span className="text-xs font-medium text-green-600 dark:text-green-400">
-              {t('compressed')}
-            </span>
-          </div>
+    <div
+      className={`space-y-3 rounded-2xl border border-violet-200/70 bg-white/95 p-4 shadow-sm shadow-violet-900/10 dark:border-violet-500/30 dark:bg-violet-900/30 ${className}`}
+    >
+      <div className="flex items-center gap-2">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100/80 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
+          <CheckCircle className="h-4 w-4" />
         </div>
+        <h3 className="text-sm font-semibold text-violet-700 dark:text-violet-200">
+          {t('compressedVideo')}
+        </h3>
+      </div>
 
-        <div className="rounded-md overflow-hidden bg-black mb-3 aspect-video relative">
-          {previewUrl ? (
+      <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl border border-violet-100/60 bg-violet-50/60 dark:border-violet-500/30 dark:bg-slate-900/60">
+        {previewUrl ? (
+          <>
             <video
               ref={videoRef}
               src={previewUrl}
-              className="w-full h-full object-contain"
+              className="h-full w-full object-contain"
               onClick={togglePlayPause}
             />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <FileVideo className="w-12 h-12 text-slate-600 dark:text-slate-400" />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+              <div className="flex items-center justify-between text-white text-xs">
+                <span>
+                  {formatTime(currentTime)} /{' '}
+                  {formatTime(duration || compressionResult.duration || 0)}
+                </span>
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    togglePlayPause()
+                  }}
+                >
+                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
-          )}
+          </>
+        ) : (
+          <FileVideo className="h-10 w-10 text-violet-400" />
+        )}
+      </div>
 
-          {previewUrl && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 text-white text-xs flex justify-between items-center">
-              <span>
-                {formatTime(currentTime)} /{' '}
-                {formatTime(duration || compressionResult.duration || 0)}
-              </span>
-              <button
-                className="p-1 rounded-full hover:bg-white/20 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  togglePlayPause()
-                }}
-              >
-                {isPlaying ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="6" y="4" width="4" height="16"></rect>
-                    <rect x="14" y="4" width="4" height="16"></rect>
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                  </svg>
-                )}
-              </button>
-            </div>
-          )}
+      <div className="grid gap-2 rounded-xl bg-violet-50/70 p-3 text-xs text-violet-700 dark:bg-violet-900/40 dark:text-violet-100">
+        <div className="flex items-center justify-between">
+          <span className="font-medium uppercase tracking-wide text-violet-600 dark:text-violet-300">
+            {t('outputFormat')}
+          </span>
+          <span className="uppercase">{compressionResult.format}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="font-medium uppercase tracking-wide text-violet-600 dark:text-violet-300">
+            {t('originalSize')}
+          </span>
+          <span>{formatFileSize(compressionResult.originalSize)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="font-medium uppercase tracking-wide text-violet-600 dark:text-violet-300">
+            {t('compressedSize')}
+          </span>
+          <span>{formatFileSize(compressionResult.compressedSize)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="font-medium uppercase tracking-wide text-violet-600 dark:text-violet-300">
+            {t('saved')}
+          </span>
+          <span className="text-sm font-semibold text-violet-600 dark:text-violet-300">
+            {savedSpace} ({compressionPercentage}%)
+          </span>
         </div>
 
-        <div className="space-y-3 mb-4">
-          <div className="flex flex-col text-xs text-slate-500 dark:text-slate-400 space-y-1">
-            <div className="flex items-center justify-between">
-              <span>{t('outputFormat')}</span>
-              <span className="font-medium uppercase">{compressionResult.format}</span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span>{t('originalSize')}</span>
-              <span className="font-medium">{formatFileSize(compressionResult.originalSize)}</span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span>{t('compressedSize')}</span>
-              <span className="font-medium">
-                {formatFileSize(compressionResult.compressedSize)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span>{t('saved')}</span>
-              <span className="font-medium text-green-600 dark:text-green-400">
-                {savedSpace} ({compressionPercentage}%)
-              </span>
-            </div>
-
-            {compressionResult.duration && (
-              <div className="flex items-center justify-between">
-                <span className="flex items-center">
-                  <Clock className="w-3 h-3 mr-1" />
-                  {t('duration')}
-                </span>
-                <span className="font-medium">{formatTime(compressionResult.duration)}</span>
-              </div>
-            )}
-
-            {compressionResult.width && compressionResult.height && (
-              <div className="flex items-center justify-between">
-                <span>{t('resolution')}</span>
-                <span className="font-medium">
-                  {compressionResult.width} × {compressionResult.height}
-                </span>
-              </div>
-            )}
+        {compressionResult.duration && (
+          <div className="flex items-center justify-between">
+            <span className="font-medium uppercase tracking-wide text-violet-600 dark:text-violet-300 flex items-center">
+              <Clock className="w-3 h-3 mr-1" />
+              {t('duration')}
+            </span>
+            <span>{formatTime(compressionResult.duration)}</span>
           </div>
+        )}
 
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 w-full"
-              onClick={openFileLocation}
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              {t('openFileLocation')}
-            </Button>
-
-            <Button className="bg-red-500 hover:bg-red-600 w-full" onClick={onReset}>
-              <Download className="h-4 w-4 mr-2" />
-              {t('compressAnother')}
-            </Button>
+        {compressionResult.width && compressionResult.height && (
+          <div className="flex items-center justify-between">
+            <span className="font-medium uppercase tracking-wide text-violet-600 dark:text-violet-300">
+              {t('resolution')}
+            </span>
+            <span>
+              {compressionResult.width} × {compressionResult.height} px
+            </span>
           </div>
-        </div>
+        )}
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Button
+          variant="outline"
+          className="border-violet-200 text-violet-600 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-400 dark:hover:bg-violet-900/20 w-full"
+          onClick={openFileLocation}
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
+          {t('openFileLocation')}
+        </Button>
+
+        <Button className="bg-violet-500 hover:bg-violet-600 text-white w-full" onClick={onReset}>
+          <Download className="h-4 w-4 mr-2" />
+          {t('compressAnother')}
+        </Button>
       </div>
     </div>
   )

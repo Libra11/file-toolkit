@@ -6,7 +6,7 @@
  */
 import { useRef, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Clock, FileVideo } from 'lucide-react'
+import { Clock, FileVideo, Play, Pause } from 'lucide-react'
 import { VideoInfo } from './types'
 import { formatFileSize, formatTime } from './utils'
 
@@ -78,107 +78,80 @@ export function VideoPreview({
   }, [])
 
   return (
-    <div className={`bg-slate-100 dark:bg-slate-800/50 rounded-lg overflow-hidden ${className}`}>
-      <div className="p-3">
-        <h3 className="text-sm font-medium mb-2">{t('originalVideo')}</h3>
-        <div className="rounded-md overflow-hidden bg-black mb-3 aspect-video relative">
-          {videoUrl ? (
+    <div
+      className={`space-y-3 rounded-2xl border border-purple-100/70 bg-white/95 p-4 shadow-sm shadow-purple-900/5 dark:border-purple-500/30 dark:bg-slate-900/70 ${className}`}
+    >
+      <h3 className="flex items-center text-sm font-semibold text-slate-800 dark:text-white">
+        <FileVideo className="mr-2 h-4 w-4 text-purple-500 dark:text-purple-300" />
+        <span className="truncate" title={fileName}>
+          {fileName}
+        </span>
+      </h3>
+
+      <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl border border-purple-100/60 bg-purple-50/60 dark:border-purple-500/30 dark:bg-slate-900/60">
+        {videoUrl ? (
+          <>
             <video
               ref={videoRef}
               src={videoUrl}
-              className="w-full h-full object-contain"
+              className="h-full w-full object-contain"
               onClick={togglePlayPause}
             />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <FileVideo className="w-12 h-12 text-slate-600 dark:text-slate-400" />
-            </div>
-          )}
-
-          {videoUrl && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 text-white text-xs flex justify-between items-center">
-              <span>
-                {formatTime(currentTime)} / {formatTime(duration || videoInfo.duration || 0)}
-              </span>
-              <button
-                className="p-1 rounded-full hover:bg-white/20 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  togglePlayPause()
-                }}
-              >
-                {isPlaying ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="6" y="4" width="4" height="16"></rect>
-                    <rect x="14" y="4" width="4" height="16"></rect>
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                  </svg>
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium truncate">{fileName}</p>
-          </div>
-          <div className="flex flex-col text-xs text-slate-500 dark:text-slate-400 space-y-1">
-            <div className="flex items-center justify-between">
-              <span>{t('fileSize')}</span>
-              <span className="font-medium">{formatFileSize(fileSize)}</span>
-            </div>
-
-            {videoInfo.duration && (
-              <div className="flex items-center justify-between">
-                <span className="flex items-center">
-                  <Clock className="w-3 h-3 mr-1" />
-                  {t('duration')}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+              <div className="flex items-center justify-between text-white text-xs">
+                <span>
+                  {formatTime(currentTime)} / {formatTime(duration || videoInfo.duration || 0)}
                 </span>
-                <span className="font-medium">{formatTime(videoInfo.duration)}</span>
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    togglePlayPause()
+                  }}
+                >
+                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </button>
               </div>
-            )}
+            </div>
+          </>
+        ) : (
+          <FileVideo className="h-10 w-10 text-purple-400" />
+        )}
+      </div>
 
-            {videoInfo.width && videoInfo.height && (
-              <div className="flex items-center justify-between">
-                <span>{t('resolution')}</span>
-                <span className="font-medium">
-                  {videoInfo.width} × {videoInfo.height}
-                </span>
-              </div>
-            )}
+      <div className="grid gap-1 text-xs text-slate-600 dark:text-slate-300">
+        <p className="flex items-center justify-between">
+          <span className="font-medium text-slate-700 dark:text-slate-200">{t('fileSize')}:</span>
+          <span>{formatFileSize(fileSize)}</span>
+        </p>
 
-            {videoInfo.codec && (
-              <div className="flex items-center justify-between">
-                <span>{t('codec')}</span>
-                <span className="font-medium">{videoInfo.codec}</span>
-              </div>
-            )}
-          </div>
-        </div>
+        {videoInfo.duration && (
+          <p className="flex items-center justify-between">
+            <span className="font-medium text-slate-700 dark:text-slate-200 flex items-center">
+              <Clock className="w-3 h-3 mr-1" />
+              {t('duration')}:
+            </span>
+            <span>{formatTime(videoInfo.duration)}</span>
+          </p>
+        )}
+
+        {videoInfo.width && videoInfo.height && (
+          <p className="flex items-center justify-between">
+            <span className="font-medium text-slate-700 dark:text-slate-200">
+              {t('resolution')}:
+            </span>
+            <span>
+              {videoInfo.width} × {videoInfo.height} px
+            </span>
+          </p>
+        )}
+
+        {videoInfo.codec && (
+          <p className="flex items-center justify-between">
+            <span className="font-medium text-slate-700 dark:text-slate-200">{t('codec')}:</span>
+            <span className="uppercase">{videoInfo.codec}</span>
+          </p>
+        )}
       </div>
     </div>
   )

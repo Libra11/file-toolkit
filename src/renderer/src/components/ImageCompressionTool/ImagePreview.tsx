@@ -19,23 +19,35 @@ export function ImagePreview({
   const { t } = useTranslation()
 
   return (
-    <div className="bg-slate-100 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-      <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center">
-        <File className="h-4 w-4 mr-1" />
-        {fileName}
+    <div className="space-y-3 rounded-2xl border border-sky-100/70 bg-white/95 p-4 shadow-sm shadow-sky-900/5 dark:border-sky-500/30 dark:bg-slate-900/70">
+      <h3 className="flex items-center text-sm font-semibold text-slate-800 dark:text-white">
+        <File className="mr-2 h-4 w-4 text-sky-500 dark:text-sky-300" />
+        <span className="truncate" title={fileName}>
+          {fileName}
+        </span>
       </h3>
-      <div className="relative w-full h-48 bg-slate-200 dark:bg-slate-900/50 rounded overflow-hidden">
-        {imageUrl && <img src={imageUrl} alt="原始图片" className="w-full h-full object-contain" />}
+      <div className="relative flex h-48 w-full items-center justify-center overflow-hidden rounded-xl border border-sky-100/60 bg-sky-50/60 dark:border-sky-500/30 dark:bg-slate-900/60">
+        {imageUrl ? (
+          <img src={imageUrl} alt="original" className="h-full w-full object-contain" />
+        ) : (
+          <File className="h-10 w-10 text-sky-400" />
+        )}
       </div>
-      <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-        <p className="flex items-center">
-          <span className="font-medium mr-1">{t('originalSize')}:</span>
-          {formatBytes(fileSize)}
+      <div className="grid gap-1 text-xs text-slate-600 dark:text-slate-300">
+        <p className="flex items-center justify-between">
+          <span className="font-medium text-slate-700 dark:text-slate-200">
+            {t('originalSize')}:
+          </span>
+          <span>{formatBytes(fileSize)}</span>
         </p>
         {imageInfo.width && imageInfo.height && (
-          <p className="flex items-center">
-            <span className="font-medium mr-1">{t('dimensions')}:</span>
-            {imageInfo.width} x {imageInfo.height} px
+          <p className="flex items-center justify-between">
+            <span className="font-medium text-slate-700 dark:text-slate-200">
+              {t('dimensions')}:
+            </span>
+            <span>
+              {imageInfo.width} x {imageInfo.height} px
+            </span>
           </p>
         )}
       </div>
