@@ -12,7 +12,15 @@
  */
 import { useState, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Archive, File, FileArchive, FolderInput, FolderOutput, Download } from 'lucide-react'
+import {
+  Archive,
+  File,
+  FileArchive,
+  FolderInput,
+  FolderOutput,
+  Download,
+  Sparkles
+} from 'lucide-react'
 import { TabsContent, Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import {
   Card,
@@ -213,307 +221,459 @@ export default function ArchiveCompressionTool(): JSX.Element {
     return `${(size / (1024 * 1024 * 1024)).toFixed(2)} GB`
   }
 
+  const totalSelectedSize = selectedFiles.reduce((sum, file) => sum + file.size, 0)
+
   return (
-    <Tabs
-      defaultValue="compress"
-      value={activeTab}
-      onValueChange={(value) => setActiveTab(value as 'compress' | 'extract')}
-      className="w-full"
-    >
-      <TabsList className="grid grid-cols-2 w-full mb-6">
-        <TabsTrigger
-          value="compress"
-          className="text-sm font-medium flex items-center justify-center"
-        >
-          <Archive className="mr-2 h-4 w-4" />
-          {t('compress')}
-        </TabsTrigger>
-        <TabsTrigger
-          value="extract"
-          className="text-sm font-medium flex items-center justify-center"
-        >
-          <FolderOutput className="mr-2 h-4 w-4" />
-          {t('extract')}
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="compress" className="mt-0">
-        <Card className="border border-slate-200 dark:border-slate-700 shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold">{t('compressFiles')}</CardTitle>
-            <CardDescription>{t('compressFilesDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* 文件选择区域 */}
-            <div className="space-y-4">
-              <Label>{t('selectFilesToCompress')}</Label>
-              <FileUploader multiple onFilesSelected={handleFileSelect} />
-
-              {selectedFiles.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <Label>{t('selectedFiles')}</Label>
-                  <div className="max-h-40 overflow-y-auto border rounded-md p-2">
-                    {selectedFiles.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center text-sm py-1 border-b last:border-b-0 dark:border-slate-700"
-                      >
-                        <File className="h-4 w-4 mr-2 text-slate-400" />
-                        <span className="truncate flex-1">{file.name}</span>
-                        <span className="text-xs text-slate-500">{formatSize(file.size)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+    <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-purple-900/10 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/60 md:p-8">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-purple-100/60 via-white to-transparent dark:from-purple-900/20 dark:via-slate-900" />
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full bg-purple-100/70 px-3 py-1 text-sm font-medium text-purple-600 dark:bg-purple-900/40 dark:text-purple-200">
+            <Archive className="h-4 w-4" />
+            {t('archiveCompression')}
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+              {t('archiveCompression')}
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {t('archiveCompressionDescription')}
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 rounded-2xl border border-purple-100/70 bg-purple-50/60 p-4 text-sm text-purple-700 shadow-inner dark:border-purple-500/30 dark:bg-purple-900/25 dark:text-purple-100 md:flex-row md:items-start md:gap-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-purple-500 shadow-sm dark:bg-white/10 dark:text-purple-200">
+              <Sparkles className="h-5 w-5" />
             </div>
-
-            {/* 压缩设置 */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="compression-format">{t('compressionFormat')}</Label>
-                <Select
-                  value={compressionFormat}
-                  onValueChange={(value) => setCompressionFormat(value as ArchiveFormat)}
-                >
-                  <SelectTrigger id="compression-format">
-                    <SelectValue placeholder={t('selectFormat')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {supportedFormats.map((format) => (
-                      <SelectItem key={format} value={format}>
-                        {format.toUpperCase()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {compressionFormat === ArchiveFormat.ZIP && (
-                <div className="space-y-2">
-                  <Label htmlFor="compression-level">{t('compressionLevel')}</Label>
-                  <RadioGroup
-                    value={compressionLevel.toString()}
-                    onValueChange={(value) => setCompressionLevel(parseInt(value))}
-                    className="flex space-x-4"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="1" id="level-low" />
-                      <Label htmlFor="level-low">{t('low')}</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="5" id="level-medium" />
-                      <Label htmlFor="level-medium">{t('medium')}</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="9" id="level-high" />
-                      <Label htmlFor="level-high">{t('high')}</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              )}
+            <div className="space-y-1">
+              <p className="text-base font-semibold">{t('archiveCompressionTipTitle')}</p>
+              <p className="text-xs leading-relaxed text-purple-600/80 dark:text-purple-100/80">
+                {t('archiveCompressionTipDescription')}
+              </p>
             </div>
+          </div>
+        </div>
 
-            {/* 压缩按钮和进度 */}
-            <div className="space-y-4">
-              <Button
-                type="button"
-                onClick={handleCompress}
-                disabled={isCompressing || selectedFiles.length === 0}
-                className="w-full"
+        <Tabs
+          defaultValue="compress"
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as 'compress' | 'extract')}
+          className="w-full"
+        >
+          <div className="flex justify-center">
+            <TabsList className="mb-6 h-[3.2rem] grid w-full max-w-lg grid-cols-2 items-center overflow-hidden rounded-full bg-purple-100/60 p-1 text-sm font-medium dark:bg-purple-900/40">
+              <TabsTrigger
+                value="compress"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-purple-300"
               >
-                {isCompressing ? (
-                  <>
-                    <div className="animate-spin mr-2">
-                      <Archive className="h-4 w-4" />
-                    </div>
-                    {t('compressing')}
-                  </>
-                ) : (
-                  <>
-                    <Archive className="h-4 w-4 mr-2" />
+                <Archive className="h-4 w-4" />
+                {t('compress')}
+              </TabsTrigger>
+              <TabsTrigger
+                value="extract"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-purple-300"
+              >
+                <FolderOutput className="h-4 w-4" />
+                {t('extract')}
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="compress" className="mt-6">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)]">
+              <Card className="border border-purple-100/70 bg-white/90 shadow-xl shadow-purple-900/10 backdrop-blur dark:border-purple-500/20 dark:bg-slate-900/70">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
                     {t('compressFiles')}
-                  </>
-                )}
-              </Button>
-
-              {isCompressing && <Progress value={compressProgress} className="h-2" />}
-
-              {compressComplete && compressResult && (
-                <div className="rounded-lg bg-slate-50 dark:bg-slate-800 p-4 mt-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{t('compressionComplete')}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenLocation(compressResult.outputPath)}
-                    >
-                      <FolderOutput className="h-4 w-4 mr-2" />
-                      {t('openLocation')}
-                    </Button>
+                  </CardTitle>
+                  <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                    {t('compressFilesDescription')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-slate-600 dark:text-slate-200">
+                      {t('selectFilesToCompress')}
+                    </Label>
+                    <FileUploader multiple onFilesSelected={handleFileSelect} />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="block text-slate-500 dark:text-slate-400">
-                        {t('originalSize')}
-                      </span>
-                      <span className="font-medium">{formatSize(compressResult.originalSize)}</span>
-                    </div>
-                    <div>
-                      <span className="block text-slate-500 dark:text-slate-400">
-                        {t('compressedSize')}
-                      </span>
-                      <span className="font-medium">
-                        {formatSize(compressResult.compressedSize)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-slate-500 dark:text-slate-400">
-                        {t('compressionRatio')}
-                      </span>
-                      <span className="font-medium">
-                        {(
-                          (1 - compressResult.compressedSize / compressResult.originalSize) *
-                          100
-                        ).toFixed(2)}
-                        %
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-slate-500 dark:text-slate-400">
-                        {t('fileCount')}
-                      </span>
-                      <span className="font-medium">{compressResult.entryCount}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="extract" className="mt-0">
-        <Card className="border border-slate-200 dark:border-slate-700 shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold">{t('extractArchive')}</CardTitle>
-            <CardDescription>{t('extractArchiveDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* 压缩包选择 */}
-            <div className="space-y-4">
-              <Label>{t('selectArchiveToExtract')}</Label>
-              <FileUploader
-                multiple={false}
-                accept=".zip,.tar,.gz,.tgz"
-                onFilesSelected={(files) => files.length > 0 && handleArchiveSelect(files[0].path)}
-              />
-
-              {archiveFile && (
-                <div className="flex items-center justify-between mt-2 p-2 border rounded-md">
-                  <div className="flex items-center">
-                    <FileArchive className="h-5 w-5 mr-2 text-blue-500" />
-                    <span className="truncate max-w-xs">{archiveFile.split('/').pop()}</span>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={handleViewContents}>
-                    {t('viewContents')}
-                  </Button>
-                </div>
-              )}
-
-              {/* 显示压缩包内容 */}
-              {showContents && archiveContents.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>{t('archiveContents')}</Label>
-                    <span className="text-xs text-slate-500">
-                      {archiveContents.length} {t('items')}
-                    </span>
-                  </div>
-                  <div className="max-h-40 overflow-y-auto border rounded-md p-2 text-sm">
-                    {archiveContents.map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center py-1 border-b last:border-b-0 dark:border-slate-700"
-                      >
-                        {item.isDirectory ? (
-                          <FolderInput className="h-4 w-4 mr-2 text-slate-400" />
-                        ) : (
-                          <File className="h-4 w-4 mr-2 text-slate-400" />
-                        )}
-                        <span className="truncate flex-1">{item.name}</span>
-                        {!item.isDirectory && (
-                          <span className="text-xs text-slate-500">{formatSize(item.size)}</span>
-                        )}
+                  {selectedFiles.length > 0 && (
+                    <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/60 dark:bg-slate-800/60">
+                      <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        <span>
+                          {selectedFiles.length} {t('items')}
+                        </span>
+                        <span>{formatSize(totalSelectedSize)}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+                      <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+                        {selectedFiles.map((file, index) => (
+                          <div
+                            key={`${file.name}-${index}`}
+                            className="flex items-center gap-3 rounded-xl bg-white/90 px-3 py-2 text-sm shadow-sm ring-1 ring-slate-200/70 transition hover:ring-purple-200 dark:bg-slate-900/80 dark:ring-slate-700/60 dark:hover:ring-purple-500/40"
+                          >
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-100/70 text-purple-500 dark:bg-purple-900/30 dark:text-purple-200">
+                              <File className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-1 flex-col">
+                              <span className="truncate font-medium text-slate-700 dark:text-slate-200">
+                                {file.name}
+                              </span>
+                              <span className="text-xs text-slate-500 dark:text-slate-400">
+                                {formatSize(file.size)}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-            {/* 解压设置 */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="archive-password">{t('password')}</Label>
-                  <span className="text-xs text-slate-500">{t('optional')}</span>
-                </div>
-                <Input
-                  id="archive-password"
-                  type="password"
-                  value={archivePassword}
-                  onChange={(e) => setArchivePassword(e.target.value)}
-                  placeholder={t('enterPasswordIfNeeded')}
-                />
+              <div className="space-y-6">
+                <Card className="border border-slate-200/70 bg-white/95 shadow-xl shadow-purple-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                      {t('compressionSettings')}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                      {t('chooseCompressionPreferences')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="compression-format"
+                        className="text-sm font-medium text-slate-600 dark:text-slate-200"
+                      >
+                        {t('compressionFormat')}
+                      </Label>
+                      <Select
+                        value={compressionFormat}
+                        onValueChange={(value) => setCompressionFormat(value as ArchiveFormat)}
+                      >
+                        <SelectTrigger
+                          id="compression-format"
+                          className="h-11 rounded-xl border-slate-200/70 bg-white/80 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/80"
+                        >
+                          <SelectValue placeholder={t('selectFormat')} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-200/60 bg-white/95 shadow-xl dark:border-slate-700 dark:bg-slate-900/95">
+                          {supportedFormats.map((format) => (
+                            <SelectItem key={format} value={format} className="rounded-lg text-sm">
+                              {format.toUpperCase()}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {compressionFormat === ArchiveFormat.ZIP && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-600 dark:text-slate-200">
+                          {t('compressionLevel')}
+                        </Label>
+                        <RadioGroup
+                          value={compressionLevel.toString()}
+                          onValueChange={(value) => setCompressionLevel(parseInt(value))}
+                          className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+                        >
+                          {[
+                            { value: '1', id: 'level-low', label: t('low') },
+                            { value: '5', id: 'level-medium', label: t('medium') },
+                            { value: '9', id: 'level-high', label: t('high') }
+                          ].map((option) => (
+                            <Label
+                              key={option.value}
+                              htmlFor={option.id}
+                              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200/70 bg-white/90 px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-purple-200 hover:text-purple-600 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:border-purple-500/40 dark:hover:text-purple-300"
+                            >
+                              <RadioGroupItem
+                                value={option.value}
+                                id={option.id}
+                                className="sr-only"
+                              />
+                              <span>{option.label}</span>
+                            </Label>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border border-purple-100/70 bg-gradient-to-br from-purple-500/10 via-white/95 to-white shadow-xl shadow-purple-900/10 dark:border-purple-500/30 dark:from-purple-500/10 dark:via-slate-900/80 dark:to-slate-900/80">
+                  <CardContent className="space-y-4 p-5">
+                    <Button
+                      type="button"
+                      onClick={handleCompress}
+                      disabled={isCompressing || selectedFiles.length === 0}
+                      className="h-11 w-full rounded-xl bg-purple-600 text-sm font-semibold shadow-lg shadow-purple-900/20 transition hover:bg-purple-700 disabled:bg-slate-300 dark:bg-purple-500 dark:hover:bg-purple-400"
+                    >
+                      {isCompressing ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 animate-spin">
+                            <Archive className="h-4 w-4" />
+                          </div>
+                          {t('compressing')}
+                        </>
+                      ) : (
+                        <>
+                          <Archive className="mr-2 h-4 w-4" />
+                          {t('compressFiles')}
+                        </>
+                      )}
+                    </Button>
+
+                    {isCompressing && (
+                      <Progress
+                        value={compressProgress}
+                        className="h-2 rounded-full bg-purple-100/60"
+                      />
+                    )}
+
+                    {compressComplete && compressResult && (
+                      <div className="space-y-4 rounded-2xl border border-purple-100/70 bg-white/90 p-4 shadow-inner dark:border-purple-500/30 dark:bg-slate-900/80">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <span className="text-base font-semibold text-slate-800 dark:text-white">
+                            {t('compressionComplete')}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenLocation(compressResult.outputPath)}
+                            className="flex items-center gap-2 text-purple-600 hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
+                          >
+                            <FolderOutput className="h-4 w-4" />
+                            {t('openLocation')}
+                          </Button>
+                        </div>
+
+                        <div className="grid gap-3 text-sm sm:grid-cols-2">
+                          <div className="rounded-xl bg-purple-50/70 p-3 dark:bg-purple-900/20">
+                            <span className="text-xs uppercase tracking-wide text-purple-600 dark:text-purple-300">
+                              {t('originalSize')}
+                            </span>
+                            <p className="mt-1 text-base font-semibold text-slate-800 dark:text-white">
+                              {formatSize(compressResult.originalSize)}
+                            </p>
+                          </div>
+                          <div className="rounded-xl bg-purple-50/70 p-3 dark:bg-purple-900/20">
+                            <span className="text-xs uppercase tracking-wide text-purple-600 dark:text-purple-300">
+                              {t('compressedSize')}
+                            </span>
+                            <p className="mt-1 text-base font-semibold text-slate-800 dark:text-white">
+                              {formatSize(compressResult.compressedSize)}
+                            </p>
+                          </div>
+                          <div className="rounded-xl bg-purple-50/70 p-3 dark:bg-purple-900/20">
+                            <span className="text-xs uppercase tracking-wide text-purple-600 dark:text-purple-300">
+                              {t('compressionRatio')}
+                            </span>
+                            <p className="mt-1 text-base font-semibold text-slate-800 dark:text-white">
+                              {(
+                                (1 - compressResult.compressedSize / compressResult.originalSize) *
+                                100
+                              ).toFixed(2)}
+                              %
+                            </p>
+                          </div>
+                          <div className="rounded-xl bg-purple-50/70 p-3 dark:bg-purple-900/20">
+                            <span className="text-xs uppercase tracking-wide text-purple-600 dark:text-purple-300">
+                              {t('fileCount')}
+                            </span>
+                            <p className="mt-1 text-base font-semibold text-slate-800 dark:text-white">
+                              {compressResult.entryCount}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </div>
+          </TabsContent>
 
-            {/* 解压按钮和进度 */}
-            <div className="space-y-4">
-              <Button
-                type="button"
-                onClick={handleExtract}
-                disabled={isExtracting || !archiveFile}
-                className="w-full"
-              >
-                {isExtracting ? (
-                  <>
-                    <div className="animate-spin mr-2">
-                      <FolderOutput className="h-4 w-4" />
-                    </div>
-                    {t('extracting')}
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
+          <TabsContent value="extract" className="mt-6">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)]">
+              <Card className="border border-purple-100/70 bg-white/90 shadow-xl shadow-purple-900/10 backdrop-blur dark:border-purple-500/20 dark:bg-slate-900/70">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
                     {t('extractArchive')}
-                  </>
-                )}
-              </Button>
-
-              {isExtracting && <Progress value={extractProgress} className="h-2" />}
-
-              {extractComplete && (
-                <div className="rounded-lg bg-slate-50 dark:bg-slate-800 p-4 mt-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{t('extractionComplete')}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenLocation(extractPath)}
-                    >
-                      <FolderOutput className="h-4 w-4 mr-2" />
-                      {t('openLocation')}
-                    </Button>
+                  </CardTitle>
+                  <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                    {t('extractArchiveDescription')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-slate-600 dark:text-slate-200">
+                      {t('selectArchiveToExtract')}
+                    </Label>
+                    <FileUploader
+                      multiple={false}
+                      accept=".zip,.tar,.gz,.tgz"
+                      onFilesSelected={(files) =>
+                        files.length > 0 && handleArchiveSelect(files[0].path)
+                      }
+                    />
                   </div>
-                </div>
-              )}
+
+                  {archiveFile && (
+                    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100/70 text-blue-500 dark:bg-blue-900/30 dark:text-blue-200">
+                          <FileArchive className="h-5 w-5" />
+                        </div>
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate font-medium text-slate-700 dark:text-slate-200">
+                            {archiveFile.split('/').pop()}
+                          </span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {archiveFile}
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleViewContents}
+                        className="flex items-center gap-2 text-purple-600 hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
+                      >
+                        {t('viewContents')}
+                      </Button>
+                    </div>
+                  )}
+
+                  {showContents && archiveContents.length > 0 && (
+                    <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 text-sm dark:border-slate-700/60 dark:bg-slate-800/60">
+                      <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        <span>{t('archiveContents')}</span>
+                        <span>
+                          {archiveContents.length} {t('items')}
+                        </span>
+                      </div>
+                      <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+                        {archiveContents.map((item, index) => (
+                          <div
+                            key={`${item.name}-${index}`}
+                            className="flex items-center gap-3 rounded-xl bg-white/90 px-3 py-2 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900/80 dark:ring-slate-700/60"
+                          >
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                              {item.isDirectory ? (
+                                <FolderInput className="h-4 w-4" />
+                              ) : (
+                                <File className="h-4 w-4" />
+                              )}
+                            </div>
+                            <span className="flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200">
+                              {item.name}
+                            </span>
+                            {!item.isDirectory && (
+                              <span className="text-xs text-slate-500 dark:text-slate-400">
+                                {formatSize(item.size)}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <Card className="border border-slate-200/70 bg-white/95 shadow-xl shadow-purple-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                      {t('securityOptions')}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+                      {t('optionalPasswordProtection')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label
+                          htmlFor="archive-password"
+                          className="text-sm font-medium text-slate-600 dark:text-slate-200"
+                        >
+                          {t('password')}
+                        </Label>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">
+                          {t('optional')}
+                        </span>
+                      </div>
+                      <Input
+                        id="archive-password"
+                        type="password"
+                        value={archivePassword}
+                        onChange={(e) => setArchivePassword(e.target.value)}
+                        placeholder={t('enterPasswordIfNeeded')}
+                        className="h-11 rounded-xl border-slate-200/70 bg-white/80 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/80"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border border-purple-100/70 bg-gradient-to-br from-purple-500/10 via-white/95 to-white shadow-xl shadow-purple-900/10 dark:border-purple-500/30 dark:from-purple-500/10 dark:via-slate-900/80 dark:to-slate-900/80">
+                  <CardContent className="space-y-4 p-5">
+                    <Button
+                      type="button"
+                      onClick={handleExtract}
+                      disabled={isExtracting || !archiveFile}
+                      className="h-11 w-full rounded-xl bg-purple-600 text-sm font-semibold shadow-lg shadow-purple-900/20 transition hover:bg-purple-700 disabled:bg-slate-300 dark:bg-purple-500 dark:hover:bg-purple-400"
+                    >
+                      {isExtracting ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 animate-spin">
+                            <FolderOutput className="h-4 w-4" />
+                          </div>
+                          {t('extracting')}
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          {t('extractArchive')}
+                        </>
+                      )}
+                    </Button>
+
+                    {isExtracting && (
+                      <Progress
+                        value={extractProgress}
+                        className="h-2 rounded-full bg-purple-100/60"
+                      />
+                    )}
+
+                    {extractComplete && (
+                      <div className="space-y-3 rounded-2xl border border-purple-100/70 bg-white/90 p-4 shadow-inner dark:border-purple-500/30 dark:bg-slate-900/80">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <span className="text-base font-semibold text-slate-800 dark:text-white">
+                            {t('extractionComplete')}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenLocation(extractPath)}
+                            className="flex items-center gap-2 text-purple-600 hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
+                          >
+                            <FolderOutput className="h-4 w-4" />
+                            {t('openLocation')}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{extractPath}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
   )
 }
