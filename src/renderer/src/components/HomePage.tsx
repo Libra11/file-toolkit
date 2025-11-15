@@ -411,6 +411,10 @@ export default function HomePage(): JSX.Element {
     visible: { y: 0, opacity: 1 }
   }
 
+  const handleBackToHome = (): void => {
+    setActiveTool(ActiveTool.None)
+  }
+
   return (
     <>
       <Dialog open={isFavoritesDialogOpen} onOpenChange={handleFavoritesDialogOpen}>
@@ -659,32 +663,6 @@ export default function HomePage(): JSX.Element {
             <div className="w-full mx-auto">
               {activeTool === ActiveTool.Conversion ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                      <FileType2 className="mr-2 h-5 w-5 text-blue-500" />
-                      {t('fileConversion')}
-                    </h2>
-                    <button
-                      onClick={() => setActiveTool(ActiveTool.None)}
-                      className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 mr-1.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 12H5M5 12L12 19M5 12L12 5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {t('backToHome')}
-                    </button>
-                  </div>
                   <div>
                     <div className="flex justify-center">
                       <div className="mb-6 h-[3.2rem] grid w-full max-w-lg grid-cols-3 items-center overflow-hidden rounded-full bg-blue-100/60 p-1 text-sm font-medium dark:bg-blue-900/40">
@@ -721,36 +699,13 @@ export default function HomePage(): JSX.Element {
                       </p>
                     </div> */}
                   </div>
-                  <FileConversionTool activeCategory={conversionTab} />
+                  <FileConversionTool
+                    activeCategory={conversionTab}
+                    onBack={handleBackToHome}
+                  />
                 </>
               ) : activeTool === ActiveTool.Compression ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                      <FileDown className="mr-2 h-5 w-5 text-emerald-500" />
-                      {t('fileCompression')}
-                    </h2>
-                    <button
-                      onClick={() => setActiveTool(ActiveTool.None)}
-                      className="flex items-center px-3 py-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-800/40 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 mr-1.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 12H5M5 12L12 19M5 12L12 5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {t('backToHome')}
-                    </button>
-                  </div>
                   <div>
                     <div className="flex justify-center">
                       <div className="mb-6 h-[3.2rem] grid w-full max-w-lg grid-cols-3 items-center overflow-hidden rounded-full bg-emerald-100/60 p-1 text-sm font-medium dark:bg-emerald-900/40">
@@ -788,283 +743,48 @@ export default function HomePage(): JSX.Element {
                     </div> */}
                   </div>
                   {compressionTab === CompressionTab.Image ? (
-                    <ImageCompressionTool />
+                    <ImageCompressionTool onBack={handleBackToHome} />
                   ) : compressionTab === CompressionTab.Audio ? (
-                    <AudioCompressionTool />
+                    <AudioCompressionTool onBack={handleBackToHome} />
                   ) : (
-                    <VideoCompressionTool />
+                    <VideoCompressionTool onBack={handleBackToHome} />
                   )}
                 </>
               ) : activeTool === ActiveTool.ArchiveCompression ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                      <Archive className="mr-2 h-5 w-5 text-purple-500" />
-                      {t('archiveCompression')}
-                    </h2>
-                    <button
-                      onClick={() => setActiveTool(ActiveTool.None)}
-                      className="flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-800/40 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 mr-1.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 12H5M5 12L12 19M5 12L12 5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {t('backToHome')}
-                    </button>
-                  </div>
-                  <ArchiveCompressionTool />
+                  <ArchiveCompressionTool onBack={handleBackToHome} />
                 </>
               ) : activeTool === ActiveTool.ExamCreation ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                      <School className="mr-2 h-5 w-5 text-amber-500" />
-                      {t('examCreation')}
-                    </h2>
-                    <button
-                      onClick={() => setActiveTool(ActiveTool.None)}
-                      className="flex items-center px-3 py-1.5 text-sm font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-800/40 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 mr-1.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 12H5M5 12L12 19M5 12L12 5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {t('backToHome')}
-                    </button>
-                  </div>
-                  <ExamCreationTool />
+                  <ExamCreationTool onBack={handleBackToHome} />
                 </>
               ) : activeTool === ActiveTool.ImageOrganize ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                      <Images className="mr-2 h-5 w-5 text-cyan-500" />
-                      {t('imageOrganize')}
-                    </h2>
-                    <button
-                      onClick={() => setActiveTool(ActiveTool.None)}
-                      className="flex items-center px-3 py-1.5 text-sm font-medium text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-900/30 dark:hover:bg-cyan-800/40 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 mr-1.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 12H5M5 12L12 19M5 12L12 5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {t('backToHome')}
-                    </button>
-                  </div>
-                  <ImageOrganizeTool />
+                  <ImageOrganizeTool onBack={handleBackToHome} />
                 </>
               ) : activeTool === ActiveTool.WordToExcel ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                      <FileText className="mr-2 h-5 w-5 text-rose-500" />
-                      {t('wordToExcel')}
-                    </h2>
-                    <button
-                      onClick={() => setActiveTool(ActiveTool.None)}
-                      className="flex items-center px-3 py-1.5 text-sm font-medium text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/30 dark:hover:bg-rose-800/40 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 mr-1.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 12H5M5 12L12 19M5 12L12 5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {t('backToHome')}
-                    </button>
-                  </div>
-                  <WordToExcelTool />
+                  <WordToExcelTool onBack={handleBackToHome} />
                 </>
               ) : activeTool === ActiveTool.JsonFormatter ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                      <Code2 className="mr-2 h-5 w-5 text-lime-500" />
-                      {t('jsonFormatter')}
-                    </h2>
-                    <button
-                      onClick={() => setActiveTool(ActiveTool.None)}
-                      className="flex items-center px-3 py-1.5 text-sm font-medium text-lime-600 hover:text-lime-700 dark:text-lime-400 dark:hover:text-lime-300 bg-lime-50 hover:bg-lime-100 dark:bg-lime-900/30 dark:hover:bg-lime-800/40 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 mr-1.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 12H5M5 12L12 19M5 12L12 5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {t('backToHome')}
-                    </button>
-                  </div>
-                  <JsonFormatterTool />
+                  <JsonFormatterTool onBack={handleBackToHome} />
                 </>
               ) : activeTool === ActiveTool.M3u8Download ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                      <Download className="mr-2 h-5 w-5 text-indigo-500" />
-                      {t('m3u8Download')}
-                    </h2>
-                    <button
-                      onClick={() => setActiveTool(ActiveTool.None)}
-                      className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 mr-1.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 12H5M5 12L12 19M5 12L12 5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {t('backToHome')}
-                    </button>
-                  </div>
-                  <M3u8DownloadTool />
+                  <M3u8DownloadTool onBack={handleBackToHome} />
                 </>
               ) : activeTool === ActiveTool.FileHash ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                      <Fingerprint className="mr-2 h-5 w-5 text-indigo-500" />
-                      {t('fileHashTool')}
-                    </h2>
-                    <button
-                      onClick={() => setActiveTool(ActiveTool.None)}
-                      className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 mr-1.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 12H5M5 12L12 19M5 12L12 5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {t('backToHome')}
-                    </button>
-                  </div>
-                  <FileHashTool />
+                  <FileHashTool onBack={handleBackToHome} />
                 </>
               ) : activeTool === ActiveTool.BatchRename ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                      <Edit3 className="mr-2 h-5 w-5 text-teal-500" />
-                      {t('batchRename')}
-                    </h2>
-                    <button
-                      onClick={() => setActiveTool(ActiveTool.None)}
-                      className="flex items-center px-3 py-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:hover:bg-teal-800/40 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-3.5 h-3.5 mr-1.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 12H5M5 12L12 19M5 12L12 5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {t('backToHome')}
-                    </button>
-                  </div>
-                  <BatchRenameTool />
+                  <BatchRenameTool onBack={handleBackToHome} />
                 </>
               ) : activeTool === ActiveTool.GifExport ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center">
-                      <FileImage className="mr-2 h-5 w-5 text-pink-500" />
-                      {t('htmlCardGifExportTool')}
-                    </h2>
-                    <button
-                      onClick={() => setActiveTool(ActiveTool.None)}
-                      className="flex items-center px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-                    >
-                      <svg
-                        className="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19 12H5M5 12L12 19M5 12L12 5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {t('backToHome')}
-                    </button>
-                  </div>
-                  <GifExportTool />
+                  <GifExportTool onBack={handleBackToHome} />
                 </>
               ) : null}
             </div>

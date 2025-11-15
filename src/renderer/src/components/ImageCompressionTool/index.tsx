@@ -19,6 +19,7 @@ import { ImageIcon, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Progress } from '@renderer/components/ui/progress'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
+import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 
 // 导入子组件
 import { FileUploader } from './FileUploader'
@@ -42,7 +43,11 @@ import {
 } from './types'
 import { estimateCompressedSize } from './utils'
 
-export default function ImageCompressionTool(): JSX.Element {
+interface ImageCompressionToolProps {
+  onBack?: () => void
+}
+
+export default function ImageCompressionTool({ onBack }: ImageCompressionToolProps): JSX.Element {
   const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -434,9 +439,17 @@ export default function ImageCompressionTool(): JSX.Element {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-sky-100/60 via-white to-transparent dark:from-sky-900/25 dark:via-slate-900" />
         <div className="space-y-6">
           <div className="flex flex-col gap-4">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-sky-100/70 px-3 py-1 text-sm font-medium text-sky-600 dark:bg-sky-900/40 dark:text-sky-200">
-              <ImageIcon className="h-4 w-4" />
-              {t('imageCompressionTool')}
+            <div className="flex gap-3 flex-row items-center justify-between">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-sky-100/70 px-3 py-1 text-sm font-medium text-sky-600 dark:bg-sky-900/40 dark:text-sky-200">
+                <ImageIcon className="h-4 w-4" />
+                {t('imageCompressionTool')}
+              </div>
+              {onBack && (
+                <BackToHomeButton
+                  onClick={onBack}
+                  className="bg-sky-100/70 text-sky-600 hover:bg-sky-100 hover:text-sky-700 dark:bg-sky-900/30 dark:text-sky-200 dark:hover:bg-sky-900/50"
+                />
+              )}
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">

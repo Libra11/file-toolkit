@@ -31,6 +31,7 @@ import {
 } from '@renderer/components/ui/select'
 import { toast } from '@renderer/components/ui/toast'
 import { Progress } from '@renderer/components/ui/progress'
+import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 import {
   Folder,
   FileSpreadsheet,
@@ -106,8 +107,12 @@ const PIPELINE_STEPS: PipelineStep[] = [
   }
 ]
 
+interface ImageOrganizeToolProps {
+  onBack?: () => void
+}
+
 // 组件主体
-const ImageOrganizeTool = (): JSX.Element => {
+const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
   const { t } = useTranslation()
 
   // 状态定义
@@ -402,9 +407,17 @@ const ImageOrganizeTool = (): JSX.Element => {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-cyan-100/60 via-white to-transparent dark:from-cyan-900/30 dark:via-slate-900" />
         <div className="space-y-8">
           <div className="flex flex-col gap-4">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-cyan-100/70 px-3 py-1 text-sm font-medium text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200">
-              <Sparkles className="h-4 w-4" />
-              {t('imageOrganize')}
+            <div className="flex gap-3 flex-row items-center justify-between">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-cyan-100/70 px-3 py-1 text-sm font-medium text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200">
+                <Sparkles className="h-4 w-4" />
+                {t('imageOrganize')}
+              </div>
+              {onBack && (
+                <BackToHomeButton
+                  onClick={onBack}
+                  className="bg-cyan-100/70 text-cyan-700 hover:bg-cyan-100 hover:text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-200 dark:hover:bg-cyan-900/50"
+                />
+              )}
             </div>
             <div className="space-y-2">
               <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">

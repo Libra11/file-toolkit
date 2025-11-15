@@ -46,6 +46,7 @@ import { Badge } from '@renderer/components/ui/badge'
 import { Switch } from '@renderer/components/ui/switch'
 import { Separator } from '@renderer/components/ui/separator'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
+import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 
 interface RenameRule {
   type: 'sequence' | 'replace' | 'prefix' | 'suffix' | 'regex' | 'timestamp' | 'extension'
@@ -72,7 +73,11 @@ interface RenamePreviewResult {
   conflicts: string[]
 }
 
-export default function BatchRenameTool(): JSX.Element {
+interface BatchRenameToolProps {
+  onBack?: () => void
+}
+
+export default function BatchRenameTool({ onBack }: BatchRenameToolProps): JSX.Element {
   const { t } = useTranslation()
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [rules, setRules] = useState<RenameRule[]>([])
@@ -435,7 +440,9 @@ export default function BatchRenameTool(): JSX.Element {
               </p>
             </div>
             <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm shadow-red-100/40 dark:border-white/10 dark:bg-white/5">
-              <p className="text-2xl font-semibold text-red-600 dark:text-red-300">{errorTasks.length}</p>
+              <p className="text-2xl font-semibold text-red-600 dark:text-red-300">
+                {errorTasks.length}
+              </p>
               <p className="text-xs uppercase tracking-wide text-red-800/70 dark:text-red-200">
                 {t('errorFiles')}
               </p>
@@ -520,10 +527,18 @@ export default function BatchRenameTool(): JSX.Element {
         <div className="relative space-y-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/70 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-slate-600 dark:border-white/20 dark:bg-white/10 dark:text-white/70">
-                <Replace className="h-4 w-4" />
-                {t('batchRename')}
-              </span>
+              <div className="flex gap-3 flex-row items-center justify-between">
+                <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/70 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-slate-600 dark:border-white/20 dark:bg-white/10 dark:text-white/70">
+                  <Replace className="h-4 w-4" />
+                  {t('batchRename')}
+                </span>
+                {onBack && (
+                  <BackToHomeButton
+                    onClick={onBack}
+                    className="bg-teal-50 text-teal-600 hover:bg-teal-100 hover:text-teal-700 dark:bg-teal-900/30 dark:text-teal-300 dark:hover:bg-teal-900/50"
+                  />
+                )}
+              </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold text-slate-900 dark:text-white sm:text-3xl">
                   {t('batchRename')}
@@ -554,19 +569,25 @@ export default function BatchRenameTool(): JSX.Element {
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm shadow-indigo-900/5 dark:border-white/15 dark:bg-white/5">
-              <p className="text-3xl font-semibold text-slate-900 dark:text-white">{selectedFiles.length}</p>
+              <p className="text-3xl font-semibold text-slate-900 dark:text-white">
+                {selectedFiles.length}
+              </p>
               <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-white/70">
                 {t('selectedFiles')}
               </p>
             </div>
             <div className="rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm shadow-indigo-900/5 dark:border-white/15 dark:bg-white/5">
-              <p className="text-3xl font-semibold text-slate-900 dark:text-white">{rules.length}</p>
+              <p className="text-3xl font-semibold text-slate-900 dark:text-white">
+                {rules.length}
+              </p>
               <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-white/70">
                 {t('renameRules')}
               </p>
             </div>
             <div className="rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm shadow-indigo-900/5 dark:border-white/15 dark:bg-white/5">
-              <p className="text-3xl font-semibold text-slate-900 dark:text-white">{previewConflictsCount}</p>
+              <p className="text-3xl font-semibold text-slate-900 dark:text-white">
+                {previewConflictsCount}
+              </p>
               <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-white/70">
                 {t('renameConflicts')}
               </p>
@@ -679,7 +700,9 @@ export default function BatchRenameTool(): JSX.Element {
                     <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
                       {t('ruleChains')}
                     </p>
-                    <p className="text-2xl font-semibold text-slate-900 dark:text-white">{rules.length}</p>
+                    <p className="text-2xl font-semibold text-slate-900 dark:text-white">
+                      {rules.length}
+                    </p>
                     <p className="text-xs text-slate-500 dark:text-white/60">{t('activeRules')}</p>
                   </div>
                   <div className="rounded-2xl border border-white/70 bg-white/80 p-4 text-sm text-slate-600 shadow-inner dark:border-white/15 dark:bg-white/5 dark:text-white/70">

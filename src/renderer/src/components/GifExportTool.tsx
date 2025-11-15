@@ -22,15 +22,17 @@ import { Progress } from './ui/progress'
 import { Badge } from './ui/badge'
 import { Separator } from './ui/separator'
 import { Switch } from './ui/switch'
+import { BackToHomeButton } from './ui/BackToHomeButton'
 import { FolderOpen, Download, Eye, Settings, FileImage, Sparkles, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { GifExportOptions, CardInfo } from '../../../shared/types'
 
 interface GifExportToolProps {
   className?: string
+  onBack?: () => void
 }
 
-export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
+export function GifExportTool({ className, onBack }: GifExportToolProps): JSX.Element {
   const { t } = useTranslation()
   const [htmlString, setHtmlString] = useState('')
   const [outputDir, setOutputDir] = useState('')
@@ -232,9 +234,17 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-pink-100/60 via-white to-transparent dark:from-pink-900/25 dark:via-slate-900" />
         <div className="space-y-8">
           <div className="flex flex-col gap-4">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-pink-100/70 px-3 py-1 text-sm font-medium text-pink-600 dark:bg-pink-900/40 dark:text-pink-100">
-              <FileImage className="h-4 w-4" />
-              {t('htmlCardGifExportTool')}
+            <div className="flex gap-3 flex-row items-center justify-between">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-pink-100/70 px-3 py-1 text-sm font-medium text-pink-600 dark:bg-pink-900/40 dark:text-pink-100">
+                <FileImage className="h-4 w-4" />
+                {t('htmlCardGifExportTool')}
+              </div>
+              {onBack && (
+                <BackToHomeButton
+                  onClick={onBack}
+                  className="bg-pink-100/70 text-pink-600 hover:bg-pink-100 hover:text-pink-700 dark:bg-pink-900/30 dark:text-pink-100 dark:hover:bg-pink-900/50"
+                />
+              )}
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
@@ -484,7 +494,9 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
                   </CardTitle>
                   <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
                     {progressMessage ||
-                      (cardInfo.length > 0 ? `${cardInfo.length} ${t('discoveredCards')}` : t('pleaseAnalyzeCards'))}
+                      (cardInfo.length > 0
+                        ? `${cardInfo.length} ${t('discoveredCards')}`
+                        : t('pleaseAnalyzeCards'))}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -493,7 +505,9 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
                       <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         {t('discoveredCards')}
                       </p>
-                      <p className="text-2xl font-semibold text-slate-900 dark:text-white">{cardInfo.length}</p>
+                      <p className="text-2xl font-semibold text-slate-900 dark:text-white">
+                        {cardInfo.length}
+                      </p>
                     </div>
                     <div className="rounded-2xl border border-pink-100/70 bg-white/80 p-3 dark:border-pink-500/30 dark:bg-slate-900/50">
                       <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -510,12 +524,12 @@ export function GifExportTool({ className }: GifExportToolProps): JSX.Element {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
                       <span>{isExporting ? t('exporting') : t('analyzeCards')}</span>
-                      <span>{isExporting ? `${exportProgress}%` : options.singleFrame ? 'PNG' : 'GIF'}</span>
+                      <span>
+                        {isExporting ? `${exportProgress}%` : options.singleFrame ? 'PNG' : 'GIF'}
+                      </span>
                     </div>
                     <Progress
-                      value={
-                        isExporting ? exportProgress : cardInfo.length > 0 ? 100 : 0
-                      }
+                      value={isExporting ? exportProgress : cardInfo.length > 0 ? 100 : 0}
                       className="h-2"
                     />
                     <div className="text-xs text-slate-500 dark:text-slate-400">

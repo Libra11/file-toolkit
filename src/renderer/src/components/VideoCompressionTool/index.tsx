@@ -19,6 +19,7 @@ import { Loader2, FileVideo, Sparkles } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Progress } from '@renderer/components/ui/progress'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
+import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 
 // 导入组件
 import { FileUploader } from './FileUploader'
@@ -38,7 +39,11 @@ import {
 } from './types'
 import { formatFileSize } from './utils'
 
-export default function VideoCompressionTool(): JSX.Element {
+interface VideoCompressionToolProps {
+  onBack?: () => void
+}
+
+export default function VideoCompressionTool({ onBack }: VideoCompressionToolProps): JSX.Element {
   const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -318,9 +323,17 @@ export default function VideoCompressionTool(): JSX.Element {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-purple-100/60 via-white to-transparent dark:from-purple-900/25 dark:via-slate-900" />
         <div className="space-y-6">
           <div className="flex flex-col gap-4">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-purple-100/70 px-3 py-1 text-sm font-medium text-purple-600 dark:bg-purple-900/40 dark:text-purple-200">
-              <FileVideo className="h-4 w-4" />
-              {t('videoCompressionTool')}
+            <div className="flex gap-3 flex-row items-center justify-between">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-purple-100/70 px-3 py-1 text-sm font-medium text-purple-600 dark:bg-purple-900/40 dark:text-purple-200">
+                <FileVideo className="h-4 w-4" />
+                {t('videoCompressionTool')}
+              </div>
+              {onBack && (
+                <BackToHomeButton
+                  onClick={onBack}
+                  className="bg-purple-100/70 text-purple-600 hover:bg-purple-100 hover:text-purple-700 dark:bg-purple-900/30 dark:text-purple-200 dark:hover:bg-purple-900/50"
+                />
+              )}
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">

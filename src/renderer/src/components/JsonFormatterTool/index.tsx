@@ -6,6 +6,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Sparkles, Wand } from 'lucide-react'
 import { cn } from '@renderer/lib/utils'
+import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 
 type JsonPrimitive = string | number | boolean | null
 
@@ -14,6 +15,10 @@ interface JsonNodeProps {
   value: unknown
   path: string
   depth: number
+}
+
+interface JsonFormatterToolProps {
+  onBack?: () => void
 }
 
 const primitiveClassMap: Record<string, string> = {
@@ -120,7 +125,7 @@ const JsonNode = ({ label, value, path, depth }: JsonNodeProps): JSX.Element => 
   )
 }
 
-export default function JsonFormatterTool(): JSX.Element {
+export default function JsonFormatterTool({ onBack }: JsonFormatterToolProps): JSX.Element {
   const { t, i18n } = useTranslation()
   const [rawJson, setRawJson] = useState<string>(
     '{\n  "name": "File Toolkit",\n  "version": "1.0.0"\n}'
@@ -186,9 +191,17 @@ export default function JsonFormatterTool(): JSX.Element {
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white/70 to-transparent dark:from-blue-900/40 dark:via-slate-900" />
       <div className="space-y-6">
         <div className="flex flex-col gap-3">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:from-blue-900/50 dark:to-indigo-900/50 dark:text-blue-200">
-            <Wand className="h-4 w-4" />
-            {displayLanguage('jsonFormatter')}
+          <div className="flex gap-3 flex-row items-center justify-between">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:from-blue-900/50 dark:to-indigo-900/50 dark:text-blue-200">
+              <Wand className="h-4 w-4" />
+              {displayLanguage('jsonFormatter')}
+            </div>
+            {onBack && (
+              <BackToHomeButton
+                onClick={onBack}
+                className="bg-blue-100/80 text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
+              />
+            )}
           </div>
           <div className="space-y-1">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">

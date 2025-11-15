@@ -22,6 +22,7 @@ import {
 import { toast } from '@renderer/components/ui/toast'
 import { ListChecks, CheckSquare, FileText, FileSpreadsheet, Sparkles } from 'lucide-react'
 import ExcelPreview from '@renderer/components/ExcelPreview'
+import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 
 // 导入xlsx库
 import * as XLSX from 'xlsx'
@@ -33,7 +34,11 @@ const fadeInAnimation = {
   transition: { duration: 0.3 }
 }
 
-const WordToExcelTool = (): JSX.Element => {
+interface WordToExcelToolProps {
+  onBack?: () => void
+}
+
+const WordToExcelTool = ({ onBack }: WordToExcelToolProps): JSX.Element => {
   const { t } = useTranslation()
 
   // 文件名
@@ -211,9 +216,17 @@ const WordToExcelTool = (): JSX.Element => {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white/50 to-transparent dark:from-blue-900/40 dark:via-slate-900" />
         <div className="space-y-6">
           <div className="flex flex-col gap-3">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:from-blue-900/50 dark:to-indigo-900/50 dark:text-blue-200">
-              <FileSpreadsheet className="h-4 w-4" />
-              {t('wordToExcel')}
+            <div className="flex gap-3 flex-row items-center justify-between">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:from-blue-900/50 dark:to-indigo-900/50 dark:text-blue-200">
+                <FileSpreadsheet className="h-4 w-4" />
+                {t('wordToExcel')}
+              </div>
+              {onBack && (
+                <BackToHomeButton
+                  onClick={onBack}
+                  className="bg-blue-100/80 text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
+                />
+              )}
             </div>
             <div className="space-y-1">
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">

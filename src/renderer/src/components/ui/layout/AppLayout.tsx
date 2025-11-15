@@ -11,7 +11,7 @@
  * @Description: 应用布局组件
  */
 import { ReactNode, useEffect, useState } from 'react'
-import { FileCog, Moon, Sun, Globe, Minus, X } from 'lucide-react'
+import { Sparkles, Moon, Sun, Globe, Minus, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18n from '@renderer/i18n'
 
@@ -88,71 +88,77 @@ export default function AppLayout({ children, onVersionClick }: AppLayoutProps):
       </div>
 
       {/* 自定义标题栏 */}
-      <div className="fixed top-0 left-0 w-full bg-gradient-to-r from-blue-500/10 to-violet-500/10 backdrop-blur-md z-50 h-10 flex items-center justify-between px-4 shadow-sm select-none custom-titlebar border-b border-slate-200/30 dark:border-slate-800/30">
-        <div
-          className="flex items-center flex-grow h-full"
-          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-        >
-          <div className="flex items-center">
-            <FileCog className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
-            <span className="text-sm font-medium">
-              {t('appName')}《
-              {onVersionClick ? (
+      <div className="fixed top-0 left-0 w-full z-50 h-14 border-b border-slate-200/40 bg-white/80 backdrop-blur-xl shadow-[0_12px_50px_rgba(15,23,42,0.08)] dark:border-slate-900/40 dark:bg-slate-900/70">
+        <div className="h-full flex items-center justify-between px-6">
+          <div
+            className="flex items-center gap-4 text-slate-700 dark:text-slate-100"
+            style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+          >
+            <div className="flex items-center justify-center h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-500/30 text-blue-600 dark:text-blue-300">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="flex flex-col leading-tight items-start">
+              <span className="text-sm font-semibold tracking-wide text-slate-900 dark:text-slate-50">
+                {t('appName')}{' '}
+                <span className="text-xs font-semibold lowercase text-slate-500 dark:text-slate-400">
+                  v{version}
+                </span>
+              </span>
+              {onVersionClick && (
                 <button
                   onClick={onVersionClick}
-                  className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-colors duration-200 cursor-pointer bg-transparent border-none p-0 font-medium"
+                  className="text-xs text-blue-600 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-200 transition"
                   title={t('clickToViewChangelog')}
+                  style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                 >
-                  {version}
+                  {t('viewChangelog', { defaultValue: '查看更新日志' })}
                 </button>
-              ) : (
-                version
               )}
-              》
-            </span>
+            </div>
           </div>
-        </div>
-        <div
-          className="flex items-center"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-        >
-          {/* 语言切换 */}
-          <button
-            onClick={toggleLanguage}
-            className="p-1.5 rounded-md text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 dark:text-slate-400 transition-colors duration-200"
-            aria-label={t('toggleLanguage')}
-            title={t('toggleLanguage')}
-          >
-            <Globe className="h-4 w-4" />
-          </button>
 
-          {/* 暗黑模式切换 */}
-          <button
-            onClick={toggleDarkMode}
-            className="p-1.5 rounded-md text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 dark:text-slate-400 transition-colors duration-200 ml-1"
-            aria-label={isDarkMode ? '切换到亮色模式' : '切换到暗色模式'}
+          <div
+            className="flex items-center gap-3"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
-            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
+            {/* 语言切换 */}
+            <button
+              onClick={toggleLanguage}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-slate-500 transition hover:border-slate-300 hover:text-slate-700 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:border-slate-500"
+              aria-label={t('toggleLanguage')}
+              title={t('toggleLanguage')}
+            >
+              <Globe className="h-4 w-4" />
+            </button>
 
-          {/* 窗口控制按钮 */}
-          <button
-            onClick={handleMinimize}
-            className="p-1.5 rounded-md text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 dark:text-slate-400 transition-colors duration-200 ml-1"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          <button
-            onClick={handleClose}
-            className="p-1.5 rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200 ml-1"
-          >
-            <X className="h-4 w-4" />
-          </button>
+            {/* 暗黑模式切换 */}
+            <button
+              onClick={toggleDarkMode}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-slate-500 transition hover:border-slate-300 hover:text-slate-700 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:border-slate-500"
+              aria-label={isDarkMode ? '切换到亮色模式' : '切换到暗色模式'}
+            >
+              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+
+            {/* 窗口控制按钮 */}
+            <button
+              onClick={handleMinimize}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-slate-500 transition hover:border-slate-300 hover:text-slate-700 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:border-slate-500"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleClose}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/60 bg-white/80 text-slate-500 transition hover:border-transparent hover:bg-red-500 hover:text-white dark:border-slate-700/60 dark:bg-slate-800/40 dark:text-slate-300 dark:hover:bg-red-500"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* 内容区域，要留出顶部标题栏的空间 */}
-      <div className="pt-10 overflow-auto w-full flex flex-col h-screen">
+      <div className="pt-14 overflow-auto w-full flex flex-col h-screen">
         {/* 主要内容 */}
         <main className="flex-1 flex  justify-center md:px-6">{children}</main>
 

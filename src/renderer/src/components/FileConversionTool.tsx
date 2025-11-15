@@ -16,13 +16,16 @@ import { useTranslation } from 'react-i18next'
 import { FileType2, Sparkles } from 'lucide-react'
 import ConversionForm from '@renderer/components/ConversionForm'
 import { conversionCategories } from '@renderer/lib/conversionTypes'
+import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 
 interface FileConversionToolProps {
   activeCategory?: string
+  onBack?: () => void
 }
 
 export default function FileConversionTool({
-  activeCategory
+  activeCategory,
+  onBack
 }: FileConversionToolProps): JSX.Element {
   const { t } = useTranslation()
   const fallbackCategory = conversionCategories[0]?.name ?? ''
@@ -39,9 +42,17 @@ export default function FileConversionTool({
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-blue-100/60 via-white to-transparent dark:from-blue-900/25 dark:via-slate-900" />
         <div className="space-y-6">
           <div className="flex flex-col gap-4">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-blue-100/70 px-3 py-1 text-sm font-medium text-blue-600 dark:bg-blue-900/40 dark:text-blue-200">
-              <FileType2 className="h-4 w-4" />
-              {t('fileConversionTool')}
+            <div className="flex gap-3 flex-row items-center justify-between">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-blue-100/70 px-3 py-1 text-sm font-medium text-blue-600 dark:bg-blue-900/40 dark:text-blue-200">
+                <FileType2 className="h-4 w-4" />
+                {t('fileConversionTool')}
+              </div>
+              {onBack && (
+                <BackToHomeButton
+                  onClick={onBack}
+                  className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-800/40 dark:hover:text-indigo-300"
+                />
+              )}
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">

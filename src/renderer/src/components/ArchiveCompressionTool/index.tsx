@@ -41,10 +41,17 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
+import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 import { ArchiveFormat, ArchiveFiles, CompressionResult, ArchiveEntry } from './types'
 import FileUploader from './FileUploader'
 
-export default function ArchiveCompressionTool(): JSX.Element {
+interface ArchiveCompressionToolProps {
+  onBack?: () => void
+}
+
+export default function ArchiveCompressionTool({
+  onBack
+}: ArchiveCompressionToolProps): JSX.Element {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<'compress' | 'extract'>('compress')
 
@@ -228,9 +235,17 @@ export default function ArchiveCompressionTool(): JSX.Element {
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-purple-100/60 via-white to-transparent dark:from-purple-900/20 dark:via-slate-900" />
       <div className="space-y-6">
         <div className="flex flex-col gap-4">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full bg-purple-100/70 px-3 py-1 text-sm font-medium text-purple-600 dark:bg-purple-900/40 dark:text-purple-200">
-            <Archive className="h-4 w-4" />
-            {t('archiveCompression')}
+          <div className="flex gap-3 flex-row items-center justify-between">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-purple-100/70 px-3 py-1 text-sm font-medium text-purple-600 dark:bg-purple-900/40 dark:text-purple-200">
+              <Archive className="h-4 w-4" />
+              {t('archiveCompression')}
+            </div>
+            {onBack && (
+              <BackToHomeButton
+                onClick={onBack}
+                className="bg-purple-100/70 text-purple-600 hover:bg-purple-100 hover:text-purple-700 dark:bg-purple-900/30 dark:text-purple-200 dark:hover:bg-purple-900/50"
+              />
+            )}
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">

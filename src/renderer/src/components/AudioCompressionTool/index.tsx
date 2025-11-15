@@ -19,6 +19,7 @@ import { Music, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Progress } from '@renderer/components/ui/progress'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
+import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 
 // 导入子组件
 import { FileUploader } from './FileUploader'
@@ -37,7 +38,11 @@ import {
   AUDIO_QUALITY_PRESETS
 } from './types'
 
-export default function AudioCompressionTool(): JSX.Element {
+interface AudioCompressionToolProps {
+  onBack?: () => void
+}
+
+export default function AudioCompressionTool({ onBack }: AudioCompressionToolProps): JSX.Element {
   const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -379,9 +384,17 @@ export default function AudioCompressionTool(): JSX.Element {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-indigo-100/60 via-white to-transparent dark:from-indigo-900/25 dark:via-slate-900" />
         <div className="space-y-6">
           <div className="flex flex-col gap-4">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-indigo-100/70 px-3 py-1 text-sm font-medium text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-200">
-              <Music className="h-4 w-4" />
-              {t('audioCompressionTool')}
+            <div className="flex gap-3 flex-row items-center justify-between">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-indigo-100/70 px-3 py-1 text-sm font-medium text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-200">
+                <Music className="h-4 w-4" />
+                {t('audioCompressionTool')}
+              </div>
+              {onBack && (
+                <BackToHomeButton
+                  onClick={onBack}
+                  className="bg-indigo-100/70 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200 dark:hover:bg-indigo-900/50"
+                />
+              )}
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
@@ -581,7 +594,8 @@ export default function AudioCompressionTool(): JSX.Element {
                           </span>
                           <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-300">
                             {Math.round(
-                              ((result.originalSize - result.compressedSize) / result.originalSize) *
+                              ((result.originalSize - result.compressedSize) /
+                                result.originalSize) *
                                 100
                             )}
                             %
