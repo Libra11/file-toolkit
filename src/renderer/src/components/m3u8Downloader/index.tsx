@@ -4,13 +4,25 @@
  * LastEditors: Libra
  * Description:
  */
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+  DownloadCloud,
+  Sparkles,
+  ShieldCheck,
+  Activity,
+  Clock,
+  Gauge,
+  AlertCircle
+} from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
 import { Badge } from '@renderer/components/ui/badge'
+import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
+import { bytesToSize } from '@renderer/lib/utils'
 import TaskList from './TaskList'
 import DownloadForm from './DownloadForm'
 import { DownloadTask, DownloadOptions } from './types'
+import { DownloadStatus } from '@shared/types'
 
 export default function M3u8DownloadTool(): JSX.Element {
   const { t } = useTranslation()
@@ -209,41 +221,155 @@ export default function M3u8DownloadTool(): JSX.Element {
     setActiveTasks((prev) => prev.filter((task) => !taskIds.includes(task.id)))
   }
 
+  const summary = useMemo(() => {
+    const downloading = activeTasks.filter((task) => task.status === DownloadStatus.DOWNLOADING)
+    const completed = activeTasks.filter((task) => task.status === DownloadStatus.COMPLETED).length
+    const failed = activeTasks.filter((task) =>
+      [DownloadStatus.FAILED, DownloadStatus.CANCELLED].includes(task.status)
+    ).length
+    const waiting = activeTasks.filter((task) => task.status === DownloadStatus.WAITING).length
+    const totalSpeed = downloading.reduce((acc, task) => acc + (task.speed || 0), 0)
+
+    return {
+      total: activeTasks.length,
+      downloading: downloading.length,
+      completed,
+      waiting,
+      failed,
+      avgSpeed: downloading.length > 0 ? totalSpeed / downloading.length : 0
+    }
+  }, [activeTasks])
+
+  const heroStats = [
+    {
+      key: 'downloading',
+      label: t('downloadingTasks') || '下载中',
+      value: summary.downloading,
+      Icon: Activity,
+      helper: t('maxConcurrentDownloads') || '并发执行'
+    },
+    {
+      key: 'waiting',
+      label: t('waitingTasks') || '等待中',
+      value: summary.waiting,
+      Icon: Clock,
+      helper: t('queueHint', { defaultValue: '排队等待合并' })
+    },
+    {
+      key: 'completed',
+      label: t('completedTasks') || '已完成',
+      value: summary.completed,
+      Icon: ShieldCheck,
+      helper: t('integrityCheckLabel', { defaultValue: '完整校验通过' })
+    },
+    {
+      key: 'speed',
+      label: t('averageSpeed', { defaultValue: '平均速度' }),
+      value: summary.avgSpeed > 0 ? `${bytesToSize(summary.avgSpeed)}/s` : '--',
+      Icon: Gauge,
+      helper: t('throughputLabel', { defaultValue: '实时吞吐' })
+    }
+  ]
+
   return (
-    <div className="mx-auto py-6">
-      <Tabs defaultValue="create" value={mainTab} onValueChange={setMainTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="create">{t('createDownload') || '创建下载'}</TabsTrigger>
-          <TabsTrigger value="tasks">
-            {t('downloadTasks') || '下载任务'}
-            {activeTasks.length > 0 && (
-              <Badge variant="outline" className="ml-2">
-                {activeTasks.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+    <div className="relative mx-auto overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-blue-900/10 backdrop-blur-sm dark:border-white/5 dark:bg-slate-900/60 md:p-8">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-blue-100/60 via-white to-transparent dark:from-blue-900/25 dark:via-slate-900" />
+      <div className="space-y-6">
+        <div className="flex flex-col gap-5">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full bg-blue-100/70 px-3 py-1 text-sm font-medium text-blue-600 dark:bg-blue-900/40 dark:text-blue-200">
+            <DownloadCloud className="h-4 w-4" />
+            {t('m3u8Download')}
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+              {t('m3u8Download')}
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {t('m3u8DownloadDescription')}
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {heroStats.map(({ key, label, value, helper, Icon }) => (
+              <div
+                key={key}
+                className="rounded-2xl border border-blue-100/60 bg-white/80 p-4 shadow-sm dark:border-blue-500/20 dark:bg-slate-900/60"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    {label}
+                  </p>
+                  <Icon className="h-4 w-4 text-blue-500" />
+                </div>
+                <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{value}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{helper}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col gap-3 rounded-2xl border border-blue-100/70 bg-blue-50/60 p-4 text-sm text-blue-700 shadow-inner dark:border-blue-500/30 dark:bg-blue-900/20 dark:text-blue-100 md:flex-row md:items-start md:gap-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-blue-500 shadow-sm dark:bg-white/10 dark:text-blue-200">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-base font-semibold">{t('batchDownload') || '批量下载提示'}</p>
+              <p className="text-xs leading-relaxed text-blue-600/80 dark:text-blue-100/80">
+                {t('batchInputFormat')}
+              </p>
+            </div>
+          </div>
+        </div>
 
-        <TabsContent value="create" className="space-y-6">
-          <DownloadForm
-            onSingleDownload={handleSingleDownload}
-            onBatchDownload={handleBatchDownload}
-            onSetActiveTab={setMainTab}
-          />
-        </TabsContent>
+        {error && (
+          <Alert className="rounded-2xl border border-destructive/40 bg-destructive/10 text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>{t('downloadError') || '操作失败'}</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-        <TabsContent value="tasks" className="space-y-6">
-          <TaskList
-            activeTasks={activeTasks}
-            onPauseTask={handlePauseTask}
-            onResumeTask={handleResumeTask}
-            onCancelTask={handleCancelTask}
-            onRetryTask={handleRetryTask}
-            onOpenFileLocation={handleOpenFileLocation}
-            onClearTasks={handleClearTasks}
-          />
-        </TabsContent>
-      </Tabs>
+        <Tabs defaultValue="create" value={mainTab} onValueChange={setMainTab} className="w-full">
+          <div className="flex justify-center">
+            <TabsList className="mb-6 grid h-[3.4rem] w-full max-w-lg grid-cols-2 items-center overflow-hidden rounded-full bg-blue-100/70 p-1 text-sm font-medium dark:bg-blue-900/40">
+              <TabsTrigger
+                value="create"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-blue-200"
+              >
+                {t('createDownload') || '创建下载'}
+              </TabsTrigger>
+              <TabsTrigger
+                value="tasks"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-blue-200"
+              >
+                {t('downloadTasks') || '下载任务'}
+                {activeTasks.length > 0 && (
+                  <Badge variant="outline" className="ml-1">
+                    {activeTasks.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="create">
+            <DownloadForm
+              onSingleDownload={handleSingleDownload}
+              onBatchDownload={handleBatchDownload}
+              onSetActiveTab={setMainTab}
+            />
+          </TabsContent>
+
+          <TabsContent value="tasks">
+            <TaskList
+              activeTasks={activeTasks}
+              onPauseTask={handlePauseTask}
+              onResumeTask={handleResumeTask}
+              onCancelTask={handleCancelTask}
+              onRetryTask={handleRetryTask}
+              onOpenFileLocation={handleOpenFileLocation}
+              onClearTasks={handleClearTasks}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   )
 }

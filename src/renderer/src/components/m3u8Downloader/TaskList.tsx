@@ -19,12 +19,18 @@ import {
   BarChart2,
   AlertTriangle
 } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardDescription } from '@renderer/components/ui/card'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent
+} from '@renderer/components/ui/card'
 import { Button } from '@renderer/components/ui/button'
 import { Progress } from '@renderer/components/ui/progress'
 import { Badge } from '@renderer/components/ui/badge'
 import { DownloadStatus } from '@shared/types'
-import { bytesToSize, formatTime } from '@renderer/lib/utils'
+import { bytesToSize, formatTime, cn } from '@renderer/lib/utils'
 
 interface TaskListProps {
   activeTasks: Array<{
@@ -138,32 +144,44 @@ export default function TaskList({
     }
   }
 
-  return (
-    <Card className="w-full shadow-lg border-primary/20">
-      <CardHeader className="py-3 flex flex-row items-center justify-between bg-muted/50">
-        <div>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <BarChart2 className="h-5 w-5 text-primary" />
-            {t('activeTasks') || '下载任务列表'}
-            <Badge variant="outline">{activeTasks.length}</Badge>
-          </CardTitle>
-          <CardDescription>
-            {t('activeTasksDescription') || '查看和管理所有下载任务'}
-          </CardDescription>
-        </div>
+  const filterOptions: Array<{
+    key: 'all' | 'completed' | 'downloading' | 'waiting' | 'failed'
+    label: string
+    count: number
+  }> = [
+    { key: 'all', label: t('allTasks') || '所有任务', count: taskCounts.all },
+    { key: 'completed', label: t('completedTasks') || '已完成', count: taskCounts.completed },
+    { key: 'downloading', label: t('downloadingTasks') || '下载中', count: taskCounts.downloading },
+    { key: 'waiting', label: t('waitingTasks') || '排队中', count: taskCounts.waiting },
+    { key: 'failed', label: t('failedTasks') || '失败/取消', count: taskCounts.failed }
+  ]
 
-        {/* 全局操作按钮 */}
-        {activeTasks.some((task) =>
-          [DownloadStatus.COMPLETED, DownloadStatus.FAILED, DownloadStatus.CANCELLED].includes(
-            task.status
-          )
-        ) && (
-          <div className="flex gap-2">
+  return (
+    <Card className="w-full border border-blue-100/60 bg-white/95 shadow-xl shadow-blue-900/10 backdrop-blur-sm dark:border-blue-500/30 dark:bg-slate-900/70">
+      <CardHeader className="border-b border-white/60 pb-5 dark:border-white/10">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-white">
+              <BarChart2 className="h-5 w-5 text-blue-500" />
+              {t('activeTasks') || '下载任务列表'}
+              <Badge variant="outline" className="ml-1">
+                {activeTasks.length}
+              </Badge>
+            </CardTitle>
+            <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
+              {t('activeTasksDescription') || '查看和管理所有下载任务'}
+            </CardDescription>
+          </div>
+          {activeTasks.some((task) =>
+            [DownloadStatus.COMPLETED, DownloadStatus.FAILED, DownloadStatus.CANCELLED].includes(
+              task.status
+            )
+          ) && (
             <Button
               variant="outline"
               size="sm"
+              className="rounded-full border-slate-200/70 bg-white/80 text-slate-600 hover:text-destructive dark:border-slate-700 dark:bg-slate-900"
               onClick={() => {
-                // 清除已完成和失败的任务
                 const tasksToRemove = activeTasks
                   .filter((task) =>
                     [
@@ -176,209 +194,229 @@ export default function TaskList({
 
                 onClearTasks(tasksToRemove)
               }}
-              title={t('clearCompletedTasks')}
             >
               <X className="h-4 w-4 mr-1" />
               {t('clearCompleted') || '清除已完成'}
             </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5 pt-5">
+        <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+            {t('filterTasks') || '任务筛选'}
+          </span>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {filterOptions.map((option) => (
+              <Button
+                key={option.key}
+                variant={taskFilter === option.key ? 'secondary' : 'ghost'}
+                size="sm"
+                className={cn(
+                  'h-8 rounded-full border border-transparent px-4 text-xs font-semibold shadow-none',
+                  taskFilter === option.key
+                    ? 'bg-blue-500/10 text-blue-600 border-blue-500/40 dark:bg-blue-500/20 dark:text-blue-100'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                )}
+                onClick={() => setTaskFilter(option.key)}
+              >
+                {option.label}
+                <Badge
+                  variant="outline"
+                  className="ml-2 h-4 min-w-[1.8rem] rounded-full border-blue-200/70 text-[10px] text-blue-600 dark:border-blue-500/50 dark:text-blue-100"
+                >
+                  {option.count}
+                </Badge>
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {activeTasks.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200/70 bg-white/85 p-8 text-center text-muted-foreground dark:border-slate-700 dark:bg-slate-900/60">
+            <Download className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+            <p>
+              {t('noDownloadTasksYet', {
+                defaultValue: '还没有下载任务，开始一个任务后即可在此跟踪进度。'
+              })}
+            </p>
+          </div>
+        ) : filteredTasks.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-amber-200/70 bg-amber-50/80 p-6 text-center text-amber-600 dark:border-amber-500/40 dark:bg-amber-500/10">
+            <AlertTriangle className="w-10 h-10 mx-auto mb-2" />
+            <p>{t('noTasksInThisCategory') || '该分类下没有任务'}</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredTasks.map((task) => (
+              <div
+                key={task.id}
+                className="rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-sm transition hover:border-blue-200/80 dark:border-slate-700 dark:bg-slate-900/60"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      {getStatusIcon(task.status)}
+                      <span className="truncate max-w-[240px] sm:max-w-[320px]">{task.fileName}</span>
+                      <Badge variant="outline" className="border-slate-200 text-xs text-slate-600 dark:border-slate-600 dark:text-slate-200">
+                        {getStatusText(task.status)}
+                      </Badge>
+                      {task.retries > 0 && (
+                        <Badge variant="outline" className="border-amber-300/60 bg-amber-50 text-amber-600 dark:border-amber-500/60 dark:bg-amber-500/20 dark:text-amber-100">
+                          {t('retryCount', { count: task.retries }) || `重试: ${task.retries}`}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground break-all">{task.url}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {task.status === DownloadStatus.DOWNLOADING && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onPauseTask(task.id)}
+                        title={t('pauseTask') || '暂停'}
+                        className="rounded-full"
+                      >
+                        <Pause className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {task.status === DownloadStatus.PAUSED && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onResumeTask(task.id)}
+                        title={t('resumeTask') || '继续'}
+                        className="rounded-full"
+                      >
+                        <Play className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {task.status === DownloadStatus.FAILED && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onRetryTask(task.id)}
+                        title={t('retryTask') || '重试'}
+                        className="rounded-full"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {[
+                      DownloadStatus.DOWNLOADING,
+                      DownloadStatus.PAUSED,
+                      DownloadStatus.WAITING
+                    ].includes(task.status) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onCancelTask(task.id)}
+                        title={t('cancelTask') || '取消'}
+                        className="rounded-full border-destructive/40 text-destructive hover:bg-destructive/10"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {task.status === DownloadStatus.COMPLETED && task.outputPath && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onOpenFileLocation(task.outputPath!)}
+                        className="rounded-full border-green-500/40 text-green-600 hover:bg-green-500/10"
+                        title={t('openLocation') || '打开文件位置'}
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <span>
+                          {t('progressLabel', {
+                            defaultValue: '进度'
+                          })}
+                        </span>
+                      {task.status === DownloadStatus.DOWNLOADING && (
+                        <span className="text-blue-600 dark:text-blue-300">
+                          {bytesToSize(task.speed)}/s · {formatTime(task.estimatedTimeRemaining)}
+                        </span>
+                      )}
+                    </div>
+                    <Progress
+                      value={task.progress}
+                      className="h-2.5 rounded-full"
+                      indicatorClassName={
+                        task.status === DownloadStatus.COMPLETED
+                          ? 'bg-green-500'
+                          : task.status === DownloadStatus.FAILED
+                            ? 'bg-destructive'
+                            : task.status === DownloadStatus.PAUSED
+                              ? 'bg-amber-500'
+                              : task.status === DownloadStatus.DOWNLOADING
+                                ? 'animate-pulse bg-blue-500'
+                                : undefined
+                      }
+                    />
+                    <div className="text-xs text-slate-500">
+                      {task.progress}%
+                      {task.totalSegments > 0 && (
+                        <span className="ml-2">
+                          (
+                          {t('segmentsProgress', {
+                            downloaded: task.downloadedSegments,
+                            total: task.totalSegments
+                          }) || `${task.downloadedSegments}/${task.totalSegments} 片段`}
+                          )
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                    <div className="space-y-2 rounded-xl border border-slate-200/60 bg-white/70 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+                      <p className="font-medium text-slate-700 dark:text-slate-200">
+                        {t('sizeLabel', { defaultValue: '数据量' })}
+                      </p>
+                    {task.totalBytes > 0 ? (
+                      <p className="font-mono">
+                        {bytesToSize(task.downloadedBytes)} / {bytesToSize(task.totalBytes)}
+                      </p>
+                    ) : (
+                      <p className="text-slate-500 dark:text-slate-400">--</p>
+                    )}
+                    {task.startTime && (
+                      <p className="text-[11px] text-slate-400">
+                        {t('startTimeLabel', { defaultValue: '开始时间' })}: {new Date(task.startTime).toLocaleTimeString()}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 rounded-xl border border-slate-200/60 bg-white/70 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+                    <p className="font-medium text-slate-700 dark:text-slate-200">
+                      {t('segmentsLabel', { defaultValue: '分片状态' })}
+                    </p>
+                    <p>
+                      {task.downloadedSegments}/{task.totalSegments || '∞'}
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      {t('retryCount', { count: task.retries }) || `重试: ${task.retries}`}
+                    </p>
+                  </div>
+                </div>
+
+                {task.error && (
+                  <div className="mt-4 rounded-2xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+                    {task.error}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
-      </CardHeader>
-
-      {/* 任务筛选器 */}
-      <div className="px-4 py-2 bg-muted/30 border-t border-b">
-        <span className="text-sm font-medium mr-2">{t('filterTasks') || '任务筛选'}:</span>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant={taskFilter === 'all' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setTaskFilter('all')}
-            className="h-7 text-xs"
-          >
-            {t('allTasks') || '所有任务'}
-            <Badge variant="outline" className="ml-1 text-[10px] h-4 min-w-[1.5rem]">
-              {taskCounts.all}
-            </Badge>
-          </Button>
-          <Button
-            variant={taskFilter === 'completed' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setTaskFilter('completed')}
-            className="h-7 text-xs"
-          >
-            {t('completedTasks') || '已完成的任务'}
-            <Badge variant="outline" className="ml-1 text-[10px] h-4 min-w-[1.5rem]">
-              {taskCounts.completed}
-            </Badge>
-          </Button>
-          <Button
-            variant={taskFilter === 'downloading' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setTaskFilter('downloading')}
-            className="h-7 text-xs"
-          >
-            {t('downloadingTasks') || '下载中的任务'}
-            <Badge variant="outline" className="ml-1 text-[10px] h-4 min-w-[1.5rem]">
-              {taskCounts.downloading}
-            </Badge>
-          </Button>
-          <Button
-            variant={taskFilter === 'waiting' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setTaskFilter('waiting')}
-            className="h-7 text-xs"
-          >
-            {t('waitingTasks') || '未开始的任务'}
-            <Badge variant="outline" className="ml-1 text-[10px] h-4 min-w-[1.5rem]">
-              {taskCounts.waiting}
-            </Badge>
-          </Button>
-          <Button
-            variant={taskFilter === 'failed' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setTaskFilter('failed')}
-            className="h-7 text-xs"
-          >
-            {t('failedTasks') || '下载失败的任务'}
-            <Badge variant="outline" className="ml-1 text-[10px] h-4 min-w-[1.5rem]">
-              {taskCounts.failed}
-            </Badge>
-          </Button>
-        </div>
-      </div>
-
-      {activeTasks.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground">
-          <Download className="w-12 h-12 mx-auto mb-2 opacity-20" />
-          <p>还没有下载任务。开始下载后，任务将显示在这里。</p>
-        </div>
-      ) : filteredTasks.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground">
-          <AlertTriangle className="w-12 h-12 mx-auto mb-2 opacity-20" />
-          <p>{t('noTasksInThisCategory') || '该分类下没有任务'}</p>
-        </div>
-      ) : (
-        <div className="divide-y">
-          {filteredTasks.map((task) => (
-            <div key={task.id} className="p-4 transition-colors hover:bg-muted/30">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center">
-                  {getStatusIcon(task.status)}
-                  <span className="font-medium ml-2 truncate max-w-[300px]">{task.fileName}</span>
-                  <Badge variant="outline" className="ml-2">
-                    {getStatusText(task.status)}
-                  </Badge>
-                  {task.retries > 0 && (
-                    <Badge variant="outline" className="ml-2 text-amber-500">
-                      {t('retryCount', { count: task.retries }) || `重试次数: ${task.retries}`}
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  {task.status === DownloadStatus.DOWNLOADING && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onPauseTask(task.id)}
-                      title={t('pauseTask') || '暂停'}
-                    >
-                      <Pause className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {task.status === DownloadStatus.PAUSED && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onResumeTask(task.id)}
-                      title={t('resumeTask') || '继续'}
-                    >
-                      <Play className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {task.status === DownloadStatus.FAILED && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onRetryTask(task.id)}
-                      title={t('retryTask') || '重试'}
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {[
-                    DownloadStatus.DOWNLOADING,
-                    DownloadStatus.PAUSED,
-                    DownloadStatus.WAITING
-                  ].includes(task.status) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onCancelTask(task.id)}
-                      title={t('cancelTask') || '取消'}
-                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {task.status === DownloadStatus.COMPLETED && task.outputPath && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onOpenFileLocation(task.outputPath!)}
-                      className="text-green-600 border-green-600/30 hover:bg-green-600/10"
-                      title={t('openLocation') || '打开文件位置'}
-                    >
-                      <FolderOpen className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <div className="text-sm text-muted-foreground mb-2 truncate w-full">{task.url}</div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs mb-1">
-                  <span>
-                    {task.progress}%
-                    {task.totalSegments > 0 && (
-                      <span className="ml-1">
-                        (
-                        {t('segmentsProgress', {
-                          downloaded: task.downloadedSegments,
-                          total: task.totalSegments
-                        }) || `${task.downloadedSegments}/${task.totalSegments} 片段`}
-                        )
-                      </span>
-                    )}
-                  </span>
-                  {task.status === DownloadStatus.DOWNLOADING && (
-                    <span className="text-primary">
-                      {bytesToSize(task.speed)}/s • {formatTime(task.estimatedTimeRemaining)}
-                    </span>
-                  )}
-                </div>
-                <Progress
-                  value={task.progress}
-                  className="h-2"
-                  indicatorClassName={
-                    task.status === DownloadStatus.COMPLETED
-                      ? 'bg-green-500'
-                      : task.status === DownloadStatus.FAILED
-                        ? 'bg-destructive'
-                        : task.status === DownloadStatus.PAUSED
-                          ? 'bg-amber-500'
-                          : task.status === DownloadStatus.DOWNLOADING
-                            ? 'animate-pulse bg-primary'
-                            : undefined
-                  }
-                />
-              </div>
-
-              {task.error && <div className="mt-2 text-sm text-destructive">{task.error}</div>}
-            </div>
-          ))}
-        </div>
-      )}
+      </CardContent>
     </Card>
   )
 }

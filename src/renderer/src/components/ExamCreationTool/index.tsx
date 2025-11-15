@@ -7,10 +7,12 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@renderer/components/ui/button'
+import { Badge } from '@renderer/components/ui/badge'
+import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
+import { Progress } from '@renderer/components/ui/progress'
 import { Separator } from '@renderer/components/ui/separator'
-import { Checkbox } from '@renderer/components/ui/checkbox'
 import {
   PlusCircle,
   Trash2,
@@ -20,7 +22,9 @@ import {
   Zap,
   ArrowRight,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  FileSearch,
+  Loader2
 } from 'lucide-react'
 import {
   Card,
@@ -260,6 +264,51 @@ export default function ExamCreationTool(): JSX.Element {
     )
   }
 
+  const totalPeriods = config.periods.length
+  const totalSubjects = config.periods.reduce(
+    (count, period) => count + period.subjects.length,
+    0
+  )
+  const totalParts = config.periods.reduce((count, period) => {
+    return (
+      count +
+      period.subjects.reduce(
+        (subjectCount, subject) => subjectCount + (subject.parts?.length ?? 0),
+        0
+      )
+    )
+  }, 0)
+  const examTypeLabel = config.project.type === 2 ? '三级架构考试' : '普通考试'
+  const heroStats = [
+    { label: '时段数量', value: totalPeriods, caption: '多场景时段划分' },
+    { label: '科目数量', value: totalSubjects, caption: '适配主观/客观题型' },
+    { label: '子卷数量', value: totalParts, caption: '细粒度卷别拆分' }
+  ]
+  const creationStatus = isExamCreated ? '创建完成' : isLoading ? '生成中' : '待创建'
+  const creationProgress = isExamCreated ? 100 : isLoading ? 68 : 35
+  const creationStatusColor = isExamCreated
+    ? 'text-green-600 dark:text-green-300'
+    : isLoading
+      ? 'text-indigo-600 dark:text-indigo-300'
+      : 'text-slate-500 dark:text-slate-400'
+  const statusPillClass = cn(
+    'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+    isExamCreated
+      ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300'
+      : isLoading
+        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
+        : 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300'
+  )
+  const multiRoomLabel = config.useMultipleRooms ? '已启用' : '未启用'
+  const tokenPreview = config.token
+    ? config.token.length > 28
+      ? `${config.token.slice(0, 12)}...${config.token.slice(-4)}`
+      : config.token
+    : '未填写 Token'
+  const notePreview = config.project.note?.trim()
+    ? config.project.note
+    : '已按默认模板载入配置，建议生成前复核基本信息和须知内容。'
+
   return (
     <div className="w-full pb-8 space-y-8">
       <motion.div
@@ -268,19 +317,24 @@ export default function ExamCreationTool(): JSX.Element {
         className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/90 p-5 shadow-2xl shadow-blue-900/10 backdrop-blur-sm transition-all duration-500 dark:border-white/10 dark:bg-slate-900/60"
       >
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white/60 to-transparent dark:from-blue-900/40 dark:via-slate-900" />
-        <div className="space-y-4 relative">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-500 text-white p-3 rounded-2xl shadow-md flex items-center justify-center">
-              <Zap className="h-5 w-5" />
+        <div className="space-y-5 relative">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-500 text-white p-3 rounded-2xl shadow-md flex items-center justify-center">
+                <Zap className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  离线考试创建工具
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  快速生成考试配置和资源，支持多场景自动化创建
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                离线考试创建工具
-              </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                快速生成考试配置和资源，支持多场景自动化创建
-              </p>
-            </div>
+            <Badge className="border-blue-200 bg-white/80 text-blue-600 dark:border-blue-800/40 dark:bg-blue-950/30 dark:text-blue-200">
+              {examTypeLabel}
+            </Badge>
           </div>
           <div className="flex items-center gap-3 rounded-2xl border border-blue-100/80 bg-blue-50/70 px-4 py-3 text-sm text-blue-700 shadow-inner dark:border-blue-800/50 dark:bg-blue-900/20 dark:text-blue-100">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 text-blue-500 shadow-sm dark:bg-white/10 dark:text-blue-200">
@@ -289,19 +343,34 @@ export default function ExamCreationTool(): JSX.Element {
             <div className="space-y-0.5">
               <p className="text-base font-semibold text-slate-900 dark:text-white">温馨提示</p>
               <p className="text-xs leading-relaxed text-blue-600/90 dark:text-blue-200">
-                请先确认主项目信息，再对时段/科目等设置进行微调。
+                请先确认主项目信息，再对时段/科目等设置进行微调，创建过程会实时回显到下方状态卡片。
               </p>
             </div>
+          </div>
+          <div className="grid gap-3 pt-1 sm:grid-cols-3">
+            {heroStats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-2xl border border-blue-100/80 bg-white/80 p-3 shadow-sm dark:border-blue-800/30 dark:bg-slate-900/50"
+              >
+                <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-white">
+                  {stat.value}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{stat.caption}</p>
+              </div>
+            ))}
           </div>
         </div>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="overflow-hidden"
-      >
+      <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="overflow-hidden"
+        >
         <Card className="overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-xl shadow-blue-900/10 dark:border-slate-700/60 dark:bg-slate-900/60">
           <CardHeader className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 p-4 border-b border-indigo-100/80 dark:border-indigo-800/30">
             <div className="flex items-center gap-3">
@@ -1040,94 +1109,208 @@ export default function ExamCreationTool(): JSX.Element {
               </div>
             </motion.div>
 
-            {/* 提交按钮 */}
-            <motion.div
-              className="flex justify-end pt-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-                className="relative"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl blur-md opacity-20 -z-10 group-hover:opacity-30 transition-opacity" />
-                {isExamCreated ? (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => setIsExamCreated(false)}
+          </CardContent>
+        </Card>
+        </motion.div>
+
+        <div className="space-y-6">
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="rounded-3xl border border-slate-200 bg-white/95 shadow-xl shadow-blue-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
+              <CardHeader className="p-5 border-b border-slate-100/80 dark:border-slate-800/60">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
+                      考试概览
+                    </CardTitle>
+                    <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
+                      快速了解当前配置状态
+                    </CardDescription>
+                  </div>
+                  <Badge className="border-indigo-200 bg-indigo-50/80 text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-900/30 dark:text-indigo-200">
+                    {examTypeLabel}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-5 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {heroStats.map((stat) => (
+                    <div
+                      key={`overview-${stat.label}`}
+                      className="rounded-2xl border border-slate-100/80 bg-white/80 p-3 shadow-sm dark:border-slate-800/40 dark:bg-slate-900/60"
+                    >
+                      <p className="text-[0.7rem] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                        {stat.label}
+                      </p>
+                      <p className="text-xl font-semibold text-slate-900 dark:text-white">{stat.value}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{stat.caption}</p>
+                    </div>
+                  ))}
+                </div>
+                <Separator className="bg-slate-100 dark:bg-slate-800/60" />
+                <div className="grid grid-cols-2 gap-3 text-xs text-slate-500 dark:text-slate-400">
+                  <div>
+                    <p>开始时间</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                      {config.project.startAt || '--'}
+                    </p>
+                  </div>
+                  <div>
+                    <p>结束时间</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                      {config.project.endAt || '--'}
+                    </p>
+                  </div>
+                </div>
+                <Separator className="bg-slate-100 dark:bg-slate-800/60" />
+                <div className="space-y-3 text-xs text-slate-500 dark:text-slate-400">
+                  <div>
+                    <p className="text-[0.7rem] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                      API 基础
+                    </p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 break-all">
+                      {config.apiBaseUrl || '未配置'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[0.7rem] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                      Access Token
+                    </p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 break-all">
+                      {tokenPreview}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span>多考场</span>
+                    <Badge
+                      variant="outline"
                       className={cn(
-                        'flex items-center gap-2 h-12 px-6 relative overflow-hidden bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-md rounded-xl border-none'
+                        'border px-3 py-1 text-xs font-semibold',
+                        config.useMultipleRooms
+                          ? 'border-green-200 bg-green-50/80 text-green-700 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-300'
+                          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200'
                       )}
                     >
-                      <span className="relative z-10 flex items-center justify-center font-medium text-lg">
-                        <CheckCircle2 className="mr-2 h-5 w-5" />
-                        考试创建完成
-                      </span>
-                    </Button>
-
-                    <Button
-                      onClick={() => setShowLogViewer(true)}
-                      variant="outline"
-                      className="flex items-center gap-2 h-12 px-6 border-green-200 hover:border-green-300 text-green-700 hover:text-green-800 dark:border-green-800/40 dark:hover:border-green-700/60 dark:text-green-400 dark:hover:text-green-300"
-                    >
-                      <span className="flex items-center justify-center font-medium">查看日志</span>
-                    </Button>
+                      {multiRoomLabel}
+                    </Badge>
                   </div>
-                ) : (
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="rounded-3xl border border-indigo-100/80 bg-white/95 shadow-xl shadow-indigo-900/10 dark:border-indigo-800/40 dark:bg-slate-900/70">
+              <CardHeader className="p-5 border-b border-indigo-100/80 dark:border-indigo-900/40">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
+                      创建状态
+                    </CardTitle>
+                    <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
+                      实时监控任务进度与日志
+                    </CardDescription>
+                  </div>
+                  <div className={statusPillClass}>
+                    <span
+                      className={cn(
+                        'h-2 w-2 rounded-full',
+                        isExamCreated
+                          ? 'bg-green-500'
+                          : isLoading
+                            ? 'bg-indigo-500'
+                            : 'bg-slate-400 dark:bg-slate-500'
+                      )}
+                    />
+                    {creationStatus}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-5 space-y-5">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <span>流程追踪</span>
+                    <span className={cn('font-semibold', creationStatusColor)}>{creationStatus}</span>
+                  </div>
+                  <Progress value={creationProgress} className="h-2 bg-slate-100 dark:bg-slate-800/70" />
+                </div>
+                <div className="rounded-2xl border border-indigo-100/80 bg-gradient-to-r from-indigo-50/80 to-purple-50/80 p-4 text-sm text-slate-600 shadow-inner dark:border-indigo-800/40 dark:from-indigo-900/30 dark:to-purple-900/20 dark:text-slate-200">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500 dark:text-indigo-200">
+                    当前考试
+                  </p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                    {config.project.name || '未命名考试'}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{notePreview}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs text-slate-500 dark:text-slate-400">
+                  <div>
+                    <p>准考证须知</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 line-clamp-2">
+                      {config.project.admissionCardRequirement || '未填写'}
+                    </p>
+                  </div>
+                  <div>
+                    <p>考试机须知</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 line-clamp-2">
+                      {config.project.requirement || '未填写'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
                   <Button
                     onClick={handleSubmit}
                     disabled={isLoading}
                     className={cn(
-                      'flex items-center gap-2 h-12 px-6 relative overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-md rounded-xl border-none',
-                      isLoading && 'from-indigo-500 to-indigo-700'
+                      'h-12 w-full justify-center rounded-2xl border-none text-base font-medium text-white shadow-lg shadow-indigo-500/30 transition-all',
+                      'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600',
+                      isLoading && 'opacity-90'
                     )}
                   >
-                    <span
-                      className="absolute inset-0 w-full h-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)] group-hover:animate-shimmer"
-                      style={{ transform: 'translateX(-100%)' }}
-                    ></span>
-                    <span className="relative z-10 flex items-center justify-center font-medium text-lg">
-                      {isLoading ? (
-                        <>
-                          <svg
-                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                          生成中...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-5 w-5" />
-                          开始生成考试
-                        </>
-                      )}
-                    </span>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        生成中...
+                      </>
+                    ) : isExamCreated ? (
+                      <>
+                        <Sparkles className="mr-2 h-5 w-5" />
+                        再次创建考试
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-5 w-5" />
+                        开始生成考试
+                      </>
+                    )}
                   </Button>
-                )}
-              </motion.div>
-            </motion.div>
-          </CardContent>
-        </Card>
-      </motion.div>
+                  <Button
+                    onClick={() => setShowLogViewer(true)}
+                    variant="outline"
+                    className="h-12 w-full justify-center rounded-2xl border-indigo-200/70 text-indigo-700 hover:border-indigo-300 hover:text-indigo-800 dark:border-indigo-800/40 dark:text-indigo-300 dark:hover:text-indigo-200"
+                  >
+                    <FileSearch className="mr-2 h-5 w-5" />
+                    {isLoading ? '实时查看日志' : '打开日志面板'}
+                  </Button>
+                  {isExamCreated && (
+                    <div className="flex items-center justify-center gap-2 rounded-2xl bg-green-50/80 p-3 text-sm font-medium text-green-700 dark:bg-green-900/20 dark:text-green-300">
+                      <CheckCircle2 className="h-4 w-4" />
+                      创建完成，可继续生成
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
 
       {/* 日志查看器弹窗 */}
       <Dialog open={showLogViewer} onOpenChange={setShowLogViewer}>
