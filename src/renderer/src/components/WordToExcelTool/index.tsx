@@ -184,7 +184,7 @@ const WordToExcelTool = (): JSX.Element => {
 
   // 获取按钮样式
   const getButtonStyle = (type: string): string => {
-    const baseStyle = 'gap-2 transition-all duration-300 font-medium shadow-sm'
+    const baseStyle = 'gap-2 px-3 transition-all duration-300 font-medium shadow-sm'
     const isHovered = hoveredButton === type
 
     switch (type) {
@@ -216,8 +216,12 @@ const WordToExcelTool = (): JSX.Element => {
               {t('wordToExcel')}
             </div>
             <div className="space-y-1">
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">{t('wordToExcel')}</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{t('wordToExcelDescription')}</p>
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+                {t('wordToExcel')}
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {t('wordToExcelDescription')}
+              </p>
             </div>
           </div>
 
@@ -226,7 +230,9 @@ const WordToExcelTool = (): JSX.Element => {
               <Sparkles className="h-5 w-5" />
             </div>
             <div className="space-y-0.5">
-              <p className="text-base font-semibold text-slate-900 dark:text-white">{t('wordToExcelTipTitle')}</p>
+              <p className="text-base font-semibold text-slate-900 dark:text-white">
+                {t('wordToExcelTipTitle')}
+              </p>
               <p className="text-xs leading-relaxed text-blue-600/90 dark:text-blue-200">
                 {t('wordToExcelTipDescription')}
               </p>
@@ -288,7 +294,7 @@ const WordToExcelTool = (): JSX.Element => {
 
                 <motion.div
                   key="buttonSection"
-                  className="flex flex-wrap gap-3 pt-2"
+                  className="flex flex-wrap gap-2 pt-2"
                   {...fadeInAnimation}
                   transition={{ duration: 0.3, delay: 0.3 }}
                 >
