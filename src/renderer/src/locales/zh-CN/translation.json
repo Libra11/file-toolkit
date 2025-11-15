@@ -493,6 +493,10 @@
   "success": "成功",
   "failed": "失败",
   "generatePreview": "生成预览",
+  "noRulesConfigured": "暂未添加重命名规则",
+  "readyForPreview": "可生成预览",
+  "selectFilesToStartPreview": "请选择文件以准备预览",
+  "renameRuleDescription": "可组合多种规则打造理想的命名流程",
   "renameRule": {
     "sequence": "序号命名",
     "replace": "替换文本",

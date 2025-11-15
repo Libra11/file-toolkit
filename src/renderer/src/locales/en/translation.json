@@ -463,6 +463,10 @@
   "success": "Success",
   "failed": "Failed",
   "generatePreview": "Generate Preview",
+  "noRulesConfigured": "No rename rules added yet",
+  "readyForPreview": "Ready for preview",
+  "selectFilesToStartPreview": "Select files to prepare the preview",
+  "renameRuleDescription": "Stack multiple rules to shape your ideal naming flow",
   "renameRule": {
     "sequence": "Sequence",
     "replace": "Replace Text",
