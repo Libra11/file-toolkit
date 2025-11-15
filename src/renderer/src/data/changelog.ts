@@ -17,6 +17,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.1.7',
+    date: '2025-11-02',
+    changes: {
+      improvements: [
+        '统一自定义标题栏、工具界面和更新日志弹窗的视觉与交互，提升整体体验',
+        'Refreshed the custom title bar, tool headers, and changelog dialog so the UI feels cohesive'
+      ]
+    }
+  },
+  {
     version: '1.1.6',
     date: '2025-10-18',
     changes: {
