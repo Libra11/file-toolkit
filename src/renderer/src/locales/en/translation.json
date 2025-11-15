@@ -527,6 +527,8 @@
   "gifExportDescription": "Export HTML cards as animated GIF or static PNG images",
   "htmlCardGifExportTool": "HTML Card GIF Export Tool",
   "htmlCardGifExportDescription": "Export card elements from HTML string as animated GIF files",
+  "htmlCardGifExportTipTitle": "Smart card export",
+  "htmlCardGifExportTipDescription": "Paste HTML that contains .card elements, analyze the structure, then batch-export GIFs or single-frame PNGs.",
   "webrtcTool": "WebRTC Audio & Video",
   "webrtcToolDescription": "Real-time audio and video communication based on WebRTC",
   "htmlString": "HTML String",
