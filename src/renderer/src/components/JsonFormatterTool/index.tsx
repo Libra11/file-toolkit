@@ -1,12 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@renderer/components/ui/card'
+import { Card, CardContent } from '@renderer/components/ui/card'
 import { Textarea } from '@renderer/components/ui/textarea'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
@@ -144,6 +138,9 @@ export default function JsonFormatterTool(): JSX.Element {
     const fallback = {
       jsonFormatter: 'JSON Formatter',
       jsonFormatterDescription: 'Validate and format JSON with highlighting and folding',
+      jsonFormatterTipTitle: 'Formatting tip',
+      jsonFormatterTipDescription:
+        'Keep keys in double quotes and separate entries with commas so the structured view renders reliably.',
       jsonFormatterInputLabel: 'JSON Input',
       jsonFormatterActionsFormat: 'Format JSON',
       jsonFormatterActionsMinify: 'Minify JSON',
@@ -185,94 +182,112 @@ export default function JsonFormatterTool(): JSX.Element {
   const isZh = languageCode.startsWith('zh')
 
   return (
-    <Card className="w-full max-w-6xl mx-auto bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800/60 shadow-lg">
-      <CardHeader className="border-b border-slate-100 dark:border-slate-800/60">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
-              <Wand className="h-5 w-5 text-blue-500" />
+    <Card className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-blue-900/10 backdrop-blur-sm transition-all duration-500 dark:border-white/10 dark:bg-slate-900/60">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white/70 to-transparent dark:from-blue-900/40 dark:via-slate-900" />
+      <div className="space-y-6">
+        <div className="flex flex-col gap-3">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:from-blue-900/50 dark:to-indigo-900/50 dark:text-blue-200">
+            <Wand className="h-4 w-4" />
+            {displayLanguage('jsonFormatter')}
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
               {displayLanguage('jsonFormatter')}
-            </CardTitle>
-            <CardDescription>{displayLanguage('jsonFormatterDescription')}</CardDescription>
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {displayLanguage('jsonFormatterDescription')}
+            </p>
           </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="space-y-4 p-4 md:p-6">
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              {displayLanguage('jsonFormatterInputLabel')}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => handleFormat(2)}
-                disabled={isFormatting}
-                className="gap-1.5"
-              >
-                <Sparkles className="h-4 w-4" />
-                {displayLanguage('jsonFormatterActionsFormat')}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => handleFormat(0)}
-                disabled={isFormatting}
-                className="gap-1.5"
-              >
-                <Wand className="h-4 w-4" />
-                {displayLanguage('jsonFormatterActionsMinify')}
-              </Button>
+        <div className="flex items-center gap-3 rounded-2xl border border-blue-100/80 bg-blue-50/70 px-4 py-3 text-sm text-blue-700 shadow-inner dark:border-blue-800/60 dark:bg-blue-900/20 dark:text-blue-100">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 text-blue-500 shadow-sm dark:bg-white/10 dark:text-blue-200">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-base font-semibold text-slate-900 dark:text-white">
+              {displayLanguage('jsonFormatterTipTitle')}
+            </p>
+            <p className="text-xs leading-relaxed text-blue-600/90 dark:text-blue-200">
+              {displayLanguage('jsonFormatterTipDescription')}
+            </p>
+          </div>
+        </div>
+
+        <CardContent className="space-y-6 rounded-3xl bg-white/95 p-0 shadow-xl shadow-blue-900/10 dark:bg-slate-900/60 dark:border-slate-800/60">
+          <section className="space-y-3 p-4 md:p-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                {displayLanguage('jsonFormatterInputLabel')}
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleFormat(2)}
+                  disabled={isFormatting}
+                  className="gap-1.5"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {displayLanguage('jsonFormatterActionsFormat')}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleFormat(0)}
+                  disabled={isFormatting}
+                  className="gap-1.5"
+                >
+                  <Wand className="h-4 w-4" />
+                  {displayLanguage('jsonFormatterActionsMinify')}
+                </Button>
+              </div>
             </div>
-          </div>
-          <Textarea
-            value={rawJson}
-            onChange={handleInputChange}
-            className="min-h-[220px] font-mono text-sm leading-[1.6]"
-            spellCheck={false}
-            autoComplete="off"
-            autoCorrect="off"
-          />
-        </section>
+            <Textarea
+              value={rawJson}
+              onChange={handleInputChange}
+              className="min-h-[220px] font-mono text-sm leading-[1.6]"
+              spellCheck={false}
+              autoComplete="off"
+              autoCorrect="off"
+            />
+          </section>
 
-        {status ? (
-          <div
-            className={cn(
-              'flex items-center gap-2 rounded-md border px-3 py-2 text-sm',
-              status.type === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-900/40 dark:text-emerald-300'
-                : 'border-red-200 bg-red-50 text-red-700 dark:border-red-800/60 dark:bg-red-900/40 dark:text-red-300'
-            )}
-          >
-            {status.type === 'success' ? (
-              <CheckCircle2 className="h-4 w-4" />
-            ) : (
-              <AlertCircle className="h-4 w-4" />
-            )}
-            <span>{status.message}</span>
-          </div>
-        ) : null}
+          {status ? (
+            <div
+              className={cn(
+                'flex items-center gap-2 rounded-md border px-3 py-2 text-sm',
+                status.type === 'success'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-900/40 dark:text-emerald-300'
+                  : 'border-red-200 bg-red-50 text-red-700 dark:border-red-800/60 dark:bg-red-900/40 dark:text-red-300'
+              )}
+            >
+              {status.type === 'success' ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              <span>{status.message}</span>
+            </div>
+          ) : null}
 
-        <section className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              {displayLanguage('jsonFormatterOutputTitle')}
-            </h3>
-            <Badge variant="secondary">
-              {hasParsedValue
-                ? isZh
-                  ? '可折叠视图'
-                  : 'Collapsible view'
-                : isZh
-                  ? '等待有效 JSON'
-                  : 'Awaiting valid JSON'}
-            </Badge>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/60">
+          <section className="space-y-2 rounded-b-3xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/60">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                {displayLanguage('jsonFormatterOutputTitle')}
+              </h3>
+              <Badge variant="secondary">
+                {hasParsedValue
+                  ? isZh
+                    ? '可折叠视图'
+                    : 'Collapsible view'
+                  : isZh
+                    ? '等待有效 JSON'
+                    : 'Awaiting valid JSON'}
+              </Badge>
+            </div>
             {hasParsedValue ? (
               <div className="font-mono text-sm leading-relaxed text-slate-800 dark:text-slate-200">
                 <JsonNode value={parsedValue} path="root" depth={0} />
@@ -284,9 +299,9 @@ export default function JsonFormatterTool(): JSX.Element {
                   : 'Provide valid JSON to see the structured preview.'}
               </p>
             )}
-          </div>
-        </section>
-      </CardContent>
+          </section>
+        </CardContent>
+      </div>
     </Card>
   )
 }

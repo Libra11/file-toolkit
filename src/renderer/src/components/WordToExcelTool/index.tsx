@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Textarea } from '@renderer/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
+import { Card, CardContent } from '@renderer/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { toast } from '@renderer/components/ui/toast'
-import { ListChecks, CheckSquare, FileText, Settings, FileSpreadsheet } from 'lucide-react'
+import { ListChecks, CheckSquare, FileText, FileSpreadsheet, Sparkles } from 'lucide-react'
 import ExcelPreview from '@renderer/components/ExcelPreview'
 
 // 导入xlsx库
@@ -200,117 +200,138 @@ const WordToExcelTool = (): JSX.Element => {
   }
 
   return (
-    <div className="py-6 space-y-6">
+    <>
       <motion.div
-        className="flex flex-col"
+        className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-blue-900/10 backdrop-blur-sm transition-all duration-500 dark:border-white/10 dark:bg-slate-900/60"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        exit={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.45 }}
       >
-        <Card className="border-blue-100 dark:border-blue-800/30 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-t-lg border-b border-blue-100 dark:border-blue-800/30">
-            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
-              <Settings className="h-5 w-5" />
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white/50 to-transparent dark:from-blue-900/40 dark:via-slate-900" />
+        <div className="space-y-6">
+          <div className="flex flex-col gap-3">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:from-blue-900/50 dark:to-indigo-900/50 dark:text-blue-200">
+              <FileSpreadsheet className="h-4 w-4" />
               {t('wordToExcel')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            <AnimatePresence>
-              <motion.div
-                key="fileConfig"
-                className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                {...fadeInAnimation}
-                transition={{ duration: 0.3, delay: 0.1 }}
-              >
-                <div className="space-y-2">
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">{t('wordToExcel')}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t('wordToExcelDescription')}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-blue-100/70 bg-blue-50/70 px-4 py-3 text-sm text-blue-700 shadow-inner dark:border-blue-800/60 dark:bg-blue-900/20 dark:text-blue-100">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 text-blue-500 shadow-sm dark:bg-white/10 dark:text-blue-200">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-base font-semibold text-slate-900 dark:text-white">{t('wordToExcelTipTitle')}</p>
+              <p className="text-xs leading-relaxed text-blue-600/90 dark:text-blue-200">
+                {t('wordToExcelTipDescription')}
+              </p>
+            </div>
+          </div>
+
+          <Card className="overflow-hidden rounded-3xl border border-blue-100/70 bg-white/95 shadow-xl shadow-blue-900/10 dark:border-blue-800/40 dark:bg-slate-900/60">
+            <CardContent className="space-y-6 px-6 pt-6 pb-6">
+              <AnimatePresence>
+                <motion.div
+                  key="fileConfig"
+                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                  {...fadeInAnimation}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <FileSpreadsheet className="h-3.5 w-3.5 text-blue-500" />
+                      {t('generateFileName')}
+                    </label>
+                    <Input
+                      value={fileName}
+                      onChange={(e) => setFileName(e.target.value)}
+                      placeholder={t('fileNamePlaceholder')}
+                      className="bg-slate-50 dark:bg-slate-800/50 focus-visible:ring-blue-500 border-blue-100 dark:border-blue-800/30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <CheckSquare className="h-3.5 w-3.5 text-blue-500" />
+                      {t('answerMatching')}
+                    </label>
+                    <Input
+                      value={answer}
+                      onChange={(e) => setAnswer(e.target.value)}
+                      placeholder={t('answerMatchingPlaceholder')}
+                      className="bg-slate-50 dark:bg-slate-800/50 focus-visible:ring-blue-500 border-blue-100 dark:border-blue-800/30"
+                    />
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  key="textareaSection"
+                  className="space-y-2"
+                  {...fadeInAnimation}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <FileSpreadsheet className="h-3.5 w-3.5 text-blue-500" />
-                    {t('generateFileName')}
+                    <FileText className="h-3.5 w-3.5 text-blue-500" />
+                    {t('originalData')}
                   </label>
-                  <Input
-                    value={fileName}
-                    onChange={(e) => setFileName(e.target.value)}
-                    placeholder={t('fileNamePlaceholder')}
-                    className="bg-slate-50 dark:bg-slate-800/50 focus-visible:ring-blue-500 border-blue-100 dark:border-blue-800/30"
+                  <Textarea
+                    value={oriData}
+                    onChange={(e) => setOriData(e.target.value)}
+                    placeholder={t('originalData')}
+                    className="min-h-[300px] bg-slate-50 dark:bg-slate-800/50 focus-visible:ring-blue-500 border-blue-100 dark:border-blue-800/30 resize-none shadow-inner"
                   />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <CheckSquare className="h-3.5 w-3.5 text-blue-500" />
-                    {t('answerMatching')}
-                  </label>
-                  <Input
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value)}
-                    placeholder={t('answerMatchingPlaceholder')}
-                    className="bg-slate-50 dark:bg-slate-800/50 focus-visible:ring-blue-500 border-blue-100 dark:border-blue-800/30"
-                  />
-                </div>
-              </motion.div>
-
-              <motion.div
-                key="textareaSection"
-                className="space-y-2"
-                {...fadeInAnimation}
-                transition={{ duration: 0.3, delay: 0.2 }}
-              >
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5 text-blue-500" />
-                  {t('originalData')}
-                </label>
-                <Textarea
-                  value={oriData}
-                  onChange={(e) => setOriData(e.target.value)}
-                  placeholder={t('originalData')}
-                  className="min-h-[300px] bg-slate-50 dark:bg-slate-800/50 focus-visible:ring-blue-500 border-blue-100 dark:border-blue-800/30 resize-none shadow-inner"
-                />
-              </motion.div>
-
-              <motion.div
-                key="buttonSection"
-                className="flex flex-wrap gap-3 pt-2"
-                {...fadeInAnimation}
-                transition={{ duration: 0.3, delay: 0.3 }}
-              >
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button
-                    onClick={handleMultipleChoice}
-                    className={getButtonStyle('multiple')}
-                    onMouseEnter={() => setHoveredButton('multiple')}
-                    onMouseLeave={() => setHoveredButton(null)}
-                  >
-                    <ListChecks size={18} />
-                    {t('multipleChoice')}
-                  </Button>
                 </motion.div>
 
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button
-                    onClick={handleTrueFalse}
-                    className={getButtonStyle('trueFalse')}
-                    onMouseEnter={() => setHoveredButton('trueFalse')}
-                    onMouseLeave={() => setHoveredButton(null)}
-                  >
-                    <CheckSquare size={18} />
-                    {t('trueFalse')}
-                  </Button>
-                </motion.div>
+                <motion.div
+                  key="buttonSection"
+                  className="flex flex-wrap gap-3 pt-2"
+                  {...fadeInAnimation}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                >
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      onClick={handleMultipleChoice}
+                      className={getButtonStyle('multiple')}
+                      onMouseEnter={() => setHoveredButton('multiple')}
+                      onMouseLeave={() => setHoveredButton(null)}
+                    >
+                      <ListChecks size={18} />
+                      {t('multipleChoice')}
+                    </Button>
+                  </motion.div>
 
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button
-                    onClick={handleFillBlank}
-                    className={getButtonStyle('fillBlank')}
-                    onMouseEnter={() => setHoveredButton('fillBlank')}
-                    onMouseLeave={() => setHoveredButton(null)}
-                  >
-                    <FileText size={18} />
-                    {t('fillBlank')}
-                  </Button>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      onClick={handleTrueFalse}
+                      className={getButtonStyle('trueFalse')}
+                      onMouseEnter={() => setHoveredButton('trueFalse')}
+                      onMouseLeave={() => setHoveredButton(null)}
+                    >
+                      <CheckSquare size={18} />
+                      {t('trueFalse')}
+                    </Button>
+                  </motion.div>
+
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      onClick={handleFillBlank}
+                      className={getButtonStyle('fillBlank')}
+                      onMouseEnter={() => setHoveredButton('fillBlank')}
+                      onMouseLeave={() => setHoveredButton(null)}
+                    >
+                      <FileText size={18} />
+                      {t('fillBlank')}
+                    </Button>
+                  </motion.div>
                 </motion.div>
-              </motion.div>
-            </AnimatePresence>
-          </CardContent>
-        </Card>
+              </AnimatePresence>
+            </CardContent>
+          </Card>
+        </div>
       </motion.div>
 
       {/* 预览对话框 */}
@@ -345,7 +366,7 @@ const WordToExcelTool = (): JSX.Element => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
 
