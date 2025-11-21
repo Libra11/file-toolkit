@@ -28,7 +28,8 @@ import {
   Fingerprint,
   Settings2,
   Check,
-  Code2
+  Code2,
+  Monitor
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import CompactToolCard from '@renderer/components/ui/card/CompactToolCard'
@@ -46,6 +47,7 @@ import { GifExportTool } from '@renderer/components/GifExportTool'
 // import { WebRTCTool } from '@renderer/components/WebRTCTool'
 import FileHashTool from '@renderer/components/FileHashTool'
 import JsonFormatterTool from '@renderer/components/JsonFormatterTool'
+import ScreenRecorderTool from '@renderer/components/ScreenRecorderTool'
 import { conversionCategories } from '@renderer/lib/conversionTypes'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
@@ -71,7 +73,8 @@ enum ActiveTool {
   BatchRename,
   GifExport,
   WebRTC,
-  FileHash
+  FileHash,
+  ScreenRecorder
 }
 
 type ToolKey = Exclude<ActiveTool, ActiveTool.None>
@@ -172,6 +175,20 @@ const toolConfigs: Record<ToolKey, ToolConfig> = {
     iconColor: 'text-indigo-500',
     titleKey: 'fileHashTool',
     descriptionKey: 'fileHashDescription'
+  },
+  [ActiveTool.WebRTC]: {
+    id: ActiveTool.WebRTC,
+    icon: VideoIcon,
+    iconColor: 'text-orange-500',
+    titleKey: 'webrtcTool',
+    descriptionKey: 'webrtcToolDescription'
+  },
+  [ActiveTool.ScreenRecorder]: {
+    id: ActiveTool.ScreenRecorder,
+    icon: Monitor,
+    iconColor: 'text-red-500',
+    titleKey: 'screenRecorder',
+    descriptionKey: 'screenRecorderDescription'
   }
 }
 
@@ -187,7 +204,8 @@ const professionalTools: ToolKey[] = [
   ActiveTool.ImageOrganize,
   ActiveTool.M3u8Download,
   ActiveTool.GifExport,
-  ActiveTool.WebRTC
+  ActiveTool.WebRTC,
+  ActiveTool.ScreenRecorder
 ]
 
 const availableToolIds = Object.values(toolConfigs).map((config) => config.id)
@@ -785,6 +803,10 @@ export default function HomePage(): JSX.Element {
               ) : activeTool === ActiveTool.GifExport ? (
                 <>
                   <GifExportTool onBack={handleBackToHome} />
+                </>
+              ) : activeTool === ActiveTool.ScreenRecorder ? (
+                <>
+                  <ScreenRecorderTool onBack={handleBackToHome} />
                 </>
               ) : null}
             </div>

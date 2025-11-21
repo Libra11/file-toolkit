@@ -10,6 +10,7 @@ import AppLayout from './components/ui/layout/AppLayout'
 import HomePage from './components/HomePage'
 import UpdateNotification from './components/UpdateNotification'
 import ChangelogPopup, { useChangelogPopup } from './components/ChangelogPopup'
+import RegionSelectionOverlay from './components/ScreenRecorderTool/RegionSelectionOverlay'
 
 function App(): JSX.Element {
   const { isOpen, currentVersion, hideChangelog, checkForNewChangelog, showChangelog } =
@@ -47,6 +48,13 @@ function App(): JSX.Element {
     } catch (error) {
       console.error('Failed to get version for changelog:', error)
     }
+  }
+
+  // Check if we are in region selection mode
+  const isRegionSelectionMode = new URLSearchParams(window.location.search).get('mode') === 'region-selection'
+
+  if (isRegionSelectionMode) {
+    return <RegionSelectionOverlay />
   }
 
   return (

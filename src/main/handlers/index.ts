@@ -23,6 +23,7 @@ import { registerBatchRenameHandlers } from './batchRenameHandlers'
 import { registerLiveKitHandlers } from './livekitHandlers'
 import { registerGifExportHandlers } from './gifExportHandlers'
 import { registerFileHashHandlers } from './fileHashHandlers'
+import { registerScreenRecorderHandlers } from './screenRecorderHandlers'
 /**
  * 注册所有IPC处理程序
  */
@@ -65,6 +66,9 @@ export function registerAllHandlers(): void {
 
   // 注册文件哈希处理程序
   registerFileHashHandlers()
+
+  // 注册屏幕录制处理程序
+  registerScreenRecorderHandlers()
 }
 
 // 导出所有处理程序
@@ -101,3 +105,6 @@ export * from './livekitHandlers'
 
 // 文件哈希处理程序
 export * from './fileHashHandlers'
+
+// 屏幕录制处理程序
+export * from './screenRecorderHandlers'

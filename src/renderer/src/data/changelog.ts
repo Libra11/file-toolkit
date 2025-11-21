@@ -17,6 +17,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.1.8',
+    date: '2025-11-21',
+    changes: {
+      features: [
+        '添加屏幕录制工具，修复区域录制无法开始的问题，增强交互体验',
+        'Added Screen Recorder, fixed region recording startup issues, and improved overall interaction'
+      ],
+      improvements: [
+        '完善中英文国际化翻译，修复按钮图标可见性问题',
+        'Completed Chinese/English localization and fixed button icon visibility issues'
+      ]
+    }
+  },
+  {
     version: '1.1.7',
     date: '2025-11-02',
     changes: {
