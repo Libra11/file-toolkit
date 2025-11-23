@@ -633,5 +633,17 @@
   "captureMoments": "Capture every moment",
   "latency": "Latency",
   "discard": "Discard",
-  "supportHighFps": "Supports high frame rates"
+  "supportHighFps": "Supports high frame rates",
+  "candidateAnswerDecryption": "Candidate Answer Decryption",
+  "candidateAnswerDecryptionDescription": "Select and decrypt encrypted candidate answer files",
+  "decrypt": "Decrypt",
+  "decrypting": "Decrypting...",
+  "decryptionSuccess": "Decryption Successful",
+  "decryptionFailed": "Decryption Failed",
+  "selectEncryptedFile": "Select Encrypted File",
+  "selectEncryptedFileDescription": "Choose the encrypted candidate answer file to decrypt",
+  "fileSavedTo": "File saved to:",
+  "decryptionResult": "Decryption Result",
+  "decryptionResultPlaceholder": "Decrypted content will appear here",
+  "unknownError": "Unknown error"
 }

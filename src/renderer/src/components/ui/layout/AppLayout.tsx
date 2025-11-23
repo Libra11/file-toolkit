@@ -158,7 +158,7 @@ export default function AppLayout({ children, onVersionClick }: AppLayoutProps):
       </div>
 
       {/* 内容区域，要留出顶部标题栏的空间 */}
-      <div className="pt-14 overflow-auto w-full flex flex-col h-screen">
+      <div id="app-scroll-container" className="pt-14 overflow-auto w-full flex flex-col h-screen">
         {/* 主要内容 */}
         <main className="flex-1 flex  justify-center md:px-6">{children}</main>
 

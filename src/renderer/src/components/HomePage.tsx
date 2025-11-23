@@ -29,7 +29,8 @@ import {
   Settings2,
   Check,
   Code2,
-  Monitor
+  Monitor,
+  Unlock
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import CompactToolCard from '@renderer/components/ui/card/CompactToolCard'
@@ -48,6 +49,7 @@ import { GifExportTool } from '@renderer/components/GifExportTool'
 import FileHashTool from '@renderer/components/FileHashTool'
 import JsonFormatterTool from '@renderer/components/JsonFormatterTool'
 import ScreenRecorderTool from '@renderer/components/ScreenRecorderTool'
+import CandidateAnswerDecryptionTool from '@renderer/components/CandidateAnswerDecryptionTool'
 import { conversionCategories } from '@renderer/lib/conversionTypes'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
@@ -74,7 +76,8 @@ enum ActiveTool {
   GifExport,
   WebRTC,
   FileHash,
-  ScreenRecorder
+  ScreenRecorder,
+  CandidateAnswerDecryption
 }
 
 type ToolKey = Exclude<ActiveTool, ActiveTool.None>
@@ -189,6 +192,13 @@ const toolConfigs: Record<ToolKey, ToolConfig> = {
     iconColor: 'text-red-500',
     titleKey: 'screenRecorder',
     descriptionKey: 'screenRecorderDescription'
+  },
+  [ActiveTool.CandidateAnswerDecryption]: {
+    id: ActiveTool.CandidateAnswerDecryption,
+    icon: Unlock,
+    iconColor: 'text-indigo-500',
+    titleKey: 'candidateAnswerDecryption',
+    descriptionKey: 'candidateAnswerDecryptionDescription'
   }
 }
 
@@ -205,7 +215,8 @@ const professionalTools: ToolKey[] = [
   ActiveTool.M3u8Download,
   ActiveTool.GifExport,
   ActiveTool.WebRTC,
-  ActiveTool.ScreenRecorder
+  ActiveTool.ScreenRecorder,
+  ActiveTool.CandidateAnswerDecryption
 ]
 
 const availableToolIds = Object.values(toolConfigs).map((config) => config.id)
@@ -235,6 +246,12 @@ export default function HomePage(): JSX.Element {
     }
     if (activeTool === ActiveTool.Compression) {
       setCompressionTab(CompressionTab.Image)
+    }
+    
+    // Scroll to top when switching tools
+    const scrollContainer = document.getElementById('app-scroll-container')
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }, [activeTool])
 
@@ -519,17 +536,17 @@ export default function HomePage(): JSX.Element {
                 ) : null}
               </div>
 
-              <DialogFooter className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <DialogFooter className="mt-6 flex flex-row gap-3">
                 <Button
                   variant="ghost"
                   onClick={() => handleFavoritesDialogOpen(false)}
-                  className="h-11 rounded-2xl border border-slate-200/80 bg-white/70 text-slate-700 shadow-sm hover:bg-white dark:border-white/20 dark:bg-transparent dark:text-white"
+                  className="h-11 flex-1 rounded-2xl border border-slate-200/80 bg-white/70 text-slate-700 shadow-sm transition-all duration-200 hover:bg-white hover:scale-[1.02] active:scale-[0.98] dark:border-white/20 dark:bg-transparent dark:text-white"
                 >
                   {t('cancel')}
                 </Button>
                 <Button
                   onClick={handleSaveFavorites}
-                  className="h-11 flex-1 rounded-2xl bg-slate-900 text-white shadow-lg shadow-indigo-900/20 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-white/90"
+                  className="h-11 flex-1 rounded-2xl bg-slate-900 text-white shadow-lg shadow-indigo-900/20 transition-all duration-200 hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-white/90"
                 >
                   {t('save')}
                 </Button>
@@ -807,6 +824,10 @@ export default function HomePage(): JSX.Element {
               ) : activeTool === ActiveTool.ScreenRecorder ? (
                 <>
                   <ScreenRecorderTool onBack={handleBackToHome} />
+                </>
+              ) : activeTool === ActiveTool.CandidateAnswerDecryption ? (
+                <>
+                  <CandidateAnswerDecryptionTool onBack={handleBackToHome} />
                 </>
               ) : null}
             </div>

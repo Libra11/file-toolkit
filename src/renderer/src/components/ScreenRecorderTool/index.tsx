@@ -508,7 +508,7 @@ export default function ScreenRecorderTool({ onBack }: ScreenRecorderToolProps):
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
     >
-      <div className="container mx-auto max-w-5xl px-4 py-8">
+      <div className="container mx-auto max-w-5xl">
         <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-gradient-to-br from-[#eef2ff] via-white to-[#e0f7ff] p-6 shadow-2xl shadow-blue-900/20 backdrop-blur-lg dark:border-white/10 dark:from-[#0f172a] dark:via-[#111c3d] dark:to-[#0a1328] md:p-10">
           <div className="pointer-events-none absolute inset-0 opacity-60">
             <div className="absolute -left-10 top-0 h-48 w-48 rounded-full bg-blue-400/30 blur-3xl dark:bg-blue-500/20" />

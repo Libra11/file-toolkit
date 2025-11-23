@@ -58,5 +58,10 @@ declare global {
     batchRename: BatchRename
     gifExport: GifExport
     hash: FileHash
+    decryption: {
+      decryptCandidateAnswer: (
+        filePath: string
+      ) => Promise<{ success: boolean; content?: string; error?: string }>
+    }
   }
 }

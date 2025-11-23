@@ -12,9 +12,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 interface FileInputProps {
   onFileSelect: (file: File | null) => void
+  accept?: string
+  placeholder?: string
 }
 
-const FileInput: React.FC<FileInputProps> = ({ onFileSelect }) => {
+const FileInput: React.FC<FileInputProps> = ({ onFileSelect, accept, placeholder }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -66,7 +68,7 @@ const FileInput: React.FC<FileInputProps> = ({ onFileSelect }) => {
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".mp4, .png, .jpg, .jpeg, .gif, .webp, .mp3, .wav, .m4a, .flac, .avi, .mov, .webm"
+        accept={accept || ".mp4, .png, .jpg, .jpeg, .gif, .webp, .mp3, .wav, .m4a, .flac, .avi, .mov, .webm"}
         className="hidden"
       />
 
@@ -111,7 +113,7 @@ const FileInput: React.FC<FileInputProps> = ({ onFileSelect }) => {
               </div>
             </div>
             <div className="text-center space-y-1">
-              <p className="font-medium text-primary">{t('selectFile')}</p>
+              <p className="font-medium text-primary">{placeholder || t('selectFile')}</p>
               <p className="text-sm text-muted-foreground">{t('dropFileHere')}</p>
             </div>
           </motion.div>
@@ -120,16 +122,16 @@ const FileInput: React.FC<FileInputProps> = ({ onFileSelect }) => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-card/70 backdrop-blur-sm border border-border/40 rounded-lg p-4 flex items-start justify-between"
+            className="bg-card/70 backdrop-blur-sm border border-border/40 rounded-lg p-4 flex items-start justify-between max-w-full"
           >
-            <div className="flex items-center space-x-3">
-              <div className="bg-primary/10 text-primary p-3 rounded-full">
+            <div className="flex items-center space-x-3 min-w-0 flex-1">
+              <div className="bg-primary/10 text-primary p-3 rounded-full shrink-0">
                 <File size={20} />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center">
-                  <h4 className="font-medium text-sm line-clamp-1 mr-2">{selectedFileName}</h4>
-                  <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs px-2 py-0.5 rounded-full flex items-center">
+                  <h4 className="font-medium text-sm truncate mr-2" title={selectedFileName}>{selectedFileName}</h4>
+                  <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs px-2 py-0.5 rounded-full flex items-center shrink-0 whitespace-nowrap">
                     <Check size={12} className="mr-1" />
                     {t('selected')}
                   </span>

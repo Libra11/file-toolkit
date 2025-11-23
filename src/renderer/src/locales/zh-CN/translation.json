@@ -662,5 +662,17 @@
   "previewTip": "您可以下载保存录制内容，或者丢弃并重新开始。",
   "captureMoments": "捕捉精彩瞬间",
   "latency": "延迟",
-  "discard": "丢弃"
+  "discard": "丢弃",
+  "candidateAnswerDecryption": "考生答案解密",
+  "candidateAnswerDecryptionDescription": "选择加密文件进行解密",
+  "decrypt": "解密",
+  "decrypting": "解密中...",
+  "decryptionSuccess": "解密成功",
+  "decryptionFailed": "解密失败",
+  "selectEncryptedFile": "选择加密文件",
+  "selectEncryptedFileDescription": "请选择需要解密的考生答案文件",
+  "fileSavedTo": "文件已保存至：",
+  "decryptionResult": "解密结果",
+  "decryptionResultPlaceholder": "解密后的结果将显示在这里",
+  "unknownError": "未知错误"
 }

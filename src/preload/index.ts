@@ -15,6 +15,7 @@ import { m3u8Download } from './api/m3u8Download'
 import { batchRename } from './api/batchRename'
 import { gifExportAPI } from './api/gifExport'
 import { hash } from './api/hash'
+import { decryption } from './api/decryption'
 
 if (process.contextIsolated) {
   try {
@@ -28,6 +29,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('batchRename', batchRename)
     contextBridge.exposeInMainWorld('gifExport', gifExportAPI)
     contextBridge.exposeInMainWorld('hash', hash)
+    contextBridge.exposeInMainWorld('decryption', decryption)
   } catch (error) {
     console.error(error)
   }
@@ -52,4 +54,6 @@ if (process.contextIsolated) {
   window.gifExport = gifExportAPI
   // @ts-ignore (define in dts)
   window.hash = hash
+  // @ts-ignore (define in dts)
+  window.decryption = decryption
 }

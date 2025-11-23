@@ -17,6 +17,22 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.1.9',
+    date: '2025-11-24',
+    changes: {
+      features: [
+        '新增考生答案解密工具，支持一键解密并查看 JSON 格式的答案内容',
+        'Added Candidate Answer Decryption tool, supporting one-click decryption and JSON format viewing'
+      ],
+      improvements: [
+        '优化文件选择组件，支持长文件名截断显示，避免界面错乱',
+        'Optimized file selection component to support long filename truncation and prevent UI layout issues',
+        '解密结果直接在界面展示并支持语法高亮，无需手动保存文件',
+        'Decryption results are displayed directly in the UI with syntax highlighting, eliminating the need to save files manually'
+      ]
+    }
+  },
+  {
     version: '1.1.8',
     date: '2025-11-21',
     changes: {

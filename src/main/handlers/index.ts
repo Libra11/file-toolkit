@@ -24,6 +24,7 @@ import { registerLiveKitHandlers } from './livekitHandlers'
 import { registerGifExportHandlers } from './gifExportHandlers'
 import { registerFileHashHandlers } from './fileHashHandlers'
 import { registerScreenRecorderHandlers } from './screenRecorderHandlers'
+import { registerDecryptionHandlers } from './decryptionHandlers'
 /**
  * 注册所有IPC处理程序
  */
@@ -69,6 +70,9 @@ export function registerAllHandlers(): void {
 
   // 注册屏幕录制处理程序
   registerScreenRecorderHandlers()
+
+  // 注册考生答案解密处理程序
+  registerDecryptionHandlers()
 }
 
 // 导出所有处理程序
@@ -108,3 +112,6 @@ export * from './fileHashHandlers'
 
 // 屏幕录制处理程序
 export * from './screenRecorderHandlers'
+
+// 考生答案解密处理程序
+export * from './decryptionHandlers'

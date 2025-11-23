@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter
 } from './ui/dialog'
 import { Button } from './ui/button'
@@ -96,15 +95,26 @@ const ChangelogPopup: React.FC<ChangelogPopupProps> = ({ isOpen, onClose, versio
             <div className="absolute bottom-0 right-0 h-48 w-48 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/25" />
           </div>
           <div className="relative px-6 py-6 sm:px-8 sm:py-8">
-            <DialogHeader className="space-y-3 text-left">
-              <DialogTitle className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-indigo-500" />
-                {t('whatsNew')}
-                <Badge variant="outline">v{changelogEntry.version}</Badge>
-              </DialogTitle>
-              <DialogDescription className="text-sm text-slate-500 dark:text-white/70">
-                {changelogEntry.date}
-              </DialogDescription>
+            <DialogHeader className="mb-6 text-left">
+              <div className="flex items-center justify-between">
+                <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-slate-900 dark:text-white">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100/80 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
+                    <Calendar className="h-5 w-5" />
+                  </div>
+                  {t('whatsNew')}
+                </DialogTitle>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                    {changelogEntry.date}
+                  </span>
+                  <Badge
+                    variant="secondary"
+                    className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+                  >
+                    v{changelogEntry.version}
+                  </Badge>
+                </div>
+              </div>
             </DialogHeader>
 
             <ScrollArea className="max-h-[50vh] pr-4">
@@ -130,11 +140,18 @@ const ChangelogPopup: React.FC<ChangelogPopupProps> = ({ isOpen, onClose, versio
               </div>
             </ScrollArea>
 
-            <DialogFooter className="flex flex-col sm:flex-row gap-2">
-              <Button variant="outline" onClick={handleDontShowAgain} className="flex-1">
+            <DialogFooter className="flex flex-row gap-3 mt-4">
+              <Button
+                variant="ghost"
+                onClick={handleDontShowAgain}
+                className="h-11 flex-1 rounded-2xl border border-slate-200/80 bg-white/70 text-slate-700 shadow-sm transition-all duration-200 hover:bg-white hover:scale-[1.02] active:scale-[0.98] dark:border-white/20 dark:bg-transparent dark:text-white"
+              >
                 {t('dontShowAgain')}
               </Button>
-              <Button onClick={onClose} className="flex-1">
+              <Button
+                onClick={onClose}
+                className="h-11 flex-1 rounded-2xl bg-slate-900 text-white shadow-lg shadow-indigo-900/20 transition-all duration-200 hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-white/90"
+              >
                 {t('close')}
               </Button>
             </DialogFooter>
