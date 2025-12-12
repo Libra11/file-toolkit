@@ -1,9 +1,3 @@
-/**
- * Author: Libra
- * Date: 2025-03-30 11:36:01
- * LastEditors: Libra
- * Description:
- */
 /*
  * @Author: Libra
  * @Date: 2024-03-30
@@ -88,12 +82,12 @@ export default function AppLayout({ children, onVersionClick }: AppLayoutProps):
       </div>
 
       {/* 自定义标题栏 */}
-      <div className="fixed top-0 left-0 w-full z-50 h-14 border-b border-slate-200/40 bg-white/80 backdrop-blur-xl shadow-[0_12px_50px_rgba(15,23,42,0.08)] dark:border-slate-900/40 dark:bg-slate-900/70">
+      <div
+        className="fixed top-0 left-0 w-full z-50 h-14 border-b border-slate-200/40 bg-white/80 backdrop-blur-xl shadow-[0_12px_50px_rgba(15,23,42,0.08)] dark:border-slate-900/40 dark:bg-slate-900/70"
+        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+      >
         <div className="h-full flex items-center justify-between px-6">
-          <div
-            className="flex items-center gap-4 text-slate-700 dark:text-slate-100"
-            style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-          >
+          <div className="flex items-center gap-4 text-slate-700 dark:text-slate-100">
             <div className="flex items-center justify-center h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-500/30 text-blue-600 dark:text-blue-300">
               <Sparkles className="h-4 w-4" />
             </div>
