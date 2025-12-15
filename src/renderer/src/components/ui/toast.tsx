@@ -26,6 +26,22 @@ interface ToastContextType {
   dismissAllToasts: () => void
 }
 
+// 事件总线机制，允许在组件外调用 toast
+type ToastMessage = Omit<Toast, 'id'>
+type Listener = (toast: ToastMessage) => void
+let listeners: Listener[] = []
+
+function subscribe(listener: Listener): () => void {
+  listeners.push(listener)
+  return () => {
+    listeners = listeners.filter((l) => l !== listener)
+  }
+}
+
+function emit(toast: ToastMessage): void {
+  listeners.forEach((l) => l(toast))
+}
+
 // 创建 Context
 const ToastContext = React.createContext<ToastContextType | undefined>(undefined)
 
@@ -33,26 +49,36 @@ const ToastContext = React.createContext<ToastContextType | undefined>(undefined
 export function ToastProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const [toasts, setToasts] = React.useState<Toast[]>([])
 
-  const addToast = React.useCallback((toast: Omit<Toast, 'id'>): void => {
-    const id = Math.random().toString(36).substring(2, 9)
-    const newToast = { id, ...toast }
-    setToasts((prev) => [...prev, newToast])
-
-    // 自动关闭
-    if (toast.duration !== 0) {
-      setTimeout(() => {
-        dismissToast(id)
-      }, toast.duration || 3000)
-    }
-  }, [])
-
   const dismissToast = React.useCallback((id: string): void => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id))
   }, [])
 
+  const addToast = React.useCallback(
+    (toast: Omit<Toast, 'id'>): void => {
+      const id = Math.random().toString(36).substring(2, 9)
+      const newToast = { id, ...toast }
+      setToasts((prev) => [...prev, newToast])
+
+      // 自动关闭
+      if (toast.duration !== 0) {
+        setTimeout(() => {
+          dismissToast(id)
+        }, toast.duration || 3000)
+      }
+    },
+    [dismissToast]
+  )
+
   const dismissAllToasts = React.useCallback((): void => {
     setToasts([])
   }, [])
+
+  // 订阅全局 toast 事件
+  React.useEffect(() => {
+    return subscribe((toast) => {
+      addToast(toast)
+    })
+  }, [addToast])
 
   return (
     <ToastContext.Provider value={{ toasts, addToast, dismissToast, dismissAllToasts }}>
@@ -109,10 +135,7 @@ function ToastItem({ toast }: { toast: Toast }): JSX.Element {
           {toast.title && <div className="font-medium">{toast.title}</div>}
           {toast.description && <div className="text-sm opacity-90 mt-1">{toast.description}</div>}
         </div>
-        <button
-          onClick={() => dismissToast(toast.id)}
-          className="text-gray-500 hover:text-gray-700"
-        >
+        <button onClick={() => dismissToast(toast.id)} className="text-gray-500 hover:text-gray-700">
           <X size={16} />
         </button>
       </div>
@@ -120,41 +143,22 @@ function ToastItem({ toast }: { toast: Toast }): JSX.Element {
   )
 }
 
-// 创建独立的 toast 调用函数
-const getToast = (): { addToast: (toast: Omit<Toast, 'id'>) => void } => {
-  try {
-    return useToast()
-  } catch (error) {
-    console.error('Toast context not available:', error)
-    // 提供一个默认实现，当 context 不可用时
-    return {
-      addToast: (toast: Omit<Toast, 'id'>): void => {
-        console.warn('Toast unavailable:', toast)
-      }
-    }
-  }
-}
-
-// 导出 toast 方法
+// 导出 toast 方法（通过事件总线触发）
 export const toast = {
   // 常规 toast
   default: (props: Omit<Toast, 'id' | 'variant'>): void => {
-    const { addToast } = getToast()
-    addToast({ ...props, variant: 'default' })
+    emit({ ...props, variant: 'default' })
   },
   // 成功 toast
   success: (props: Omit<Toast, 'id' | 'variant'>): void => {
-    const { addToast } = getToast()
-    addToast({ ...props, variant: 'success' })
+    emit({ ...props, variant: 'success' })
   },
   // 警告 toast
   warning: (props: Omit<Toast, 'id' | 'variant'>): void => {
-    const { addToast } = getToast()
-    addToast({ ...props, variant: 'warning' })
+    emit({ ...props, variant: 'warning' })
   },
   // 错误 toast
   error: (props: Omit<Toast, 'id' | 'variant'>): void => {
-    const { addToast } = getToast()
-    addToast({ ...props, variant: 'destructive' })
+    emit({ ...props, variant: 'destructive' })
   }
 }

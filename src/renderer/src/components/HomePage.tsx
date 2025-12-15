@@ -30,7 +30,8 @@ import {
   Check,
   Code2,
   Monitor,
-  Unlock
+  Unlock,
+  FileSpreadsheet
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import CompactToolCard from '@renderer/components/ui/card/CompactToolCard'
@@ -50,6 +51,7 @@ import FileHashTool from '@renderer/components/FileHashTool'
 import JsonFormatterTool from '@renderer/components/JsonFormatterTool'
 import ScreenRecorderTool from '@renderer/components/ScreenRecorderTool'
 import CandidateAnswerDecryptionTool from '@renderer/components/CandidateAnswerDecryptionTool'
+import ExcelMatchRenameTool from '@renderer/components/ExcelMatchRenameTool'
 import { conversionCategories } from '@renderer/lib/conversionTypes'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
@@ -77,7 +79,8 @@ enum ActiveTool {
   WebRTC,
   FileHash,
   ScreenRecorder,
-  CandidateAnswerDecryption
+  CandidateAnswerDecryption,
+  ExcelMatchRename
 }
 
 type ToolKey = Exclude<ActiveTool, ActiveTool.None>
@@ -186,10 +189,17 @@ const toolConfigs: Record<ToolKey, ToolConfig> = {
     titleKey: 'webrtcTool',
     descriptionKey: 'webrtcToolDescription'
   },
+  [ActiveTool.ExcelMatchRename]: {
+    id: ActiveTool.ExcelMatchRename,
+    icon: FileSpreadsheet,
+    iconColor: 'text-emerald-600',
+    titleKey: 'excelMatchRename',
+    descriptionKey: 'excelMatchRenameDescription'
+  },
   [ActiveTool.ScreenRecorder]: {
     id: ActiveTool.ScreenRecorder,
     icon: Monitor,
-    iconColor: 'text-red-500',
+    iconColor: 'text-violet-500',
     titleKey: 'screenRecorder',
     descriptionKey: 'screenRecorderDescription'
   },
@@ -216,7 +226,8 @@ const professionalTools: ToolKey[] = [
   ActiveTool.GifExport,
   ActiveTool.WebRTC,
   ActiveTool.ScreenRecorder,
-  ActiveTool.CandidateAnswerDecryption
+  ActiveTool.CandidateAnswerDecryption,
+  ActiveTool.ExcelMatchRename
 ]
 
 const availableToolIds = Object.values(toolConfigs).map((config) => config.id)
@@ -821,10 +832,10 @@ export default function HomePage(): JSX.Element {
                 <>
                   <GifExportTool onBack={handleBackToHome} />
                 </>
+               ) : activeTool === ActiveTool.ExcelMatchRename ? (
+                <ExcelMatchRenameTool onBack={handleBackToHome} />
               ) : activeTool === ActiveTool.ScreenRecorder ? (
-                <>
-                  <ScreenRecorderTool onBack={handleBackToHome} />
-                </>
+                <ScreenRecorderTool onBack={handleBackToHome} />
               ) : activeTool === ActiveTool.CandidateAnswerDecryption ? (
                 <>
                   <CandidateAnswerDecryptionTool onBack={handleBackToHome} />

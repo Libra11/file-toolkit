@@ -17,6 +17,22 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.2.0',
+    date: '2025-12-12',
+    changes: {
+      features: [
+        'Excel 匹配重命名工具 UI 全新升级：采用单卡片布局，整合来源选择、规则配置与预览面板，操作更流畅',
+        'Excel Match Rename Tool UI Redesign: Implemented a unified "Single Card" layout consolidating Source, Rules, and Preview panels for better usability'
+      ],
+      improvements: [
+        '优化文件操作性能，采用异步非阻塞方式处理大批量文件，避免界面卡顿',
+        'Optimized file operations to use non-blocking async I/O, preventing UI freezes during batch processing',
+        '添加执行操作时的最小加载时间（800ms），提供更明确的操作反馈',
+        'Added a minimum loading duration (800ms) for execution actions to provide better visual feedback'
+      ]
+    }
+  },
+  {
     version: '1.1.9',
     date: '2025-11-24',
     changes: {

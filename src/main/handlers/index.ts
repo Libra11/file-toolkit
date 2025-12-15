@@ -25,6 +25,7 @@ import { registerGifExportHandlers } from './gifExportHandlers'
 import { registerFileHashHandlers } from './fileHashHandlers'
 import { registerScreenRecorderHandlers } from './screenRecorderHandlers'
 import { registerDecryptionHandlers } from './decryptionHandlers'
+import { registerExcelMatchHandlers } from './excelMatchHandlers'
 /**
  * 注册所有IPC处理程序
  */
@@ -72,7 +73,11 @@ export function registerAllHandlers(): void {
   registerScreenRecorderHandlers()
 
   // 注册考生答案解密处理程序
+  // 注册考生答案解密处理程序
   registerDecryptionHandlers()
+
+  // 注册 Excel 匹配重命名处理程序
+  registerExcelMatchHandlers()
 }
 
 // 导出所有处理程序
@@ -115,3 +120,6 @@ export * from './screenRecorderHandlers'
 
 // 考生答案解密处理程序
 export * from './decryptionHandlers'
+
+// Excel 匹配重命名处理程序
+export * from './excelMatchHandlers'

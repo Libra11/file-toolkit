@@ -63,5 +63,15 @@ declare global {
         filePath: string
       ) => Promise<{ success: boolean; content?: string; error?: string }>
     }
+    excelMatch: {
+      selectFolder: () => Promise<string | null>
+      scanFolder: (path: string) => Promise<string[]>
+      readExcel: () => Promise<{ path: string; headers: string[]; data: any[] } | null>
+      execute: (args: {
+        tasks: { originalPath: string; newFilename: string }[]
+        targetDir?: string
+        overwrite?: boolean
+      }) => Promise<{ success: number; fail: number; errors: string[] }>
+    }
   }
 }

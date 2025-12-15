@@ -16,6 +16,7 @@ import { batchRename } from './api/batchRename'
 import { gifExportAPI } from './api/gifExport'
 import { hash } from './api/hash'
 import { decryption } from './api/decryption'
+import { excelMatch } from './api/excelMatch'
 
 if (process.contextIsolated) {
   try {
@@ -30,6 +31,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('gifExport', gifExportAPI)
     contextBridge.exposeInMainWorld('hash', hash)
     contextBridge.exposeInMainWorld('decryption', decryption)
+    contextBridge.exposeInMainWorld('excelMatch', excelMatch)
   } catch (error) {
     console.error(error)
   }
@@ -56,4 +58,6 @@ if (process.contextIsolated) {
   window.hash = hash
   // @ts-ignore (define in dts)
   window.decryption = decryption
+  // @ts-ignore (define in dts)
+  window.excelMatch = excelMatch
 }
