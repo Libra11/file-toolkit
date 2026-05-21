@@ -11,6 +11,7 @@ import { runExport } from './export'
 import { exec, spawn } from 'child_process'
 import * as path from 'path'
 import { app, BrowserWindow } from 'electron'
+import { getNameRuleConfig } from '@shared/imageOrganizeRules'
 
 // 进度更新函数类型
 type ProgressCallback = (status: string, percentage?: number) => void
@@ -33,6 +34,7 @@ export async function processImages({
 }): Promise<void> {
   // 创建路径配置
   const paths = createPaths({ rootDir, sourceDir, excelPath, nameRule })
+  const ruleConfig = getNameRuleConfig(paths.originalFileNameRule)
 
   // 每次执行前，先删除 rootDir 目录下的所有文件
   updateProgress('正在清理目录...', 5)
@@ -60,16 +62,18 @@ export async function processImages({
     throw new Error(`平铺文件夹失败: ${error instanceof Error ? error.message : String(error)}`)
   }
 
-  // 2. 对文件名进行分类
-  updateProgress('正在分类文件...', 30)
-  try {
-    await organizePhotos(paths.flatDir, paths.categoryDir, paths)
-  } catch (error) {
-    console.error('文件分类失败:', error)
-    throw new Error(`文件分类失败: ${error instanceof Error ? error.message : String(error)}`)
+  // 2. 需要固定命名格式的规则才进行格式分类
+  if (ruleConfig.fileKeySource === 'filename-part') {
+    updateProgress('正在分类文件...', 30)
+    try {
+      await organizePhotos(paths.flatDir, paths.categoryDir, paths)
+    } catch (error) {
+      console.error('文件分类失败:', error)
+      throw new Error(`文件分类失败: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
-  // 3. 重命名符合格式的文件
+  // 3. 按规则重命名文件
   updateProgress('正在重命名文件...', 50)
   try {
     await renameIdCardFiles(paths)
@@ -87,13 +91,13 @@ export async function processImages({
     throw new Error(`图片压缩失败: ${error instanceof Error ? error.message : String(error)}`)
   }
 
-  // 5. 根据excel进行分类
-  updateProgress('正在根据Excel分类...', 80)
+  // 5. 根据Excel映射输出结果
+  updateProgress('正在输出结果...', 80)
   try {
     await runExport(paths)
   } catch (error) {
-    console.error('Excel分类失败:', error)
-    throw new Error(`Excel分类失败: ${error instanceof Error ? error.message : String(error)}`)
+    console.error('结果输出失败:', error)
+    throw new Error(`结果输出失败: ${error instanceof Error ? error.message : String(error)}`)
   }
 
   updateProgress('处理完成', 100)

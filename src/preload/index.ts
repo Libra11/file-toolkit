@@ -17,6 +17,7 @@ import { gifExportAPI } from './api/gifExport'
 import { hash } from './api/hash'
 import { decryption } from './api/decryption'
 import { excelMatch } from './api/excelMatch'
+import { videoSprite } from './api/videoSprite'
 
 if (process.contextIsolated) {
   try {
@@ -32,6 +33,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('hash', hash)
     contextBridge.exposeInMainWorld('decryption', decryption)
     contextBridge.exposeInMainWorld('excelMatch', excelMatch)
+    contextBridge.exposeInMainWorld('videoSprite', videoSprite)
   } catch (error) {
     console.error(error)
   }
@@ -60,4 +62,7 @@ if (process.contextIsolated) {
   window.decryption = decryption
   // @ts-ignore (define in dts)
   window.excelMatch = excelMatch
+  // @ts-ignore (define in dts)
+  window.videoSprite = videoSprite
 }
+

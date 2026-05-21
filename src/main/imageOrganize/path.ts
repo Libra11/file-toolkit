@@ -6,11 +6,12 @@
  */
 import { app } from 'electron'
 import * as path from 'path'
+import type { NameRule } from '@shared/imageOrganizeRules'
 
-// 原始文件命名规则,目前只支持身份证号_姓名和姓名_身份证号
+// 原始文件命名规则
 const originalFileNameRule = '身份证号_姓名'
 
-export type NameRule = '身份证号_姓名' | '姓名_身份证号'
+export type { NameRule } from '@shared/imageOrganizeRules'
 
 export interface PathConfig {
   originalFileNameRule: NameRule
@@ -22,7 +23,7 @@ export interface PathConfig {
   validDir: string
   renameDir: string
   resizeDir: string
-  categoryByExamDir: string
+  finalOutputDir: string
   successExcel: string
   failExcel: string
 }
@@ -55,8 +56,8 @@ export function createPaths(config: {
     renameDir: path.join(rootDir, '3重命名文件夹'),
     // 图片文件压缩
     resizeDir: path.join(rootDir, '4压缩后'),
-    // 根据试卷进行分类
-    categoryByExamDir: path.join(rootDir, '5根据试卷进行分类'),
+    // 最终输出，有分类列时按分类创建子目录
+    finalOutputDir: path.join(rootDir, '5最终输出'),
     // 成功的excel
     successExcel: path.join(rootDir, '6成功.xlsx'),
     // 失败的excel

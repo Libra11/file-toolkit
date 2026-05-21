@@ -31,7 +31,8 @@ import {
   Code2,
   Monitor,
   Unlock,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Grid3x3
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import CompactToolCard from '@renderer/components/ui/card/CompactToolCard'
@@ -52,6 +53,7 @@ import JsonFormatterTool from '@renderer/components/JsonFormatterTool'
 import ScreenRecorderTool from '@renderer/components/ScreenRecorderTool'
 import CandidateAnswerDecryptionTool from '@renderer/components/CandidateAnswerDecryptionTool'
 import ExcelMatchRenameTool from '@renderer/components/ExcelMatchRenameTool'
+import { VideoSpriteTool } from '@renderer/components/VideoSpriteTool'
 import { conversionCategories } from '@renderer/lib/conversionTypes'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
@@ -80,7 +82,8 @@ enum ActiveTool {
   FileHash,
   ScreenRecorder,
   CandidateAnswerDecryption,
-  ExcelMatchRename
+  ExcelMatchRename,
+  VideoSprite
 }
 
 type ToolKey = Exclude<ActiveTool, ActiveTool.None>
@@ -209,6 +212,13 @@ const toolConfigs: Record<ToolKey, ToolConfig> = {
     iconColor: 'text-indigo-500',
     titleKey: 'candidateAnswerDecryption',
     descriptionKey: 'candidateAnswerDecryptionDescription'
+  },
+  [ActiveTool.VideoSprite]: {
+    id: ActiveTool.VideoSprite,
+    icon: Grid3x3,
+    iconColor: 'text-violet-500',
+    titleKey: 'videoSpriteTool',
+    descriptionKey: 'videoSpriteDescription'
   }
 }
 
@@ -227,7 +237,8 @@ const professionalTools: ToolKey[] = [
   ActiveTool.WebRTC,
   ActiveTool.ScreenRecorder,
   ActiveTool.CandidateAnswerDecryption,
-  ActiveTool.ExcelMatchRename
+  ActiveTool.ExcelMatchRename,
+  ActiveTool.VideoSprite
 ]
 
 const availableToolIds = Object.values(toolConfigs).map((config) => config.id)
@@ -840,6 +851,8 @@ export default function HomePage(): JSX.Element {
                 <>
                   <CandidateAnswerDecryptionTool onBack={handleBackToHome} />
                 </>
+              ) : activeTool === ActiveTool.VideoSprite ? (
+                <VideoSpriteTool onBack={handleBackToHome} />
               ) : null}
             </div>
           )}

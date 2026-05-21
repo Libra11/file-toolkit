@@ -26,6 +26,7 @@ import { registerFileHashHandlers } from './fileHashHandlers'
 import { registerScreenRecorderHandlers } from './screenRecorderHandlers'
 import { registerDecryptionHandlers } from './decryptionHandlers'
 import { registerExcelMatchHandlers } from './excelMatchHandlers'
+import { registerVideoSpriteHandlers } from './videoSpriteHandlers'
 /**
  * 注册所有IPC处理程序
  */
@@ -78,6 +79,9 @@ export function registerAllHandlers(): void {
 
   // 注册 Excel 匹配重命名处理程序
   registerExcelMatchHandlers()
+
+  // 注册视频拼图处理程序
+  registerVideoSpriteHandlers()
 }
 
 // 导出所有处理程序
@@ -123,3 +127,7 @@ export * from './decryptionHandlers'
 
 // Excel 匹配重命名处理程序
 export * from './excelMatchHandlers'
+
+// 视频拼图处理程序
+export * from './videoSpriteHandlers'
+

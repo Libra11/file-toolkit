@@ -9,6 +9,7 @@ import { checkFileExists } from '../utils/fileSystem'
 import path from 'path'
 import fs from 'fs/promises'
 import { existsSync } from 'fs'
+import sharp from 'sharp'
 
 // 图片压缩设置接口
 export interface ImageCompressionOptions {
@@ -40,7 +41,7 @@ async function getFileSize(filePath: string): Promise<number> {
 }
 
 /**
- * 压缩图片文件
+ * 压缩图片文件（使用 Sharp 优化性能）
  * @param inputPath 输入路径
  * @param outputPath 输出路径
  * @param options 压缩选项
@@ -69,8 +70,7 @@ export async function compressImage(
     maintainAspectRatio,
     format,
     compressionLevel,
-    lossless,
-    preset
+    lossless
   } = mergedOptions
 
   console.log('压缩选项:', mergedOptions)
@@ -89,104 +89,20 @@ export async function compressImage(
   // 获取原始文件大小
   const originalSize = await getFileSize(inputPath)
 
-  // 获取图片信息
-  let originalWidth, originalHeight
+  // 使用 Sharp 获取图片信息（比 ffprobe 快得多）
+  let originalWidth: number | undefined
+  let originalHeight: number | undefined
+  
   try {
-    const probeArgs = [
-      '-v',
-      'error',
-      '-print_format',
-      'json',
-      '-show_format',
-      '-show_streams',
-      inputPath
-    ]
-    const probeResult = await execFileAsync(ffprobePath, probeArgs)
-    const info = JSON.parse(probeResult.stdout)
-    if (info.streams && info.streams[0]) {
-      originalWidth = info.streams[0].width
-      originalHeight = info.streams[0].height
-    }
+    const metadata = await sharp(inputPath).metadata()
+    originalWidth = metadata.width
+    originalHeight = metadata.height
   } catch (error) {
     console.warn('无法获取图片尺寸:', error)
   }
 
-  // 构建ffmpeg参数
-  const ffmpegArgs: string[] = ['-y', '-i', inputPath]
-
-  // 设置输出格式和编码器
-  if (format) {
-    const extension = path.extname(outputPath).toLowerCase()
-    let outputFormat = outputPath
-
-    // 如果需要强制输出格式，重写输出路径
-    if (
-      (format === 'jpg' && !extension.includes('.jpg') && !extension.includes('.jpeg')) ||
-      (format === 'png' && !extension.includes('.png')) ||
-      (format === 'webp' && !extension.includes('.webp'))
-    ) {
-      outputFormat = outputPath.substring(0, outputPath.lastIndexOf('.')) + '.' + format
-    }
-
-    // 编码器设置
-    switch (format) {
-      case 'jpg':
-        ffmpegArgs.push('-c:v', 'mjpeg')
-        ffmpegArgs.push('-q:v', quality.toString())
-        break
-      case 'png':
-        ffmpegArgs.push('-c:v', 'png')
-        // PNG优化参数
-        if (compressionLevel !== undefined) {
-          ffmpegArgs.push('-compression_level', compressionLevel.toString())
-          // 添加预设参数以获得更好的压缩效果
-          ffmpegArgs.push('-pred', 'mixed') // 使用混合预测
-          ffmpegArgs.push('-bits_per_raw_sample', '8') // 8位色深
-        }
-        break
-      case 'webp':
-        ffmpegArgs.push('-c:v', 'libwebp')
-        if (lossless) {
-          ffmpegArgs.push('-lossless', '1')
-          if (compressionLevel !== undefined) {
-            ffmpegArgs.push('-compression_level', compressionLevel.toString())
-          }
-        } else {
-          ffmpegArgs.push('-q:v', quality.toString())
-        }
-        if (preset) {
-          ffmpegArgs.push('-preset', preset)
-        }
-        break
-    }
-
-    outputPath = outputFormat
-  } else {
-    // 根据输出文件扩展名自动选择编码器
-    const extension = path.extname(outputPath).toLowerCase()
-    if (extension.includes('.jpg') || extension.includes('.jpeg')) {
-      ffmpegArgs.push('-c:v', 'mjpeg')
-      ffmpegArgs.push('-q:v', quality.toString())
-    } else if (extension.includes('.png')) {
-      ffmpegArgs.push('-c:v', 'png')
-      if (compressionLevel !== undefined) {
-        ffmpegArgs.push('-compression_level', compressionLevel.toString())
-      }
-    } else if (extension.includes('.webp')) {
-      ffmpegArgs.push('-c:v', 'libwebp')
-      if (lossless) {
-        ffmpegArgs.push('-lossless', '1')
-        if (compressionLevel !== undefined) {
-          ffmpegArgs.push('-compression_level', compressionLevel.toString())
-        }
-      } else {
-        ffmpegArgs.push('-q:v', quality.toString())
-      }
-      if (preset) {
-        ffmpegArgs.push('-preset', preset || 'default')
-      }
-    }
-  }
+  // 构建 Sharp 处理链
+  let sharpInstance = sharp(inputPath)
 
   // 设置尺寸调整
   let newWidth = width
@@ -226,7 +142,12 @@ export async function compressImage(
 
     // 设置缩放参数
     if (newWidth && newHeight) {
-      ffmpegArgs.push('-vf', `scale=${newWidth}:${newHeight}:flags=lanczos`)
+      sharpInstance = sharpInstance.resize({
+        width: newWidth,
+        height: newHeight,
+        fit: maintainAspectRatio ? 'inside' : 'fill',
+        kernel: 'lanczos3' // 高质量缩放
+      })
     }
   } else {
     // 没有提供新的宽高，使用原图尺寸
@@ -234,24 +155,93 @@ export async function compressImage(
     newHeight = originalHeight
   }
 
-  // 像素格式(可选)
-  // ffmpegArgs.push('-pix_fmt', 'yuv420p')
+  // 确定输出格式和路径
+  let finalOutputPath = outputPath
+  const extension = path.extname(outputPath).toLowerCase()
+  const outputFormat = format || (extension.includes('.jpg') || extension.includes('.jpeg') ? 'jpg' : extension.includes('.png') ? 'png' : extension.includes('.webp') ? 'webp' : undefined)
 
-  // 添加输出路径
-  ffmpegArgs.push(outputPath)
+  // 根据格式设置压缩参数
+  switch (outputFormat) {
+    case 'jpg':
+      // JPEG: FFmpeg 的 quality 是 2-31，Sharp 是 1-100
+      // 需要将 FFmpeg 的 quality (2-31) 转换为 Sharp 的 quality (1-100)
+      const jpegQuality = Math.round(((quality - 2) / 29) * 98 + 1)
+      sharpInstance = sharpInstance.jpeg({
+        quality: Math.min(100, Math.max(1, jpegQuality)),
+        mozjpeg: true // 使用 mozjpeg 获得更好的压缩效果
+      })
+      if (format && !extension.includes('.jpg') && !extension.includes('.jpeg')) {
+        finalOutputPath = outputPath.substring(0, outputPath.lastIndexOf('.')) + '.jpg'
+      }
+      break
 
-  console.log('ffmpegArgs:', ffmpegArgs)
+    case 'png':
+      sharpInstance = sharpInstance.png({
+        compressionLevel: compressionLevel || 9,
+        quality: Math.min(100, Math.max(1, 100 - quality * 3)) // 将 FFmpeg quality 转换为 PNG quality
+      })
+      if (format && !extension.includes('.png')) {
+        finalOutputPath = outputPath.substring(0, outputPath.lastIndexOf('.')) + '.png'
+      }
+      break
 
-  // 执行压缩
-  await execFileAsync(ffmpegPath, ffmpegArgs)
+    case 'webp':
+      if (lossless) {
+        sharpInstance = sharpInstance.webp({
+          lossless: true,
+          effort: compressionLevel || 6 // WebP 无损压缩的 effort (0-6)
+        })
+      } else {
+        // WebP 的 quality 是 0-100，直接使用
+        sharpInstance = sharpInstance.webp({
+          quality: Math.min(100, Math.max(0, quality)),
+          effort: 6 // 最高压缩效率
+        })
+      }
+      if (format && !extension.includes('.webp')) {
+        finalOutputPath = outputPath.substring(0, outputPath.lastIndexOf('.')) + '.webp'
+      }
+      break
+
+    default:
+      // 根据扩展名自动选择
+      if (extension.includes('.jpg') || extension.includes('.jpeg')) {
+        const jpegQuality = Math.round(((quality - 2) / 29) * 98 + 1)
+        sharpInstance = sharpInstance.jpeg({
+          quality: Math.min(100, Math.max(1, jpegQuality)),
+          mozjpeg: true
+        })
+      } else if (extension.includes('.png')) {
+        sharpInstance = sharpInstance.png({
+          compressionLevel: compressionLevel || 9,
+          quality: Math.min(100, Math.max(1, 100 - quality * 3))
+        })
+      } else if (extension.includes('.webp')) {
+        if (lossless) {
+          sharpInstance = sharpInstance.webp({
+            lossless: true,
+            effort: compressionLevel || 6
+          })
+        } else {
+          sharpInstance = sharpInstance.webp({
+            quality: Math.min(100, Math.max(0, quality)),
+            effort: 6
+          })
+        }
+      }
+      break
+  }
+
+  // 执行压缩并保存到文件
+  await sharpInstance.toFile(finalOutputPath)
 
   // 获取压缩后文件大小
-  const compressedSize = await getFileSize(outputPath)
+  const compressedSize = await getFileSize(finalOutputPath)
 
   // 计算压缩比率
   const compressionRatio = originalSize > 0 ? originalSize / compressedSize : 1
 
-  console.log('outputPath:', outputPath)
+  console.log('outputPath:', finalOutputPath)
   console.log('originalSize:', originalSize)
   console.log('compressedSize:', compressedSize)
   console.log('compressionRatio:', compressionRatio)
@@ -261,7 +251,7 @@ export async function compressImage(
   console.log('newHeight:', newHeight)
 
   return {
-    outputPath,
+    outputPath: finalOutputPath,
     originalSize,
     compressedSize,
     compressionRatio,

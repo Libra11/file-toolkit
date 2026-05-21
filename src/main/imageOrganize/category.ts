@@ -7,7 +7,9 @@
 import { promises as fs } from 'fs'
 import * as fsSync from 'fs'
 import * as path from 'path'
+import { getNameRuleConfig } from '@shared/imageOrganizeRules'
 import { PathConfig } from './path'
+import { readImageOrganizeRecords } from './excel'
 
 // 图片扩展名， 包括大小写
 const imgExts: string[] = ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG']
@@ -39,16 +41,17 @@ interface RenameResult {
  * @returns 文件类型
  */
 function categorizeFileName(filename: string, paths: PathConfig): CategoryResult {
-  // 检查文件名是否包含扩展名
-  const parts = filename.split('.')
-  const ext = parts[1] || ''
-  // 如果没有扩展名或只有一个点，nameWithoutExt 就是整个文件名
-  const nameWithoutExt = parts.length > 1 ? parts.slice(0, -1).join('.') : filename
-  const hasExt = parts.length > 1
+  const ext = path.extname(filename).slice(1)
+  const nameWithoutExt = path.basename(filename, path.extname(filename))
+  const hasExt = Boolean(ext)
 
   // 如果文件名中没有下划线
-  if (!nameWithoutExt.includes('_') || !hasExt) {
+  if (paths.originalFileNameRule !== '编号' && (!nameWithoutExt.includes('_') || !hasExt)) {
     return '普通文件名'
+  }
+
+  if (paths.originalFileNameRule === '编号') {
+    return hasExt && imgExts.includes(ext) && nameWithoutExt ? '符合格式的文件' : '其他格式'
   }
 
   const nameParts = nameWithoutExt.split('_')
@@ -86,6 +89,22 @@ function categorizeFileName(filename: string, paths: PathConfig): CategoryResult
   }
 }
 
+function extractFileKey(file: string, paths: PathConfig): string {
+  const nameWithoutExt = path.basename(file, path.extname(file))
+  const ruleConfig = getNameRuleConfig(paths.originalFileNameRule)
+
+  if (ruleConfig.fileKeySource === 'filename') {
+    return nameWithoutExt
+  }
+
+  const nameParts = nameWithoutExt.split('_')
+  return ruleConfig.fileKeyPart === 'second' ? nameParts[1] : nameParts[0]
+}
+
+function sanitizeFileName(value: string): string {
+  return value.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim()
+}
+
 /**
  * 创建目录（如果不存在）
  * @param dirPath 目录路径
@@ -116,17 +135,6 @@ export async function organizePhotos(
   // 创建目标根目录
   await ensureDir(targetDir)
 
-  // 创建分类目录
-  const categories: CategoryResult[] = [
-    '符合格式的文件',
-    '非身份证号_姓名',
-    '普通文件名',
-    '其他格式'
-  ]
-
-  // 并行创建所有分类目录
-  await Promise.all(categories.map((category) => ensureDir(path.join(targetDir, category))))
-
   // 读取源目录下的所有文件
   const files = await fs.readdir(sourceDir)
   const result: OrganizeResult = {
@@ -142,6 +150,7 @@ export async function organizePhotos(
       const targetPath = path.join(targetDir, category, file)
 
       // 复制文件到对应分类目录
+      await ensureDir(path.dirname(targetPath))
       await fs.copyFile(sourcePath, targetPath)
 
       // 统计结果
@@ -153,50 +162,52 @@ export async function organizePhotos(
 }
 
 /**
- * 重命名符合格式的文件文件夹中的文件
+ * 按规则重命名待处理图片
  * @param paths 路径配置对象
  * @returns 处理结果统计
  */
 export async function renameIdCardFiles(paths: PathConfig): Promise<RenameResult> {
+  const ruleConfig = getNameRuleConfig(paths.originalFileNameRule)
+  const sourceDir = ruleConfig.fileKeySource === 'filename' ? paths.flatDir : paths.validDir
+
   // 确保源目录存在
-  if (!fsSync.existsSync(paths.validDir)) {
-    throw new Error(`源目录 "${paths.validDir}" 不存在`)
+  if (!fsSync.existsSync(sourceDir)) {
+    throw new Error(`源目录 "${sourceDir}" 不存在`)
   }
 
   // 创建目标目录
   await ensureDir(paths.renameDir)
 
   // 读取源目录下的所有文件
-  const files = await fs.readdir(paths.validDir)
+  const files = await fs.readdir(sourceDir)
   const result: RenameResult = {
     total: files.length,
     success: 0,
     failed: 0,
     errors: []
   }
+  const records = await readImageOrganizeRecords(paths)
+  const outputNameByFileKey = new Map(records.map((record) => [record.fileKey, record.outputName]))
 
   // 并行处理所有文件
   await Promise.all(
     files.map(async (file) => {
       try {
         // 分离文件名和扩展名
-        const parts = file.split('.')
-        const ext = parts.length > 1 ? `.${parts.pop()}` : ''
-        const nameWithoutExt = parts.join('.')
+        const ext = path.extname(file)
+        const fileKey = extractFileKey(file, paths)
+        const mappedOutputName = outputNameByFileKey.get(fileKey)
 
-        // 提取身份证号
-        let idCard: string
-        if (paths.originalFileNameRule === '身份证号_姓名') {
-          idCard = nameWithoutExt.split('_')[0]
-        } else {
-          idCard = nameWithoutExt.split('_')[1]
+        if (ruleConfig.fileKeySource === 'filename' && !mappedOutputName) {
+          throw new Error(`Excel中未找到图片编号 "${fileKey}" 对应的输出命名字段`)
         }
 
-        // 新文件名：身份证号.原扩展名
-        const newFileName = `${idCard}${ext}`
+        // 新文件名：规则配置指定的输出字段.原扩展名
+        const outputName = sanitizeFileName(mappedOutputName || fileKey)
+        const newFileName = `${outputName}${ext}`
 
         // 源文件和目标文件的完整路径
-        const sourcePath = path.join(paths.validDir, file)
+        const sourcePath = path.join(sourceDir, file)
         const targetPath = path.join(paths.renameDir, newFileName)
 
         // 复制并重命名文件

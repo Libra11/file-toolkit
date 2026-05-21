@@ -6,6 +6,8 @@
  */
 import { ipcMain } from 'electron'
 import { compressImage, ImageCompressionOptions } from '../../compressors/fileCompressors'
+import sharp from 'sharp'
+import fs from 'fs/promises'
 
 /**
  * 注册图像压缩相关的IPC处理程序
@@ -44,7 +46,7 @@ export function registerImageCompressionHandlers(): void {
     }
   )
 
-  // 估算文件大小
+  // 估算文件大小（使用 Sharp 优化性能）
   ipcMain.handle(
     'estimate-compressed-size',
     async (_, inputPath: string, quality: number, scale: number = 1) => {
@@ -53,42 +55,43 @@ export function registerImageCompressionHandlers(): void {
           `IPC调用: estimate-compressed-size ${inputPath}, quality=${quality}, scale=${scale}`
         )
 
-        // 获取原图大小和尺寸
-        const originalInfo = await compressImage(
-          inputPath,
-          inputPath + '.probe.jpg', // 临时文件
-          { quality: 100 } // 高质量获取信息
-        )
+        // 使用 Sharp 快速获取图片信息
+        const metadata = await sharp(inputPath).metadata()
+        const originalWidth = metadata.width || 100
+        const originalHeight = metadata.height || 100
 
-        // 创建样本
-        const sampleOptions = {
-          quality,
-          width: Math.round((originalInfo.originalWidth || 100) * 0.1), // 10%尺寸样本
-          height: Math.round((originalInfo.originalHeight || 100) * 0.1),
-          maintainAspectRatio: true
-        }
+        // 获取原图大小
+        const stats = await fs.stat(inputPath)
+        const originalSize = stats.size
 
-        // 生成样本并计算压缩比
-        const sampleResult = await compressImage(
-          inputPath,
-          inputPath + '.sample.jpg',
-          sampleOptions
-        )
+        // 计算目标尺寸
+        const finalWidth = Math.round(originalWidth * scale)
+        const finalHeight = Math.round(originalHeight * scale)
 
-        // 估算最终大小
-        const finalWidth = Math.round((originalInfo.originalWidth || 100) * scale)
-        const finalHeight = Math.round((originalInfo.originalHeight || 100) * scale)
-        const estimatedSize = Math.round(
-          (sampleResult.compressedSize * (finalWidth * finalHeight)) /
-            (sampleResult.newWidth! * sampleResult.newHeight!)
+        // 使用 Sharp 快速生成小样本估算压缩比
+        // 创建一个 100x100 的小样本用于估算
+        const sampleSize = 100
+        const sampleWidth = Math.min(sampleSize, originalWidth)
+        const sampleHeight = Math.min(sampleSize, originalHeight)
+
+        // 生成样本到内存（不写磁盘，更快）
+        const sampleBuffer = await sharp(inputPath)
+          .resize(sampleWidth, sampleHeight, { fit: 'inside' })
+          .jpeg({ quality: Math.round(((quality - 2) / 29) * 98 + 1), mozjpeg: true })
+          .toBuffer()
+
+        // 估算压缩比
+        const sampleRatio = (sampleWidth * sampleHeight) / (originalWidth * originalHeight)
+        const estimatedCompressedSize = Math.round(
+          (sampleBuffer.length / sampleRatio) * scale * scale
         )
 
         return {
-          estimatedSize,
-          compressionRatio: originalInfo.originalSize / estimatedSize,
-          originalSize: originalInfo.originalSize,
-          originalWidth: originalInfo.originalWidth,
-          originalHeight: originalInfo.originalHeight,
+          estimatedSize: estimatedCompressedSize,
+          compressionRatio: originalSize / estimatedCompressedSize,
+          originalSize,
+          originalWidth,
+          originalHeight,
           newWidth: finalWidth,
           newHeight: finalHeight
         }

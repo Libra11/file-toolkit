@@ -336,7 +336,7 @@ export default function ImageCompressionTool({ onBack }: ImageCompressionToolPro
     }
   }
 
-  // 批量压缩图片
+  // 批量压缩图片（使用并行处理优化性能）
   const batchCompressImages = async (): Promise<void> => {
     if (!selectedFiles.length) return
 
@@ -356,14 +356,17 @@ export default function ImageCompressionTool({ onBack }: ImageCompressionToolPro
 
       const results: CompressionResult[] = []
       const totalFiles = selectedFiles.length
+      let completedFiles = 0
 
-      // 逐个处理文件
-      for (let i = 0; i < selectedFiles.length; i++) {
-        const file = selectedFiles[i]
+      // 并行处理文件（最多同时3个，避免资源耗尽）
+      const concurrencyLimit = 3
+      const fileQueue = [...selectedFiles]
+      const activePromises: Promise<void>[] = []
+
+      const processFile = async (file: File): Promise<void> => {
         try {
-          // 更新当前处理文件名和进度
+          // 更新当前处理文件名
           setCurrentProcessingFile(file.name)
-          setBatchProgress(Math.round((i / totalFiles) * 100))
 
           // 获取原始文件扩展名
           const originalExt = file.name.split('.').pop()?.toLowerCase() || ''
@@ -399,7 +402,29 @@ export default function ImageCompressionTool({ onBack }: ImageCompressionToolPro
           results.push(compressionData)
         } catch (err) {
           console.error(`处理文件 ${file.name} 时出错:`, err)
-          // 继续处理下一个文件
+        } finally {
+          // 更新进度
+          completedFiles++
+          setBatchProgress(Math.round((completedFiles / totalFiles) * 100))
+        }
+      }
+
+      // 并行处理队列
+      while (fileQueue.length > 0 || activePromises.length > 0) {
+        // 启动新的处理任务，直到达到并发限制
+        while (fileQueue.length > 0 && activePromises.length < concurrencyLimit) {
+          const file = fileQueue.shift()!
+          const promise = processFile(file).then(() => {
+            // 完成后从活动列表中移除
+            const index = activePromises.indexOf(promise)
+            if (index > -1) activePromises.splice(index, 1)
+          })
+          activePromises.push(promise)
+        }
+
+        // 等待至少一个任务完成
+        if (activePromises.length > 0) {
+          await Promise.race(activePromises)
         }
       }
 

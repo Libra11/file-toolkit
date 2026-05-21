@@ -36,7 +36,6 @@ import {
   Folder,
   FileSpreadsheet,
   Settings,
-  ArrowRight,
   Loader2,
   Sparkles,
   Workflow,
@@ -50,9 +49,12 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { ImageProcessLogger, ProcessLogMessage } from './ImageProcessLogger'
 import { useTranslation } from 'react-i18next'
-
-// 命名规则类型
-type NameRule = '身份证号_姓名' | '姓名_身份证号'
+import type { NameRule } from '@shared/imageOrganizeRules'
+import {
+  getOptionalExcelColumnLabels,
+  getRequiredExcelColumnLabels,
+  nameRuleConfigs
+} from '@shared/imageOrganizeRules'
 
 // 进度状态接口
 interface ProgressStatus {
@@ -183,6 +185,12 @@ const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
 
   const statusBadge = statusConfigs[statusVariant]
   const isActionDisabled = isProcessing || !rootDir || !sourceDir || !excelPath
+  const requiredExcelColumns = useMemo(() => getRequiredExcelColumnLabels(nameRule), [nameRule])
+  const optionalExcelColumns = useMemo(() => getOptionalExcelColumnLabels(nameRule), [nameRule])
+  const excelRequirementDescription = t('imageOrganizeRuleRequirement', {
+    required: requiredExcelColumns.join('、'),
+    optional: optionalExcelColumns.join('、')
+  })
 
   // 根据状态信息获取当前步骤
   const getStepFromStatus = (status: string): string => {
@@ -191,7 +199,7 @@ const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
     if (status.includes('重命名')) return '文件重命名'
     if (status.includes('压缩图片(')) return '图片压缩'
     if (status.includes('压缩图片')) return '图片压缩'
-    if (status.includes('Excel')) return 'Excel分类'
+    if (status.includes('输出')) return '结果输出'
     if (status.includes('清理')) return '清理目录'
     if (status.includes('准备')) return '准备处理'
     return '处理中'
@@ -219,7 +227,7 @@ const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
           lastLog.type !== 'info' ||
           (lastLog.step && lastLog.step !== step) ||
           // 每增加10%进度添加一条新日志，减少日志数量但仍保留关键节点
-          Math.floor(lastLog.percentage / 10) !== Math.floor(data.percentage / 10)
+          Math.floor((lastLog.percentage ?? 0) / 10) !== Math.floor(data.percentage / 10)
         ) {
           const newLogMessage: ProcessLogMessage = {
             type: 'info',
@@ -441,7 +449,7 @@ const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
                       {t('imageOrganizeTipTitle')}
                     </p>
                     <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                      {t('imageOrganizeTipDescription')}
+                      {excelRequirementDescription}
                     </p>
                     <div className="flex flex-wrap gap-2 pt-1 text-xs">
                       <span className="rounded-full bg-cyan-50 px-3 py-1 font-medium text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-200">
@@ -605,7 +613,7 @@ const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
                           id="excelPath"
                           value={excelPath}
                           onChange={(e) => setExcelPath(e.target.value)}
-                          placeholder={t('selectExcelFile')}
+                          placeholder={excelRequirementDescription}
                           readOnly
                           className="h-11 flex-1 rounded-xl border border-slate-200/70 bg-white/80 text-sm shadow-sm focus-visible:ring-cyan-500 dark:border-slate-700 dark:bg-slate-900/60"
                         />
@@ -645,10 +653,16 @@ const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
                           <SelectValue placeholder={t('selectNameRule')} />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border border-slate-200/60 bg-white/95 shadow-xl dark:border-slate-700 dark:bg-slate-900/95">
-                          <SelectItem value="身份证号_姓名">{t('idCardName')}</SelectItem>
-                          <SelectItem value="姓名_身份证号">{t('nameIdCard')}</SelectItem>
+                          {Object.entries(nameRuleConfigs).map(([value, config]) => (
+                            <SelectItem key={value} value={value}>
+                              {config.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
+                      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                        {excelRequirementDescription}
+                      </p>
                     </div>
                   </div>
 

@@ -18,6 +18,7 @@ import type {
 import type { gifExportAPI } from './api/gifExport'
 import type { GifExportOptions, CardInfo } from '../shared/types'
 import type { FileHash } from './types/hash'
+import type { videoSprite } from './api/videoSprite' // Added import for videoSprite
 
 export type IpcListener = (event: IpcRendererEvent, ...args: unknown[]) => void
 
@@ -73,5 +74,7 @@ declare global {
         overwrite?: boolean
       }) => Promise<{ success: number; fail: number; errors: string[] }>
     }
+    videoSprite: typeof videoSprite
   }
 }
+

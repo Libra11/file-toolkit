@@ -105,6 +105,8 @@ export const ImageProcessLogger = ({
       scrollContainer.addEventListener('scroll', handleScroll)
       return (): void => scrollContainer.removeEventListener('scroll', handleScroll)
     }
+
+    return undefined
   }, [])
 
   // 获取步骤图标
@@ -118,7 +120,7 @@ export const ImageProcessLogger = ({
         return <FileOutput className="h-4 w-4" />
       case '图片压缩':
         return <Image className="h-4 w-4" />
-      case 'Excel分类':
+      case '结果输出':
         return <FileOutput className="h-4 w-4" />
       case '清理目录':
         return <FileCog className="h-4 w-4" />
@@ -236,8 +238,8 @@ export const ImageProcessLogger = ({
                     ? '文件重命名'
                     : currentStep.includes('压缩')
                       ? '图片压缩'
-                      : currentStep.includes('Excel')
-                        ? 'Excel分类'
+                      : currentStep.includes('输出')
+                        ? '结果输出'
                         : currentStep.includes('清理')
                           ? '清理目录'
                           : currentStep.includes('完成')
