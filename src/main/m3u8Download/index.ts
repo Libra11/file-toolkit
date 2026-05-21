@@ -55,8 +55,35 @@ export interface DownloadOptions {
 // 全局下载事件发射器
 export const downloadEventEmitter = new EventEmitter()
 
+// 设置最大监听器数量，避免内存泄漏警告
+downloadEventEmitter.setMaxListeners(100)
+
 // 活动下载任务Map
 const activeTasks = new Map<string, DownloadTask>()
+
+// 定期清理已完成的任务，避免内存泄漏
+const CLEANUP_INTERVAL = 3600000 // 1小时
+const cleanupTimer = setInterval(() => {
+  const now = Date.now()
+  for (const [id, task] of activeTasks.entries()) {
+    // 清理完成、失败或取消超过1小时的任务
+    if (
+      [DownloadStatus.COMPLETED, DownloadStatus.FAILED, DownloadStatus.CANCELLED].includes(
+        task.status
+      ) &&
+      task.startTime &&
+      now - task.startTime > CLEANUP_INTERVAL
+    ) {
+      activeTasks.delete(id)
+      console.log(`自动清理已完成任务: ${id}`)
+    }
+  }
+}, CLEANUP_INTERVAL)
+
+// 确保定时器不会阻止进程退出
+if (cleanupTimer.unref) {
+  cleanupTimer.unref()
+}
 
 // 全局下载池控制
 const downloadPool = {

@@ -2,11 +2,90 @@
  * @Author: Libra
  * @Date: 2024-03-30
  * @LastEditors: Libra
- * @Description: 图像格式转换功能
+ * @Description: 图像格式转换功能（使用 Sharp 优化性能）
  */
-import { ffmpegPath, execFileAsync } from '../utils/ffmpegConfig'
-import { checkFileExists } from '../utils/fileSystem'
-import fs from 'fs'
+import sharp from 'sharp'
+import fs from 'fs/promises'
+import { existsSync } from 'fs'
+
+/**
+ * 通用图片格式转换函数
+ * @param inputPath 输入路径
+ * @param outputPath 输出路径
+ * @param format 输出格式
+ * @param options 转换选项
+ * @returns 输出文件路径
+ */
+async function convertImage(
+  inputPath: string,
+  outputPath: string,
+  format: 'jpeg' | 'png' | 'webp',
+  options?: {
+    quality?: number
+    compressionLevel?: number
+    lossless?: boolean
+  }
+): Promise<string> {
+  try {
+    console.log(`开始转换图片: ${inputPath} -> ${outputPath} (格式: ${format})`)
+
+    // 检查输入文件是否存在
+    if (!existsSync(inputPath)) {
+      throw new Error(`输入文件不存在: ${inputPath}`)
+    }
+
+    // 删除已存在的输出文件
+    if (existsSync(outputPath)) {
+      await fs.unlink(outputPath)
+    }
+
+    // 使用 Sharp 进行转换
+    let sharpInstance = sharp(inputPath)
+
+    // 根据格式设置参数
+    switch (format) {
+      case 'jpeg':
+        sharpInstance = sharpInstance.jpeg({
+          quality: options?.quality || 90,
+          mozjpeg: true
+        })
+        break
+      case 'png':
+        sharpInstance = sharpInstance.png({
+          compressionLevel: options?.compressionLevel || 9,
+          quality: options?.quality || 100
+        })
+        break
+      case 'webp':
+        if (options?.lossless) {
+          sharpInstance = sharpInstance.webp({
+            lossless: true,
+            effort: options?.compressionLevel || 6
+          })
+        } else {
+          sharpInstance = sharpInstance.webp({
+            quality: options?.quality || 90,
+            effort: 6
+          })
+        }
+        break
+    }
+
+    // 执行转换并保存
+    await sharpInstance.toFile(outputPath)
+
+    // 检查生成文件
+    if (!existsSync(outputPath)) {
+      throw new Error(`转换失败，输出文件不存在: ${outputPath}`)
+    }
+
+    console.log(`图片转换成功: ${outputPath}`)
+    return outputPath
+  } catch (error) {
+    console.error(`图片转换错误:`, error)
+    throw error
+  }
+}
 
 /**
  * 将PNG转换为JPG
@@ -15,35 +94,7 @@ import fs from 'fs'
  * @returns 输出文件路径
  */
 export async function convertPngToJpg(inputPath: string, outputPath: string): Promise<string> {
-  try {
-    console.log(`开始转换PNG到JPG: ${inputPath} -> ${outputPath}`)
-
-    // 检查输入文件是否存在
-    if (!fs.existsSync(inputPath)) {
-      throw new Error(`输入文件不存在: ${inputPath}`)
-    }
-
-    // 检查输出路径并删除已存在的文件
-    checkFileExists(outputPath)
-
-    // 配置ffmpeg参数 - 使用无损转换
-    const ffmpegArgs = ['-i', inputPath, '-q:v', '0', '-y', outputPath]
-
-    // 执行ffmpeg转换
-    console.log(`执行ffmpeg命令: ${ffmpegPath} ${ffmpegArgs.join(' ')}`)
-    await execFileAsync(ffmpegPath, ffmpegArgs)
-
-    // 检查生成文件
-    if (!fs.existsSync(outputPath)) {
-      throw new Error(`转换失败，输出文件不存在: ${outputPath}`)
-    }
-
-    console.log(`PNG到JPG转换成功: ${outputPath}`)
-    return outputPath
-  } catch (error) {
-    console.error(`PNG到JPG转换错误:`, error)
-    throw error
-  }
+  return convertImage(inputPath, outputPath, 'jpeg', { quality: 95 })
 }
 
 /**
@@ -53,35 +104,7 @@ export async function convertPngToJpg(inputPath: string, outputPath: string): Pr
  * @returns 输出文件路径
  */
 export async function convertJpgToPng(inputPath: string, outputPath: string): Promise<string> {
-  try {
-    console.log(`开始转换JPG到PNG: ${inputPath} -> ${outputPath}`)
-
-    // 检查输入文件是否存在
-    if (!fs.existsSync(inputPath)) {
-      throw new Error(`输入文件不存在: ${inputPath}`)
-    }
-
-    // 检查输出路径并删除已存在的文件
-    checkFileExists(outputPath)
-
-    // 配置ffmpeg参数
-    const ffmpegArgs = ['-i', inputPath, outputPath]
-
-    // 执行ffmpeg转换
-    console.log(`执行ffmpeg命令: ${ffmpegPath} ${ffmpegArgs.join(' ')}`)
-    await execFileAsync(ffmpegPath, ffmpegArgs)
-
-    // 检查生成文件
-    if (!fs.existsSync(outputPath)) {
-      throw new Error(`转换失败，输出文件不存在: ${outputPath}`)
-    }
-
-    console.log(`JPG到PNG转换成功: ${outputPath}`)
-    return outputPath
-  } catch (error) {
-    console.error(`JPG到PNG转换错误:`, error)
-    throw error
-  }
+  return convertImage(inputPath, outputPath, 'png', { quality: 100 })
 }
 
 /**
@@ -91,35 +114,7 @@ export async function convertJpgToPng(inputPath: string, outputPath: string): Pr
  * @returns 输出文件路径
  */
 export async function convertWebpToJpg(inputPath: string, outputPath: string): Promise<string> {
-  try {
-    console.log(`开始转换WEBP到JPG: ${inputPath} -> ${outputPath}`)
-
-    // 检查输入文件是否存在
-    if (!fs.existsSync(inputPath)) {
-      throw new Error(`输入文件不存在: ${inputPath}`)
-    }
-
-    // 检查输出路径并删除已存在的文件
-    checkFileExists(outputPath)
-
-    // 配置ffmpeg参数 - 使用无损转换
-    const ffmpegArgs = ['-i', inputPath, '-q:v', '0', outputPath]
-
-    // 执行ffmpeg转换
-    console.log(`执行ffmpeg命令: ${ffmpegPath} ${ffmpegArgs.join(' ')}`)
-    await execFileAsync(ffmpegPath, ffmpegArgs)
-
-    // 检查生成文件
-    if (!fs.existsSync(outputPath)) {
-      throw new Error(`转换失败，输出文件不存在: ${outputPath}`)
-    }
-
-    console.log(`WEBP到JPG转换成功: ${outputPath}`)
-    return outputPath
-  } catch (error) {
-    console.error(`WEBP到JPG转换错误:`, error)
-    throw error
-  }
+  return convertImage(inputPath, outputPath, 'jpeg', { quality: 95 })
 }
 
 /**
@@ -129,35 +124,7 @@ export async function convertWebpToJpg(inputPath: string, outputPath: string): P
  * @returns 输出文件路径
  */
 export async function convertJpgToWebp(inputPath: string, outputPath: string): Promise<string> {
-  try {
-    console.log(`开始转换JPG到WEBP: ${inputPath} -> ${outputPath}`)
-
-    // 检查输入文件是否存在
-    if (!fs.existsSync(inputPath)) {
-      throw new Error(`输入文件不存在: ${inputPath}`)
-    }
-
-    // 检查输出路径并删除已存在的文件
-    checkFileExists(outputPath)
-
-    // 配置ffmpeg参数 - 使用无损转换
-    const ffmpegArgs = ['-i', inputPath, '-c:v', 'libwebp', '-lossless', '1', outputPath]
-
-    // 执行ffmpeg转换
-    console.log(`执行ffmpeg命令: ${ffmpegPath} ${ffmpegArgs.join(' ')}`)
-    await execFileAsync(ffmpegPath, ffmpegArgs)
-
-    // 检查生成文件
-    if (!fs.existsSync(outputPath)) {
-      throw new Error(`转换失败，输出文件不存在: ${outputPath}`)
-    }
-
-    console.log(`JPG到WEBP转换成功: ${outputPath}`)
-    return outputPath
-  } catch (error) {
-    console.error(`JPG到WEBP转换错误:`, error)
-    throw error
-  }
+  return convertImage(inputPath, outputPath, 'webp', { lossless: true, compressionLevel: 6 })
 }
 
 /**
@@ -167,47 +134,7 @@ export async function convertJpgToWebp(inputPath: string, outputPath: string): P
  * @returns 输出文件路径
  */
 export async function convertPngToWebp(inputPath: string, outputPath: string): Promise<string> {
-  try {
-    console.log(`开始转换PNG到WEBP: ${inputPath} -> ${outputPath}`)
-
-    // 检查输入文件是否存在
-    if (!fs.existsSync(inputPath)) {
-      throw new Error(`输入文件不存在: ${inputPath}`)
-    }
-
-    // 检查输出路径并删除已存在的文件
-    checkFileExists(outputPath)
-
-    // 配置ffmpeg参数 - 使用无损转换
-    const ffmpegArgs = [
-      '-i',
-      inputPath,
-      '-c:v',
-      'libwebp',
-      '-lossless',
-      '1',
-      '-compression_level',
-      '6', // 最高压缩级别，范围 0-6
-      '-quality',
-      '100', // 确保最大质量
-      outputPath
-    ]
-
-    // 执行ffmpeg转换
-    console.log(`执行ffmpeg命令: ${ffmpegPath} ${ffmpegArgs.join(' ')}`)
-    await execFileAsync(ffmpegPath, ffmpegArgs)
-
-    // 检查生成文件
-    if (!fs.existsSync(outputPath)) {
-      throw new Error(`转换失败，输出文件不存在: ${outputPath}`)
-    }
-
-    console.log(`PNG到WEBP转换成功: ${outputPath}`)
-    return outputPath
-  } catch (error) {
-    console.error(`PNG到WEBP转换错误:`, error)
-    throw error
-  }
+  return convertImage(inputPath, outputPath, 'webp', { lossless: true, compressionLevel: 6 })
 }
 
 /**
@@ -217,33 +144,5 @@ export async function convertPngToWebp(inputPath: string, outputPath: string): P
  * @returns 输出文件路径
  */
 export async function convertWebpToPng(inputPath: string, outputPath: string): Promise<string> {
-  try {
-    console.log(`开始转换WEBP到PNG: ${inputPath} -> ${outputPath}`)
-
-    // 检查输入文件是否存在
-    if (!fs.existsSync(inputPath)) {
-      throw new Error(`输入文件不存在: ${inputPath}`)
-    }
-
-    // 检查输出路径并删除已存在的文件
-    checkFileExists(outputPath)
-
-    // 配置ffmpeg参数
-    const ffmpegArgs = ['-i', inputPath, outputPath]
-
-    // 执行ffmpeg转换
-    console.log(`执行ffmpeg命令: ${ffmpegPath} ${ffmpegArgs.join(' ')}`)
-    await execFileAsync(ffmpegPath, ffmpegArgs)
-
-    // 检查生成文件
-    if (!fs.existsSync(outputPath)) {
-      throw new Error(`转换失败，输出文件不存在: ${outputPath}`)
-    }
-
-    console.log(`WEBP到PNG转换成功: ${outputPath}`)
-    return outputPath
-  } catch (error) {
-    console.error(`WEBP到PNG转换错误:`, error)
-    throw error
-  }
+  return convertImage(inputPath, outputPath, 'png', { quality: 100 })
 }

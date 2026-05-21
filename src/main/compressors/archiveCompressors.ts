@@ -42,28 +42,37 @@ const defaultArchiveOptions: ArchiveCompressionOptions = {
   level: 5
 }
 
-// 递归计算目录大小
+// 递归计算目录大小（并行优化版本）
 async function calculateDirSize(dirPath: string): Promise<number> {
-  let size = 0
   try {
     const files = await fs.readdir(dirPath)
-    for (const file of files) {
-      const filePath = path.join(dirPath, file)
-      try {
-        const stats = await fs.stat(filePath)
-        if (stats.isFile()) {
-          size += stats.size
-        } else if (stats.isDirectory()) {
-          size += await calculateDirSize(filePath)
+
+    // 并行处理所有文件
+    const sizes = await Promise.all(
+      files.map(async (file) => {
+        const filePath = path.join(dirPath, file)
+        try {
+          const stats = await fs.stat(filePath)
+          if (stats.isFile()) {
+            return stats.size
+          } else if (stats.isDirectory()) {
+            // 递归计算子目录大小
+            return calculateDirSize(filePath)
+          }
+          return 0
+        } catch (error) {
+          console.error(`无法读取文件信息 ${filePath}:`, error)
+          return 0
         }
-      } catch (error) {
-        console.error(`无法读取文件信息 ${filePath}:`, error)
-      }
-    }
+      })
+    )
+
+    // 汇总所有大小
+    return sizes.reduce((sum, size) => sum + size, 0)
   } catch (error) {
     console.error(`无法读取目录 ${dirPath}:`, error)
+    return 0
   }
-  return size
 }
 
 /**

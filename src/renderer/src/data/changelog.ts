@@ -17,6 +17,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.2.2',
+    date: '2026-05-21',
+    changes: {
+      improvements: [
+        '图片压缩性能大幅提升：使用 Sharp 替代 FFmpeg，速度提升 5-10 倍',
+        'Image compression performance significantly improved: Replaced FFmpeg with Sharp, 5-10x faster',
+        '图片格式转换优化：所有图片格式转换（PNG/JPG/WEBP）改用 Sharp，无进程启动开销',
+        'Image format conversion optimized: All image conversions (PNG/JPG/WEBP) now use Sharp with zero process overhead',
+        '批量图片压缩并行处理：支持最多 3 个并发任务，批量处理速度提升 3-5 倍',
+        'Batch image compression now supports parallel processing with up to 3 concurrent tasks, 3-5x faster',
+        '视频转换代码重构：消除 150+ 行重复代码，提升可维护性',
+        'Video conversion code refactored: Eliminated 150+ lines of duplicate code for better maintainability',
+        '目录大小计算并行化：大目录计算速度提升 3-5 倍',
+        'Directory size calculation parallelized: 3-5x faster for large directories',
+        '修复 m3u8 下载器内存泄漏：添加自动清理机制，避免长时间运行内存增长',
+        'Fixed m3u8 downloader memory leak: Added auto-cleanup mechanism to prevent memory growth during long sessions'
+      ]
+    }
+  },
+  {
     version: '1.2.0',
     date: '2025-12-12',
     changes: {
