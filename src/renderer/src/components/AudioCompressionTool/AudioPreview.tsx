@@ -1,12 +1,8 @@
-/**
- * Author: Libra
- * Date: 2024-03-31
- * LastEditors: Libra
- * Description: 音频预览组件
- */
-import { useRef, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Music } from 'lucide-react'
+import { DataRow } from '@renderer/components/ui/panel'
+import { cn } from '@renderer/lib/utils'
 import { AudioInfo } from './types'
 
 interface AudioPreviewProps {
@@ -17,78 +13,73 @@ interface AudioPreviewProps {
   className?: string
 }
 
+function formatSize(bytes?: number): string {
+  if (bytes === undefined) return '—'
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** index).toFixed(2)} ${units[index]}`
+}
+
 export function AudioPreview({
   audioUrl,
   fileName,
   fileSize,
-  audioInfo,
+  audioInfo = {},
   className
 }: AudioPreviewProps): JSX.Element {
   const { t } = useTranslation()
   const audioRef = useRef<HTMLAudioElement>(null)
 
   useEffect(() => {
-    // 组件挂载时重置音频状态
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0
-    }
+    if (audioRef.current) audioRef.current.currentTime = 0
   }, [audioUrl])
 
   return (
-    <div className={`border rounded-lg p-4 shadow-sm ${className || ''}`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center">
-          <Music className="w-5 h-5 text-blue-500 mr-2" />
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-[200px]">
-            {fileName || t('audioPreview')}
-          </h3>
-        </div>
-        {fileSize && (
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            {(fileSize / 1024 / 1024).toFixed(2)} MB
-          </span>
-        )}
+    <div className={cn('space-y-4', className)}>
+      <div className="flex items-center gap-2">
+        <Music className="h-4 w-4 shrink-0 text-primary" />
+        <h3 className="truncate text-xs font-medium text-foreground" title={fileName}>
+          {fileName || t('audioPreview')}
+        </h3>
       </div>
 
-      {/* 音频信息显示 */}
-      {audioInfo && Object.keys(audioInfo).length > 0 && (
-        <div className="grid grid-cols-2 gap-2 text-sm mb-3 bg-slate-50 dark:bg-slate-800/50 p-2 rounded">
-          {audioInfo.duration && (
-            <>
-              <div className="text-slate-500">{t('duration')}:</div>
-              <div className="text-slate-700 dark:text-slate-300">{audioInfo.duration}</div>
-            </>
-          )}
-          {audioInfo.sampleRate && (
-            <>
-              <div className="text-slate-500">{t('sampleRate')}:</div>
-              <div className="text-slate-700 dark:text-slate-300">{audioInfo.sampleRate} Hz</div>
-            </>
-          )}
-          {audioInfo.channels && (
-            <>
-              <div className="text-slate-500">{t('channels')}:</div>
-              <div className="text-slate-700 dark:text-slate-300">
-                {audioInfo.channels === 1 ? t('mono') : t('stereo')}
-              </div>
-            </>
-          )}
-          {audioInfo.bitrate && (
-            <>
-              <div className="text-slate-500">{t('bitrate')}:</div>
-              <div className="text-slate-700 dark:text-slate-300">{audioInfo.bitrate} kbps</div>
-            </>
-          )}
-          {audioInfo.format && (
-            <>
-              <div className="text-slate-500">{t('format')}:</div>
-              <div className="text-slate-700 dark:text-slate-300">{audioInfo.format}</div>
-            </>
-          )}
+      <div className="rounded-lg border border-border bg-muted/30 p-5">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-primary">
+            <Music className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-foreground">{t('originalAudio')}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{formatSize(fileSize)}</p>
+          </div>
         </div>
-      )}
+        <audio
+          ref={audioRef}
+          src={audioUrl}
+          controls
+          className="w-full"
+          controlsList="nodownload"
+        />
+      </div>
 
-      <audio ref={audioRef} src={audioUrl} controls className="w-full" controlsList="nodownload" />
+      <dl className="divide-y divide-border border-y border-border">
+        <DataRow label={t('fileSize')} value={formatSize(fileSize)} />
+        <DataRow label={t('format')} value={audioInfo.format?.toUpperCase() || '—'} />
+        <DataRow label={t('duration')} value={audioInfo.duration ?? '—'} />
+        <DataRow
+          label={t('sampleRate')}
+          value={audioInfo.sampleRate ? `${audioInfo.sampleRate} Hz` : '—'}
+        />
+        <DataRow
+          label={t('channels')}
+          value={audioInfo.channels ? (audioInfo.channels === 1 ? t('mono') : t('stereo')) : '—'}
+        />
+        <DataRow
+          label={t('bitrate')}
+          value={audioInfo.bitrate ? `${audioInfo.bitrate} kbps` : '—'}
+        />
+      </dl>
     </div>
   )
 }

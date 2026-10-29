@@ -1,12 +1,9 @@
-/**
- * Author: Libra
- * Date: 2025-03-31 17:16:57
- * LastEditors: Libra
- * Description:
- */
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FileUp } from 'lucide-react'
+import { FileUp, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import { EmptyState } from '@renderer/components/ui/states'
+import { cn } from '@renderer/lib/utils'
 
 interface FileUploaderProps {
   onFileSelect: (files: File[]) => void
@@ -20,55 +17,34 @@ export function FileUploader({
   batchMode = false
 }: FileUploaderProps): JSX.Element {
   const { t } = useTranslation()
+  const [isDragging, setIsDragging] = useState(false)
 
-  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>): void => {
-    e.preventDefault()
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const files: File[] = []
-      for (let i = 0; i < e.dataTransfer.files.length; i++) {
-        const file = e.dataTransfer.files[i]
-        if (file.type.startsWith('image/')) {
-          files.push(file)
-        }
-      }
-      if (files.length > 0) {
-        if (batchMode) {
-          onFileSelect(files)
-        } else {
-          // 单文件模式只选第一个
-          onFileSelect([files[0]])
-        }
-      }
+  const selectImages = (fileList: FileList): void => {
+    const files = Array.from(fileList).filter((file) => file.type.startsWith('image/'))
+    if (files.length > 0) {
+      onFileSelect(batchMode ? files : files.slice(0, 1))
     }
   }
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>): void => {
-    e.preventDefault()
+  const handleFileDrop = (event: React.DragEvent<HTMLDivElement>): void => {
+    event.preventDefault()
+    setIsDragging(false)
+    selectImages(event.dataTransfer.files)
   }
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    if (e.target.files && e.target.files.length > 0) {
-      const files: File[] = []
-      for (let i = 0; i < e.target.files.length; i++) {
-        const file = e.target.files[i]
-        if (file.type.startsWith('image/')) {
-          files.push(file)
-        }
-      }
-      if (files.length > 0) {
-        onFileSelect(files)
-      }
-    }
-  }
-
-  const openFileDialog = (): void => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
-    }
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    if (event.target.files) selectImages(event.target.files)
   }
 
   return (
-    <div className="mt-4">
+    <div
+      onDrop={handleFileDrop}
+      onDragOver={(event) => {
+        event.preventDefault()
+        setIsDragging(true)
+      }}
+      onDragLeave={() => setIsDragging(false)}
+    >
       <input
         type="file"
         ref={fileInputRef}
@@ -77,25 +53,21 @@ export function FileUploader({
         multiple={batchMode}
         onChange={handleFileInputChange}
       />
-      <div
-        className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
-        onClick={openFileDialog}
-        onDrop={handleFileDrop}
-        onDragOver={handleDragOver}
-      >
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <FileUp className="h-10 w-10 text-slate-400 dark:text-slate-500" />
-          <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300">
-            {batchMode ? t('dropFilesHere') : t('dragDropImage')}
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
-            {t('supportedFormats')}: JPEG, PNG, WebP
-          </p>
-          <Button className="mt-4" size="sm">
+      <EmptyState
+        icon={isDragging ? ImageIcon : FileUp}
+        title={batchMode ? t('dropFilesHere') : t('dragDropImage')}
+        description={`${t('supportedFormats')}: JPEG, PNG, WebP`}
+        className={cn(
+          'min-h-48 bg-muted/20 px-4 py-6',
+          isDragging && 'border-primary bg-primary/[0.05]'
+        )}
+        action={
+          <Button type="button" size="sm" onClick={() => fileInputRef.current?.click()}>
+            <FileUp className="mr-2 h-4 w-4" />
             {batchMode ? t('selectFiles') : t('selectImage')}
           </Button>
-        </div>
-      </div>
+        }
+      />
     </div>
   )
 }

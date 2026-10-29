@@ -22,7 +22,7 @@ const CollapsibleTrigger = React.forwardRef<
   <CollapsiblePrimitive.Trigger
     ref={ref}
     className={cn(
-      'flex items-center justify-between w-full rounded-md px-4 py-2 text-sm font-medium transition-all hover:bg-muted',
+      'flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
       className
     )}
     {...props}
@@ -44,7 +44,7 @@ const CollapsibleContent = React.forwardRef<
   <CollapsiblePrimitive.Content
     ref={ref}
     className={cn(
-      'overflow-hidden text-sm transition-all data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down',
+      'overflow-hidden text-xs text-muted-foreground transition-all data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down',
       className
     )}
     {...props}

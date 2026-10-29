@@ -1,55 +1,30 @@
-/**
- * Author: Libra
- * Date: 2025-05-15 17:32:27
- * LastEditors: Libra
- * Description:
- */
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Download,
-  X,
-  AlertCircle,
-  CheckCircle,
   FolderOpen,
-  Play,
+  ListFilter,
   Pause,
+  Play,
   RefreshCw,
-  Clock,
-  BarChart2,
-  AlertTriangle
+  Search,
+  SearchX,
+  Trash2,
+  X
 } from 'lucide-react'
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent
-} from '@renderer/components/ui/card'
 import { Button } from '@renderer/components/ui/button'
-import { Progress } from '@renderer/components/ui/progress'
-import { Badge } from '@renderer/components/ui/badge'
+import { Input } from '@renderer/components/ui/input'
+import { Panel, PanelBody, PanelHeader } from '@renderer/components/ui/panel'
+import { SegmentedControl } from '@renderer/components/ui/segmented-control'
+import { EmptyState, Notice, StatusDot } from '@renderer/components/ui/states'
 import { DownloadStatus } from '@shared/types'
 import { bytesToSize, formatTime, cn } from '@renderer/lib/utils'
+import type { DownloadTask } from './types'
+
+type TaskFilter = 'all' | 'completed' | 'downloading' | 'waiting' | 'paused' | 'failed'
 
 interface TaskListProps {
-  activeTasks: Array<{
-    id: string
-    url: string
-    fileName: string
-    status: DownloadStatus
-    progress: number
-    speed: number
-    estimatedTimeRemaining: number
-    error?: string
-    retries: number
-    totalSegments: number
-    downloadedSegments: number
-    totalBytes: number
-    downloadedBytes: number
-    startTime?: number
-    outputPath?: string
-  }>
+  activeTasks: DownloadTask[]
   onPauseTask: (taskId: string) => Promise<void>
   onResumeTask: (taskId: string) => Promise<void>
   onCancelTask: (taskId: string) => Promise<void>
@@ -68,63 +43,50 @@ export default function TaskList({
   onClearTasks
 }: TaskListProps): JSX.Element {
   const { t } = useTranslation()
-  const [taskFilter, setTaskFilter] = useState<
-    'all' | 'completed' | 'downloading' | 'waiting' | 'failed'
-  >('all')
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>('all')
+  const [query, setQuery] = useState('')
 
-  // 根据筛选条件过滤任务
   const filteredTasks = useMemo(() => {
-    switch (taskFilter) {
-      case 'completed':
-        return activeTasks.filter((task) => task.status === DownloadStatus.COMPLETED)
-      case 'downloading':
-        return activeTasks.filter((task) => task.status === DownloadStatus.DOWNLOADING)
-      case 'waiting':
-        return activeTasks.filter((task) => task.status === DownloadStatus.WAITING)
-      case 'failed':
-        return activeTasks.filter(
-          (task) =>
-            task.status === DownloadStatus.FAILED || task.status === DownloadStatus.CANCELLED
-        )
-      default:
-        return activeTasks
-    }
-  }, [activeTasks, taskFilter])
+    const normalizedQuery = query.trim().toLocaleLowerCase()
+    const tasks = activeTasks.filter((task) => {
+      switch (taskFilter) {
+        case 'completed':
+          return task.status === DownloadStatus.COMPLETED
+        case 'downloading':
+          return task.status === DownloadStatus.DOWNLOADING
+        case 'waiting':
+          return task.status === DownloadStatus.WAITING
+        case 'paused':
+          return task.status === DownloadStatus.PAUSED
+        case 'failed':
+          return [DownloadStatus.FAILED, DownloadStatus.CANCELLED].includes(task.status)
+        default:
+          return true
+      }
+    })
 
-  // 计算每个分类下的任务数量
-  const taskCounts = useMemo(() => {
-    return {
+    if (!normalizedQuery) {
+      return tasks
+    }
+    return tasks.filter((task) =>
+      `${task.fileName} ${task.url}`.toLocaleLowerCase().includes(normalizedQuery)
+    )
+  }, [activeTasks, query, taskFilter])
+
+  const taskCounts = useMemo(
+    () => ({
       all: activeTasks.length,
       completed: activeTasks.filter((task) => task.status === DownloadStatus.COMPLETED).length,
       downloading: activeTasks.filter((task) => task.status === DownloadStatus.DOWNLOADING).length,
       waiting: activeTasks.filter((task) => task.status === DownloadStatus.WAITING).length,
-      failed: activeTasks.filter(
-        (task) => task.status === DownloadStatus.FAILED || task.status === DownloadStatus.CANCELLED
+      paused: activeTasks.filter((task) => task.status === DownloadStatus.PAUSED).length,
+      failed: activeTasks.filter((task) =>
+        [DownloadStatus.FAILED, DownloadStatus.CANCELLED].includes(task.status)
       ).length
-    }
-  }, [activeTasks])
+    }),
+    [activeTasks]
+  )
 
-  // 获取任务状态图标
-  const getStatusIcon = (status: DownloadStatus): JSX.Element => {
-    switch (status) {
-      case DownloadStatus.DOWNLOADING:
-        return <Download className="w-4 h-4 text-primary animate-pulse" />
-      case DownloadStatus.PAUSED:
-        return <Pause className="w-4 h-4 text-amber-500" />
-      case DownloadStatus.COMPLETED:
-        return <CheckCircle className="w-4 h-4 text-green-500" />
-      case DownloadStatus.FAILED:
-        return <AlertCircle className="w-4 h-4 text-destructive" />
-      case DownloadStatus.CANCELLED:
-        return <X className="w-4 h-4 text-muted-foreground" />
-      case DownloadStatus.WAITING:
-        return <Clock className="w-4 h-4 text-blue-500" />
-      default:
-        return <Download className="w-4 h-4" />
-    }
-  }
-
-  // 获取任务状态文本
   const getStatusText = (status: DownloadStatus): string => {
     switch (status) {
       case DownloadStatus.DOWNLOADING:
@@ -144,279 +106,267 @@ export default function TaskList({
     }
   }
 
-  const filterOptions: Array<{
-    key: 'all' | 'completed' | 'downloading' | 'waiting' | 'failed'
-    label: string
-    count: number
-  }> = [
-    { key: 'all', label: t('allTasks') || '所有任务', count: taskCounts.all },
-    { key: 'completed', label: t('completedTasks') || '已完成', count: taskCounts.completed },
-    { key: 'downloading', label: t('downloadingTasks') || '下载中', count: taskCounts.downloading },
-    { key: 'waiting', label: t('waitingTasks') || '排队中', count: taskCounts.waiting },
-    { key: 'failed', label: t('failedTasks') || '失败/取消', count: taskCounts.failed }
+  const getStatusTone = (status: DownloadStatus): 'neutral' | 'active' | 'success' | 'error' => {
+    if (status === DownloadStatus.DOWNLOADING) return 'active'
+    if (status === DownloadStatus.COMPLETED) return 'success'
+    if (status === DownloadStatus.FAILED) return 'error'
+    return 'neutral'
+  }
+
+  const filterOptions = [
+    { value: 'all' as const, label: `${t('allTasks')} · ${taskCounts.all}` },
+    {
+      value: 'downloading' as const,
+      label: `${t('downloadingTasks')} · ${taskCounts.downloading}`
+    },
+    { value: 'waiting' as const, label: `${t('waitingTasks')} · ${taskCounts.waiting}` },
+    { value: 'paused' as const, label: `${t('taskStatusPaused')} · ${taskCounts.paused}` },
+    { value: 'completed' as const, label: `${t('completedTasks')} · ${taskCounts.completed}` },
+    { value: 'failed' as const, label: `${t('failedTasks')} · ${taskCounts.failed}` }
   ]
 
-  return (
-    <Card className="w-full border border-blue-100/60 bg-white/95 shadow-xl shadow-blue-900/10 backdrop-blur-sm dark:border-blue-500/30 dark:bg-slate-900/70">
-      <CardHeader className="border-b border-white/60 pb-5 dark:border-white/10">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-white">
-              <BarChart2 className="h-5 w-5 text-blue-500" />
-              {t('activeTasks') || '下载任务列表'}
-              <Badge variant="outline" className="ml-1">
-                {activeTasks.length}
-              </Badge>
-            </CardTitle>
-            <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-              {t('activeTasksDescription') || '查看和管理所有下载任务'}
-            </CardDescription>
-          </div>
-          {activeTasks.some((task) =>
-            [DownloadStatus.COMPLETED, DownloadStatus.FAILED, DownloadStatus.CANCELLED].includes(
-              task.status
-            )
-          ) && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full border-slate-200/70 bg-white/80 text-slate-600 hover:text-destructive dark:border-slate-700 dark:bg-slate-900"
-              onClick={() => {
-                const tasksToRemove = activeTasks
-                  .filter((task) =>
-                    [
-                      DownloadStatus.COMPLETED,
-                      DownloadStatus.FAILED,
-                      DownloadStatus.CANCELLED
-                    ].includes(task.status)
-                  )
-                  .map((task) => task.id)
+  const removableTaskIds = activeTasks
+    .filter((task) =>
+      [DownloadStatus.COMPLETED, DownloadStatus.FAILED, DownloadStatus.CANCELLED].includes(
+        task.status
+      )
+    )
+    .map((task) => task.id)
 
-                onClearTasks(tasksToRemove)
-              }}
-            >
-              <X className="h-4 w-4 mr-1" />
-              {t('clearCompleted') || '清除已完成'}
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5 pt-5">
-        <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            {t('filterTasks') || '任务筛选'}
-          </span>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {filterOptions.map((option) => (
-              <Button
-                key={option.key}
-                variant={taskFilter === option.key ? 'secondary' : 'ghost'}
-                size="sm"
-                className={cn(
-                  'h-8 rounded-full border border-transparent px-4 text-xs font-semibold shadow-none',
-                  taskFilter === option.key
-                    ? 'bg-blue-500/10 text-blue-600 border-blue-500/40 dark:bg-blue-500/20 dark:text-blue-100'
-                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                )}
-                onClick={() => setTaskFilter(option.key)}
-              >
-                {option.label}
-                <Badge
-                  variant="outline"
-                  className="ml-2 h-4 min-w-[1.8rem] rounded-full border-blue-200/70 text-[10px] text-blue-600 dark:border-blue-500/50 dark:text-blue-100"
-                >
-                  {option.count}
-                </Badge>
+  return (
+    <Panel>
+      <PanelHeader
+        eyebrow={t('downloadTasks')}
+        title={t('activeTasks')}
+        description={t('activeTasksDescription')}
+        action={
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs text-muted-foreground">
+              {filteredTasks.length} / {activeTasks.length}
+            </span>
+            {removableTaskIds.length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => onClearTasks(removableTaskIds)}>
+                <Trash2 className="mr-2 h-3.5 w-3.5" />
+                {t('clearCompleted')}
               </Button>
-            ))}
+            )}
+          </div>
+        }
+      />
+      <PanelBody className="space-y-4 p-4">
+        <div className="space-y-3 rounded-lg border border-border bg-muted/25 p-3">
+          <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+            <ListFilter className="h-3.5 w-3.5 text-muted-foreground" />
+            {t('filterTasks')}
+          </div>
+          <SegmentedControl
+            value={taskFilter}
+            onChange={setTaskFilter}
+            options={filterOptions}
+            ariaLabel={t('filterTasks')}
+            className="w-full"
+          />
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={`${t('search')} · ${t('fileName')} / URL`}
+              aria-label={t('search')}
+              className="bg-card pl-9 text-xs"
+            />
           </div>
         </div>
 
         {activeTasks.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200/70 bg-white/85 p-8 text-center text-muted-foreground dark:border-slate-700 dark:bg-slate-900/60">
-            <Download className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-            <p>
-              {t('noDownloadTasksYet', {
-                defaultValue: '还没有下载任务，开始一个任务后即可在此跟踪进度。'
-              })}
-            </p>
-          </div>
+          <EmptyState
+            icon={Download}
+            title={t('activeTasks')}
+            description={t('noDownloadTasksYet')}
+          />
         ) : filteredTasks.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-amber-200/70 bg-amber-50/80 p-6 text-center text-amber-600 dark:border-amber-500/40 dark:bg-amber-500/10">
-            <AlertTriangle className="w-10 h-10 mx-auto mb-2" />
-            <p>{t('noTasksInThisCategory') || '该分类下没有任务'}</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredTasks.map((task) => (
-              <div
-                key={task.id}
-                className="rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-sm transition hover:border-blue-200/80 dark:border-slate-700 dark:bg-slate-900/60"
+          <EmptyState
+            icon={SearchX}
+            title={t('noTasksInThisCategory')}
+            description={query || t('filterTasks')}
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTaskFilter('all')
+                  setQuery('')
+                }}
               >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      {getStatusIcon(task.status)}
-                      <span className="truncate max-w-[240px] sm:max-w-[320px]">{task.fileName}</span>
-                      <Badge variant="outline" className="border-slate-200 text-xs text-slate-600 dark:border-slate-600 dark:text-slate-200">
-                        {getStatusText(task.status)}
-                      </Badge>
-                      {task.retries > 0 && (
-                        <Badge variant="outline" className="border-amber-300/60 bg-amber-50 text-amber-600 dark:border-amber-500/60 dark:bg-amber-500/20 dark:text-amber-100">
-                          {t('retryCount', { count: task.retries }) || `重试: ${task.retries}`}
-                        </Badge>
-                      )}
+                {t('allTasks')}
+              </Button>
+            }
+          />
+        ) : (
+          <div className="space-y-3">
+            {filteredTasks.map((task) => {
+              const progress = Math.min(100, Math.max(0, task.progress || 0))
+              return (
+                <article
+                  key={task.id}
+                  className="rounded-lg border border-border bg-background/35 p-4"
+                >
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                        <h3
+                          className="max-w-full truncate text-sm font-medium text-foreground"
+                          title={task.fileName}
+                        >
+                          {task.fileName}
+                        </h3>
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <StatusDot tone={getStatusTone(task.status)} />
+                          {getStatusText(task.status)}
+                        </div>
+                        {task.retries > 0 && (
+                          <span className="text-[11px] text-muted-foreground">
+                            {t('retryCount', { count: task.retries })}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1.5 break-all font-mono text-[11px] leading-relaxed text-muted-foreground">
+                        {task.url}
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground break-all">{task.url}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {task.status === DownloadStatus.DOWNLOADING && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onPauseTask(task.id)}
-                        title={t('pauseTask') || '暂停'}
-                        className="rounded-full"
-                      >
-                        <Pause className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {task.status === DownloadStatus.PAUSED && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onResumeTask(task.id)}
-                        title={t('resumeTask') || '继续'}
-                        className="rounded-full"
-                      >
-                        <Play className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {task.status === DownloadStatus.FAILED && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onRetryTask(task.id)}
-                        title={t('retryTask') || '重试'}
-                        className="rounded-full"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {[
-                      DownloadStatus.DOWNLOADING,
-                      DownloadStatus.PAUSED,
-                      DownloadStatus.WAITING
-                    ].includes(task.status) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onCancelTask(task.id)}
-                        title={t('cancelTask') || '取消'}
-                        className="rounded-full border-destructive/40 text-destructive hover:bg-destructive/10"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {task.status === DownloadStatus.COMPLETED && task.outputPath && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onOpenFileLocation(task.outputPath!)}
-                        className="rounded-full border-green-500/40 text-green-600 hover:bg-green-500/10"
-                        title={t('openLocation') || '打开文件位置'}
-                      >
-                        <FolderOpen className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
 
-                <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs text-slate-500">
-                        <span>
-                          {t('progressLabel', {
-                            defaultValue: '进度'
-                          })}
-                        </span>
+                    <div className="flex shrink-0 flex-wrap gap-2">
                       {task.status === DownloadStatus.DOWNLOADING && (
-                        <span className="text-blue-600 dark:text-blue-300">
-                          {bytesToSize(task.speed)}/s · {formatTime(task.estimatedTimeRemaining)}
-                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void onPauseTask(task.id)}
+                        >
+                          <Pause className="mr-1.5 h-3.5 w-3.5" />
+                          {t('pauseTask')}
+                        </Button>
+                      )}
+                      {task.status === DownloadStatus.PAUSED && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void onResumeTask(task.id)}
+                        >
+                          <Play className="mr-1.5 h-3.5 w-3.5" />
+                          {t('resumeTask')}
+                        </Button>
+                      )}
+                      {task.status === DownloadStatus.FAILED && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void onRetryTask(task.id)}
+                        >
+                          <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                          {t('retryTask')}
+                        </Button>
+                      )}
+                      {[
+                        DownloadStatus.DOWNLOADING,
+                        DownloadStatus.PAUSED,
+                        DownloadStatus.WAITING
+                      ].includes(task.status) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void onCancelTask(task.id)}
+                        >
+                          <X className="mr-1.5 h-3.5 w-3.5" />
+                          {t('cancelTask')}
+                        </Button>
+                      )}
+                      {task.status === DownloadStatus.COMPLETED && task.outputPath && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (task.outputPath) void onOpenFileLocation(task.outputPath)
+                          }}
+                        >
+                          <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
+                          {t('openLocation')}
+                        </Button>
                       )}
                     </div>
-                    <Progress
-                      value={task.progress}
-                      className="h-2.5 rounded-full"
-                      indicatorClassName={
-                        task.status === DownloadStatus.COMPLETED
-                          ? 'bg-green-500'
-                          : task.status === DownloadStatus.FAILED
-                            ? 'bg-destructive'
-                            : task.status === DownloadStatus.PAUSED
-                              ? 'bg-amber-500'
-                              : task.status === DownloadStatus.DOWNLOADING
-                                ? 'animate-pulse bg-blue-500'
-                                : undefined
-                      }
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <span className="font-mono font-medium text-foreground">{progress}%</span>
+                      <span className="font-mono text-[11px] text-muted-foreground">
+                        {task.status === DownloadStatus.DOWNLOADING
+                          ? `${bytesToSize(task.speed)}/s · ${formatTime(task.estimatedTimeRemaining)}`
+                          : getStatusText(task.status)}
+                      </span>
+                    </div>
+                    <div
+                      className="h-1.5 overflow-hidden rounded-sm bg-muted"
+                      role="progressbar"
+                      aria-label={`${task.fileName} ${getStatusText(task.status)}`}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={progress}
+                    >
+                      <div
+                        className={cn(
+                          'h-full bg-primary transition-[width]',
+                          task.status === DownloadStatus.FAILED && 'bg-destructive',
+                          [DownloadStatus.PAUSED, DownloadStatus.CANCELLED].includes(task.status) &&
+                            'bg-muted-foreground'
+                        )}
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <dl className="mt-4 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
+                    <div className="bg-card px-3 py-2.5">
+                      <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {t('sizeLabel')}
+                      </dt>
+                      <dd className="mt-1 font-mono text-xs text-foreground">
+                        {task.totalBytes > 0
+                          ? `${bytesToSize(task.downloadedBytes)} / ${bytesToSize(task.totalBytes)}`
+                          : `${bytesToSize(task.downloadedBytes)} / --`}
+                      </dd>
+                    </div>
+                    <div className="bg-card px-3 py-2.5">
+                      <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {t('segmentsLabel')}
+                      </dt>
+                      <dd className="mt-1 font-mono text-xs text-foreground">
+                        {task.downloadedSegments} / {task.totalSegments || '--'}
+                      </dd>
+                    </div>
+                    <div className="bg-card px-3 py-2.5">
+                      <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {t('startTimeLabel')}
+                      </dt>
+                      <dd className="mt-1 font-mono text-xs text-foreground">
+                        {task.startTime ? new Date(task.startTime).toLocaleTimeString() : '--'}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  {task.error && (
+                    <Notice
+                      tone="error"
+                      title={getStatusText(task.status)}
+                      description={task.error}
+                      className="mt-3"
                     />
-                    <div className="text-xs text-slate-500">
-                      {task.progress}%
-                      {task.totalSegments > 0 && (
-                        <span className="ml-2">
-                          (
-                          {t('segmentsProgress', {
-                            downloaded: task.downloadedSegments,
-                            total: task.totalSegments
-                          }) || `${task.downloadedSegments}/${task.totalSegments} 片段`}
-                          )
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                    <div className="space-y-2 rounded-xl border border-slate-200/60 bg-white/70 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
-                      <p className="font-medium text-slate-700 dark:text-slate-200">
-                        {t('sizeLabel', { defaultValue: '数据量' })}
-                      </p>
-                    {task.totalBytes > 0 ? (
-                      <p className="font-mono">
-                        {bytesToSize(task.downloadedBytes)} / {bytesToSize(task.totalBytes)}
-                      </p>
-                    ) : (
-                      <p className="text-slate-500 dark:text-slate-400">--</p>
-                    )}
-                    {task.startTime && (
-                      <p className="text-[11px] text-slate-400">
-                        {t('startTimeLabel', { defaultValue: '开始时间' })}: {new Date(task.startTime).toLocaleTimeString()}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2 rounded-xl border border-slate-200/60 bg-white/70 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
-                    <p className="font-medium text-slate-700 dark:text-slate-200">
-                      {t('segmentsLabel', { defaultValue: '分片状态' })}
-                    </p>
-                    <p>
-                      {task.downloadedSegments}/{task.totalSegments || '∞'}
-                    </p>
-                    <p className="text-[11px] text-slate-400">
-                      {t('retryCount', { count: task.retries }) || `重试: ${task.retries}`}
-                    </p>
-                  </div>
-                </div>
-
-                {task.error && (
-                  <div className="mt-4 rounded-2xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-                    {task.error}
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </article>
+              )
+            })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   )
 }

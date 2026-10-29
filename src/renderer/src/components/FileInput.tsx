@@ -1,14 +1,8 @@
-/**
- * Author: Libra
- * Date: 2024-10-07 01:16:22
- * LastEditors: Libra
- * Description:
- */
 import React, { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
-import { Upload, File, X, Check, AlertCircle } from 'lucide-react'
-import { t } from 'i18next'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Upload, File, X, Check } from 'lucide-react'
+import { cn } from '@renderer/lib/utils'
 
 interface FileInputProps {
   onFileSelect: (file: File | null) => void
@@ -17,6 +11,7 @@ interface FileInputProps {
 }
 
 const FileInput: React.FC<FileInputProps> = ({ onFileSelect, accept, placeholder }) => {
+  const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -43,8 +38,8 @@ const FileInput: React.FC<FileInputProps> = ({ onFileSelect, accept, placeholder
     }
   }
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>): void => {
-    e.preventDefault()
+  const handleDragOver = (event: React.DragEvent<HTMLButtonElement>): void => {
+    event.preventDefault()
     setIsDragging(true)
   }
 
@@ -52,10 +47,10 @@ const FileInput: React.FC<FileInputProps> = ({ onFileSelect, accept, placeholder
     setIsDragging(false)
   }
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>): void => {
-    e.preventDefault()
+  const handleDrop = (event: React.DragEvent<HTMLButtonElement>): void => {
+    event.preventDefault()
     setIsDragging(false)
-    const file = e.dataTransfer.files[0]
+    const file = event.dataTransfer.files[0]
     if (file) {
       setSelectedFileName(file.name)
       onFileSelect(file)
@@ -63,96 +58,76 @@ const FileInput: React.FC<FileInputProps> = ({ onFileSelect, accept, placeholder
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0">
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept={accept || ".mp4, .png, .jpg, .jpeg, .gif, .webp, .mp3, .wav, .m4a, .flac, .avi, .mov, .webm"}
+        accept={
+          accept ||
+          '.mp4, .png, .jpg, .jpeg, .gif, .webp, .mp3, .wav, .m4a, .flac, .avi, .mov, .webm'
+        }
         className="hidden"
       />
 
-      <AnimatePresence mode="wait">
-        {!selectedFileName ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`
-              border-2 border-dashed rounded-lg p-8
-              ${
-                isDragging
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50 hover:bg-primary/5'
-              }
-              transition-colors duration-200 ease-in-out
-              flex flex-col items-center justify-center space-y-4
-              cursor-pointer
-            `}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={handleButtonClick}
+      {!selectedFileName ? (
+        <button
+          type="button"
+          className={cn(
+            'flex min-h-32 w-full flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-5 py-5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+            isDragging
+              ? 'border-primary bg-primary/5'
+              : 'border-input bg-muted/20 hover:border-primary/40 hover:bg-muted/40'
+          )}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={handleButtonClick}
+        >
+          <span
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-md border',
+              isDragging
+                ? 'border-primary/25 bg-primary/10 text-primary'
+                : 'border-border bg-card text-muted-foreground'
+            )}
           >
-            <div className="relative">
-              <div
-                className={`
-                absolute -inset-0.5 rounded-full blur-sm
-                ${isDragging ? 'bg-primary opacity-20' : 'bg-primary/0'}
-                transition-all duration-200
-              `}
-              ></div>
-              <div
-                className={`
-                relative p-4 rounded-full 
-                ${isDragging ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
-                transition-colors duration-200
-              `}
-              >
-                <Upload size={24} />
-              </div>
-            </div>
-            <div className="text-center space-y-1">
-              <p className="font-medium text-primary">{placeholder || t('selectFile')}</p>
-              <p className="text-sm text-muted-foreground">{t('dropFileHere')}</p>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-card/70 backdrop-blur-sm border border-border/40 rounded-lg p-4 flex items-start justify-between max-w-full"
+            <Upload className="h-4 w-4" />
+          </span>
+          <span className="space-y-1">
+            <span className="block text-xs font-medium text-foreground">
+              {placeholder || t('selectFile')}
+            </span>
+            <span className="block text-[11px] text-muted-foreground">{t('dropFileHere')}</span>
+          </span>
+        </button>
+      ) : (
+        <div className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-card px-3 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <File className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-medium text-foreground" title={selectedFileName}>
+              {selectedFileName}
+            </p>
+            <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Check className="h-3 w-3 text-primary" />
+              {t('selected')} · {t('readyForConversion')}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleRemoveFile}
+            className="h-8 w-8 shrink-0 rounded-md hover:bg-destructive/10 hover:text-destructive"
+            aria-label={t('remove')}
+            title={t('remove')}
           >
-            <div className="flex items-center space-x-3 min-w-0 flex-1">
-              <div className="bg-primary/10 text-primary p-3 rounded-full shrink-0">
-                <File size={20} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center">
-                  <h4 className="font-medium text-sm truncate mr-2" title={selectedFileName}>{selectedFileName}</h4>
-                  <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs px-2 py-0.5 rounded-full flex items-center shrink-0 whitespace-nowrap">
-                    <Check size={12} className="mr-1" />
-                    {t('selected')}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 flex items-center">
-                  <AlertCircle size={12} className="mr-1" />
-                  {t('readyForConversion')}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleRemoveFile}
-              className="hover:bg-destructive/10 hover:text-destructive rounded-full h-8 w-8"
-            >
-              <X size={16} />
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

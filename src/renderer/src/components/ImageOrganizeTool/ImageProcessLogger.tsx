@@ -5,7 +5,7 @@
  * Description: 图片处理日志查看器
  */
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import {
   Info,
   Check,
@@ -17,13 +17,12 @@ import {
   FileCog,
   FileOutput,
   List,
-  LayoutList,
   Eye
 } from 'lucide-react'
-import { Progress } from '@renderer/components/ui/progress'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
+import { EmptyState, StatusDot } from '@renderer/components/ui/states'
 
 // 日志消息接口
 export interface ProcessLogMessage {
@@ -51,6 +50,7 @@ export const ImageProcessLogger = ({
   currentProgress = 0,
   currentStep = ''
 }: ImageProcessLoggerProps): JSX.Element => {
+  const { t } = useTranslation()
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [compactMode, setCompactMode] = useState<boolean>(false)
   const [autoScroll, setAutoScroll] = useState<boolean>(true)
@@ -134,41 +134,34 @@ export const ImageProcessLogger = ({
   }
 
   // 根据日志类型返回对应的图标和颜色
-  const getLogTypeInfo = (
-    log: ProcessLogMessage
-  ): { icon: JSX.Element; color: string; bgColor: string } => {
+  const getLogTypeInfo = (log: ProcessLogMessage): { icon: JSX.Element; color: string } => {
     const stepIcon = getStepIcon(log.step)
 
     switch (log.type) {
       case 'info':
         return {
           icon: stepIcon,
-          color: 'text-blue-500',
-          bgColor: 'bg-blue-50 dark:bg-blue-900/20'
+          color: 'text-muted-foreground'
         }
       case 'success':
         return {
           icon: <Check className="h-4 w-4" />,
-          color: 'text-green-500',
-          bgColor: 'bg-green-50 dark:bg-green-900/20'
+          color: 'text-primary'
         }
       case 'warn':
         return {
           icon: <AlertTriangle className="h-4 w-4" />,
-          color: 'text-yellow-500',
-          bgColor: 'bg-yellow-50 dark:bg-yellow-900/20'
+          color: 'text-foreground'
         }
       case 'error':
         return {
           icon: <AlertOctagon className="h-4 w-4" />,
-          color: 'text-red-500',
-          bgColor: 'bg-red-50 dark:bg-red-900/20'
+          color: 'text-destructive'
         }
       default:
         return {
           icon: stepIcon,
-          color: 'text-gray-500',
-          bgColor: 'bg-gray-50 dark:bg-gray-900/20'
+          color: 'text-muted-foreground'
         }
     }
   }
@@ -217,189 +210,161 @@ export const ImageProcessLogger = ({
     }
   }
 
+  const getLocalizedStep = (step?: string): string => {
+    if (!step) return ''
+    if (step.includes('平铺')) return t('imageOrganizeStepFlatten')
+    if (step.includes('分类')) return t('imageOrganizeStepMatch')
+    if (step.includes('重命名')) return t('imageOrganizeStepRename')
+    if (step.includes('压缩')) return t('imageOrganizeStepCompress')
+    if (step.includes('输出')) return t('imageOrganizeStepCleanup')
+    if (step.includes('清理')) return t('imageOrganizeStepCleanDirectory')
+    if (step.includes('准备')) return t('preparing')
+    if (step.includes('完成')) return t('processingComplete')
+    if (step.includes('错误') || step.includes('失败')) return t('processingFailed')
+    if (step.includes('处理中')) return t('processing')
+    return step
+  }
+
   const stats = getStepStats()
+  const latestLogType = logs[logs.length - 1]?.type
+  const consoleTone = isProcessing
+    ? 'active'
+    : latestLogType === 'error'
+      ? 'error'
+      : currentProgress >= 100
+        ? 'success'
+        : 'neutral'
 
   return (
-    <div className="space-y-4">
-      {/* 进度条区域 */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-2 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/10 dark:to-blue-900/10 p-3 rounded-lg border border-cyan-100 dark:border-cyan-800/30 shadow-sm"
-      >
-        <div className="flex justify-between items-center mb-1">
-          <span className="font-medium text-cyan-700 dark:text-cyan-400 flex items-center gap-1.5">
-            {getStepIcon(
-              currentStep.includes('平铺')
-                ? '文件平铺'
-                : currentStep.includes('分类')
-                  ? '文件分类'
-                  : currentStep.includes('重命名')
-                    ? '文件重命名'
-                    : currentStep.includes('压缩')
-                      ? '图片压缩'
-                      : currentStep.includes('输出')
-                        ? '结果输出'
-                        : currentStep.includes('清理')
-                          ? '清理目录'
-                          : currentStep.includes('完成')
-                            ? '完成'
-                            : currentStep.includes('错误')
-                              ? '错误'
-                              : ''
-            )}
-            {currentStep}
-          </span>
-          <div className="flex items-center space-x-2">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center"
-            >
-              <Switch
-                id="compact-mode"
-                checked={compactMode}
-                onCheckedChange={toggleCompactMode}
-                className="data-[state=checked]:bg-cyan-500"
-              />
-              <Label
-                htmlFor="compact-mode"
-                className="ml-2 text-xs text-cyan-700 dark:text-cyan-400 cursor-pointer"
-              >
-                简洁模式
-              </Label>
-            </motion.div>
-            <span className="bg-cyan-100 dark:bg-cyan-800/30 text-cyan-700 dark:text-cyan-300 font-medium px-2 py-0.5 rounded-full text-xs">
-              {currentProgress}%
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/30 px-3 py-2.5">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+            <StatusDot tone={consoleTone} />
+            <span className="text-primary">
+              {getStepIcon(
+                currentStep.includes('平铺')
+                  ? '文件平铺'
+                  : currentStep.includes('分类')
+                    ? '文件分类'
+                    : currentStep.includes('重命名')
+                      ? '文件重命名'
+                      : currentStep.includes('压缩')
+                        ? '图片压缩'
+                        : currentStep.includes('输出')
+                          ? '结果输出'
+                          : currentStep.includes('清理')
+                            ? '清理目录'
+                            : currentStep.includes('完成')
+                              ? '完成'
+                              : currentStep.includes('错误')
+                                ? '错误'
+                                : ''
+              )}
+            </span>
+            <span className="truncate">
+              {getLocalizedStep(currentStep) || t('imageOrganizeStatusIdle')}
             </span>
           </div>
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            {compactMode
+              ? t('imageOrganizeKeyLogs')
+              : t('imageOrganizeRecentLogs', {
+                  count: Math.min(logs.length, MAX_VISIBLE_LOGS)
+                })}
+          </p>
         </div>
-        <Progress value={currentProgress} className="h-2 bg-cyan-100 dark:bg-cyan-900/30" />
 
-        {/* 文件计数器 */}
-        {stats.current > 0 && (
-          <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400 mt-1 px-1">
-            <span>已处理: {stats.current} 个文件</span>
-            {!autoScroll && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={scrollToBottom}
-                className="h-6 px-2 py-0 text-xs text-cyan-500 hover:text-cyan-600 dark:text-cyan-400 dark:hover:text-cyan-300"
-              >
-                <Eye size={12} className="mr-1" />
-                滚动至最新
-              </Button>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="font-mono text-xs font-semibold text-primary">{currentProgress}%</span>
+          <div className="flex items-center gap-2 border-l border-border pl-3">
+            <Switch
+              id="compact-mode"
+              checked={compactMode}
+              onCheckedChange={toggleCompactMode}
+              className="data-[state=checked]:bg-primary"
+            />
+            <Label htmlFor="compact-mode" className="text-[11px] font-normal text-muted-foreground">
+              {t('imageOrganizeCompactMode')}
+            </Label>
+          </div>
+        </div>
+      </div>
+
+      <div ref={scrollAreaRef} className="h-[330px] overflow-y-auto bg-muted/20">
+        {visibleLogs.length === 0 ? (
+          <EmptyState
+            icon={Clock}
+            title={isProcessing ? t('preparing') : t('readyToStart')}
+            description={
+              isProcessing ? t('imageOrganizeStatusRunning') : t('imageOrganizeLogsDescription')
+            }
+            className="h-full min-h-0 rounded-none border-0 bg-transparent"
+          />
+        ) : (
+          <div className="font-mono text-[11px]">
+            {visibleLogs.map((log, index) => {
+              const { icon, color } = getLogTypeInfo(log)
+              return (
+                <div
+                  key={`${log.timestamp}-${index}`}
+                  className="grid grid-cols-[72px_16px_minmax(0,1fr)_auto] items-start gap-2 border-b border-border/60 px-3 py-2.5 last:border-b-0"
+                >
+                  <time
+                    dateTime={log.timestamp}
+                    className="whitespace-nowrap text-[10px] leading-4 text-muted-foreground"
+                  >
+                    {formatTimestamp(log.timestamp)}
+                  </time>
+                  <span className={`leading-4 ${color}`} title={getLocalizedStep(log.step)}>
+                    {icon}
+                  </span>
+                  <span className="min-w-0 whitespace-pre-wrap break-words leading-4 text-foreground">
+                    {log.message}
+                  </span>
+                  <span className="whitespace-nowrap text-[10px] leading-4 text-muted-foreground">
+                    {log.percentage !== undefined ? `${log.percentage}%` : ''}
+                  </span>
+                </div>
+              )
+            })}
+
+            {/* 如果日志被截断，显示提示 */}
+            {logs.length > MAX_VISIBLE_LOGS && !compactMode && (
+              <div className="px-3 py-2 text-center text-[10px] text-muted-foreground">
+                {t('imageOrganizeLogsTruncated', {
+                  visible: MAX_VISIBLE_LOGS,
+                  total: logs.length
+                })}
+              </div>
             )}
           </div>
         )}
-      </motion.div>
+      </div>
 
-      {/* 日志区域 */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-lg bg-gradient-to-r from-slate-50 to-cyan-50 dark:from-slate-900/50 dark:to-cyan-900/10 p-1 border border-cyan-100 dark:border-cyan-800/30 shadow-md"
-      >
-        <div className="flex items-center justify-between px-2 py-1">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
-            <List size={14} />
-            {compactMode ? '关键日志' : `最近 ${Math.min(logs.length, MAX_VISIBLE_LOGS)} 条日志`}
+      {(stats.current > 0 || !autoScroll) && (
+        <div className="flex min-h-9 items-center justify-between gap-3 border-t border-border bg-muted/30 px-3 py-1.5">
+          <span className="text-[11px] text-muted-foreground">
+            {stats.current > 0 ? `${t('imageOrganizeFilesProcessed')}: ${stats.current}` : ''}
           </span>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          {!autoScroll && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={toggleCompactMode}
-              className="h-6 px-2 text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300"
+              onClick={scrollToBottom}
+              className="h-7 px-2 text-[11px]"
             >
-              {compactMode ? (
-                <LayoutList size={14} className="mr-1" />
-              ) : (
-                <List size={14} className="mr-1" />
-              )}
-              {compactMode ? '详细模式' : '简洁模式'}
+              <Eye className="mr-1.5 h-3 w-3" />
+              {t('imageOrganizeScrollToLatest')}
             </Button>
-          </motion.div>
-        </div>
-
-        <div
-          ref={scrollAreaRef}
-          className="h-[300px] overflow-y-auto rounded-md bg-white/80 dark:bg-slate-800/50 shadow-inner scrollbar-thin scrollbar-thumb-cyan-200 dark:scrollbar-thumb-cyan-800 scrollbar-track-transparent"
-        >
-          {visibleLogs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6">
-              <motion.div
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  repeatType: 'reverse'
-                }}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-3 rounded-full mb-4 shadow-md"
-              >
-                <Clock className="h-8 w-8" />
-              </motion.div>
-              <p className="text-cyan-600 dark:text-cyan-400 font-medium">
-                {isProcessing ? '准备处理中...' : '等待图片处理开始...'}
-              </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 text-center max-w-xs">
-                {isProcessing ? '正在初始化，请稍候...' : '处理日志将实时显示在此处'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2 p-3">
-              <AnimatePresence initial={false}>
-                {visibleLogs.map((log, index) => {
-                  const { icon, color, bgColor } = getLogTypeInfo(log)
-                  return (
-                    <motion.div
-                      key={`${log.timestamp}-${index}`}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className={`flex items-start gap-3 p-2.5 rounded-lg ${bgColor} border border-slate-100 dark:border-slate-800/50 shadow-sm hover:shadow-md transition-shadow`}
-                    >
-                      <div
-                        className={`mt-0.5 flex-shrink-0 ${color} p-1.5 rounded-md bg-white/90 dark:bg-slate-800/90 shadow-sm`}
-                      >
-                        {icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span
-                            className={`text-xs ${color} font-medium px-1.5 py-0.5 rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-100 dark:border-slate-800/50 flex-shrink-0`}
-                          >
-                            {formatTimestamp(log.timestamp)}
-                          </span>
-                          {log.percentage !== undefined && (
-                            <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium px-1.5 py-0.5 rounded-full">
-                              {log.percentage}%
-                            </span>
-                          )}
-                          <span className="font-medium text-slate-700 dark:text-slate-300 break-words">
-                            {log.message}
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )
-                })}
-              </AnimatePresence>
-
-              {/* 如果日志被截断，显示提示 */}
-              {logs.length > MAX_VISIBLE_LOGS && !compactMode && (
-                <div className="text-xs text-center text-slate-500 dark:text-slate-400 py-1">
-                  仅显示最近 {MAX_VISIBLE_LOGS} 条日志，共 {logs.length} 条
-                </div>
-              )}
-            </div>
           )}
         </div>
-      </motion.div>
+      )}
+
+      <div className="flex items-center gap-1.5 border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
+        <List className="h-3 w-3" />
+        {compactMode ? t('imageOrganizeKeyLogs') : t('processingLogs')}
+      </div>
     </div>
   )
 }

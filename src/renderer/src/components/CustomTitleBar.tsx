@@ -1,13 +1,14 @@
-/**
- * Author: Libra
- * Date: 2024-10-07 17:13:50
- * LastEditors: Libra
- * Description:
- */
 import React from 'react'
-import { Minus, X, FileType2 } from 'lucide-react' // 导入 FileType2 图标作为应用图标
+import { FileType2, Minus, X } from 'lucide-react'
+import { cn } from '@renderer/lib/utils'
+import { useTranslation } from 'react-i18next'
+
+const controlButton =
+  'inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30'
 
 const CustomTitleBar: React.FC = () => {
+  const { t } = useTranslation()
+
   const handleMinimize = async (): Promise<void> => {
     await window.system.minimizeWindow()
   }
@@ -17,33 +18,48 @@ const CustomTitleBar: React.FC = () => {
   }
 
   return (
-    <div className="fixed top-0 left-0 w-full bg-gradient-to-r from-primary/10 to-secondary/10 backdrop-blur-md z-50 h-10 flex items-center justify-between px-4 shadow-sm select-none custom-titlebar border-b border-border/40">
+    <header className="custom-titlebar fixed inset-x-0 top-0 z-50 flex h-[52px] select-none items-center border-b border-border bg-card text-foreground">
       <div
-        className="flex items-center flex-grow h-full"
+        className="flex h-full min-w-0 flex-1 items-center gap-2.5 px-4"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
-        <div className="flex items-center">
-          <FileType2 size={18} className="text-primary mr-2" />
-          <span className="font-semibold text-sm bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            文件转换大师
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          <FileType2 className="h-4 w-4" strokeWidth={1.7} />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-[13px] font-semibold tracking-[-0.01em]">
+            {t('appName')}
           </span>
-        </div>
+          <span className="mt-0.5 block text-[8px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            {t('workspace')}
+          </span>
+        </span>
       </div>
-      <div className="flex" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+
+      <div
+        className="flex shrink-0 items-center gap-1 px-3"
+        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+      >
         <button
+          type="button"
           onClick={handleMinimize}
-          className="p-1.5 rounded-md hover:bg-gray-200/80 dark:hover:bg-gray-800/80 transition-colors duration-200 flex items-center justify-center"
+          className={controlButton}
+          title={t('minimize')}
+          aria-label={t('minimize')}
         >
-          <Minus size={16} className="text-gray-600 dark:text-gray-400" />
+          <Minus className="h-4 w-4" strokeWidth={1.7} />
         </button>
         <button
+          type="button"
           onClick={handleClose}
-          className="p-1.5 rounded-md hover:bg-red-500 transition-colors duration-200 flex items-center justify-center ml-1"
+          className={cn(controlButton, 'hover:bg-destructive hover:text-destructive-foreground')}
+          title={t('close')}
+          aria-label={t('close')}
         >
-          <X size={16} className="text-gray-600 dark:text-gray-400 group-hover:text-white" />
+          <X className="h-4 w-4" strokeWidth={1.7} />
         </button>
       </div>
-    </div>
+    </header>
   )
 }
 

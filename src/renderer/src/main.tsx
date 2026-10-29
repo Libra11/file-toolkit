@@ -7,7 +7,8 @@ import './i18n' // Import the i18n configuration
 // 初始化暗黑模式
 const isDarkMode =
   localStorage.getItem('darkMode') === 'true' ||
-  window.matchMedia('(prefers-color-scheme: dark)').matches
+  (localStorage.getItem('darkMode') === null &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches)
 
 if (isDarkMode) {
   document.documentElement.classList.add('dark')

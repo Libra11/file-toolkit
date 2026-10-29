@@ -1,183 +1,451 @@
-/*
- * @Author: Libra
- * @Date: 2024-03-30
- * @LastEditors: Libra
- * @Description: 应用布局组件
- */
-import { ReactNode, useEffect, useState } from 'react'
-import { Sparkles, Moon, Sun, Globe, Minus, X } from 'lucide-react'
+import { ReactNode, useEffect, useMemo, useState } from 'react'
+import {
+  ArrowUpRight,
+  Blocks,
+  ChevronRight,
+  FileBox,
+  Languages,
+  LayoutDashboard,
+  Moon,
+  Search,
+  Settings2,
+  SlidersHorizontal,
+  Star,
+  Sun,
+  Minus,
+  X
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import i18n from '@renderer/i18n'
+import { cn } from '@renderer/lib/utils'
+import { toolDefinitions, toolGroups, toolMap, type ToolId } from '@renderer/lib/toolRegistry'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle
+} from '@renderer/components/ui/dialog'
+import { SettingsMenu } from '@renderer/components/SettingsMenu'
+import { useSettings } from '@renderer/hooks/useSettings'
 
 interface AppLayoutProps {
   children: ReactNode
+  activeTool: ToolId | null
+  onSelectTool: (tool: ToolId | null) => void
+  favorites: ToolId[]
+  onEditFavorites: () => void
+  searchOpen: boolean
+  onSearchOpenChange: (open: boolean) => void
   onVersionClick?: () => void
 }
 
-export default function AppLayout({ children, onVersionClick }: AppLayoutProps): JSX.Element {
+const chromeButton =
+  'inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40'
+
+export default function AppLayout({
+  children,
+  activeTool,
+  onSelectTool,
+  favorites,
+  onEditFavorites,
+  searchOpen,
+  onSearchOpenChange,
+  onVersionClick
+}: AppLayoutProps): JSX.Element {
   const { t } = useTranslation()
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(
-    localStorage.getItem('darkMode') === 'true' ||
-      window.matchMedia('(prefers-color-scheme: dark)').matches
-  )
-  const [version, setVersion] = useState<string>('')
-
-  // 监听颜色模式变化
-  useEffect(() => {
-    const html = document.documentElement
-
-    if (isDarkMode) {
-      html.classList.add('dark')
-      localStorage.setItem('darkMode', 'true')
-    } else {
-      html.classList.remove('dark')
-      localStorage.setItem('darkMode', 'false')
-    }
-  }, [isDarkMode])
+  const { settings, updateSettings } = useSettings()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [version, setVersion] = useState('')
+  const [query, setQuery] = useState('')
+  const [highlightedIndex, setHighlightedIndex] = useState(0)
 
   useEffect(() => {
-    async function fetchVersion(): Promise<void> {
-      try {
-        const version = await window.system.getAppVersion()
-        console.log(version)
-        setVersion(version)
-      } catch (error) {
-        console.error('Failed to get version:', error)
-        setVersion('N/A')
-      }
-    }
-    fetchVersion()
+    window.system
+      .getAppVersion()
+      .then(setVersion)
+      .catch(() => setVersion('—'))
   }, [])
 
-  // 切换暗黑模式
-  const toggleDarkMode = (): void => {
-    setIsDarkMode(!isDarkMode)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.isComposing || event.keyCode === 229) return
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        if (searchOpen) {
+          onSearchOpenChange(false)
+        } else if (!document.querySelector('[role="dialog"][data-state="open"]')) {
+          onSearchOpenChange(true)
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return (): void => window.removeEventListener('keydown', handleKeyDown)
+  }, [searchOpen, onSearchOpenChange])
+
+  useEffect(() => {
+    if (searchOpen) {
+      setQuery('')
+      setHighlightedIndex(0)
+    }
+  }, [searchOpen])
+
+  const searchResults = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase()
+    if (!normalized) return toolDefinitions
+    return toolDefinitions.filter((tool) =>
+      `${t(tool.titleKey)} ${t(tool.descriptionKey)}`.toLocaleLowerCase().includes(normalized)
+    )
+  }, [query, t])
+
+  const activeOptionId = searchResults[highlightedIndex]
+    ? `tool-search-option-${searchResults[highlightedIndex].id}`
+    : undefined
+
+  useEffect(() => {
+    if (!searchOpen || !activeOptionId) return
+    document.getElementById(activeOptionId)?.scrollIntoView({ block: 'nearest' })
+  }, [activeOptionId, searchOpen])
+
+  const openTool = (id: ToolId): void => {
+    onSelectTool(id)
+    onSearchOpenChange(false)
   }
 
-  // 切换语言
   const toggleLanguage = (): void => {
-    const currentLanguage = i18n.language
-    const newLanguage = currentLanguage === 'en' ? 'zh' : 'en'
-    i18n.changeLanguage(newLanguage)
-    localStorage.setItem('language', newLanguage)
+    updateSettings({ language: settings.language === 'en' ? 'zh' : 'en' })
   }
 
-  // 窗口控制
-  const handleMinimize = async (): Promise<void> => {
-    await window.system.minimizeWindow()
-  }
-
-  const handleClose = async (): Promise<void> => {
-    await window.system.closeWindow()
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>): void => {
+    if (
+      event.nativeEvent.isComposing ||
+      event.nativeEvent.keyCode === 229 ||
+      searchResults.length === 0
+    ) {
+      return
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setHighlightedIndex((current) => Math.min(current + 1, searchResults.length - 1))
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setHighlightedIndex((current) => Math.max(current - 1, 0))
+    } else if (event.key === 'Enter' && searchResults[highlightedIndex]) {
+      event.preventDefault()
+      openTool(searchResults[highlightedIndex].id)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 text-slate-900 dark:text-slate-50">
-      {/* 背景装饰 */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-r from-blue-500/20 to-violet-500/20 blur-3xl opacity-50 dark:opacity-30" />
-        <div className="absolute bottom-0 right-0 w-full h-40 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 blur-3xl opacity-50 dark:opacity-30" />
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl" />
-      </div>
-
-      {/* 自定义标题栏 */}
-      <div
-        className="fixed top-0 left-0 w-full z-50 h-14 border-b border-slate-200/40 bg-white/80 backdrop-blur-xl shadow-[0_12px_50px_rgba(15,23,42,0.08)] dark:border-slate-900/40 dark:bg-slate-900/70"
+    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+      <header
+        className="relative z-40 flex h-[52px] shrink-0 items-center border-b border-border bg-card"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
-        <div className="h-full flex items-center justify-between px-6">
-          <div className="flex items-center gap-4 text-slate-700 dark:text-slate-100">
-            <div className="flex items-center justify-center h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-500/30 text-blue-600 dark:text-blue-300">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <div className="flex flex-col leading-tight items-start">
-              <span className="text-sm font-semibold tracking-wide text-slate-900 dark:text-slate-50">
-                {t('appName')}{' '}
-                <span className="text-xs font-semibold lowercase text-slate-500 dark:text-slate-400">
-                  v{version}
-                </span>
-              </span>
-              {onVersionClick && (
-                <button
-                  onClick={onVersionClick}
-                  className="text-xs text-blue-600 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-200 transition"
-                  title={t('clickToViewChangelog')}
-                  style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-                >
-                  {t('viewChangelog', { defaultValue: '查看更新日志' })}
-                </button>
-              )}
-            </div>
-          </div>
+        <button
+          type="button"
+          onClick={() => onSelectTool(null)}
+          aria-label={`${t('appName')} · ${t('workspace')}`}
+          title={t('workspace')}
+          className="flex h-full w-60 shrink-0 items-center gap-2.5 border-r border-border px-5 text-left max-lg:w-[72px] max-lg:justify-center max-lg:px-0"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <FileBox className="h-4 w-4" strokeWidth={1.8} />
+          </span>
+          <span className="min-w-0 max-lg:hidden">
+            <span className="block truncate text-[13px] font-semibold tracking-[-0.01em]">
+              {t('appName')}
+            </span>
+            <span className="mt-0.5 block text-[8px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {t('workspace')}
+            </span>
+          </span>
+        </button>
 
-          <div
-            className="flex items-center gap-3"
+        <div className="flex min-w-0 flex-1 items-center gap-2 px-4 text-xs sm:px-5">
+          <button
+            type="button"
+            onClick={() => onSelectTool(null)}
+            className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
-            {/* 语言切换 */}
-            <button
-              onClick={toggleLanguage}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-slate-500 transition hover:border-slate-300 hover:text-slate-700 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:border-slate-500"
-              aria-label={t('toggleLanguage')}
-              title={t('toggleLanguage')}
-            >
-              <Globe className="h-4 w-4" />
-            </button>
-
-            {/* 暗黑模式切换 */}
-            <button
-              onClick={toggleDarkMode}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-slate-500 transition hover:border-slate-300 hover:text-slate-700 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:border-slate-500"
-              aria-label={isDarkMode ? '切换到亮色模式' : '切换到暗色模式'}
-            >
-              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-
-            {/* 窗口控制按钮 */}
-            <button
-              onClick={handleMinimize}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-slate-500 transition hover:border-slate-300 hover:text-slate-700 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:border-slate-500"
-            >
-              <Minus className="h-4 w-4" />
-            </button>
-            <button
-              onClick={handleClose}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/60 bg-white/80 text-slate-500 transition hover:border-transparent hover:bg-red-500 hover:text-white dark:border-slate-700/60 dark:bg-slate-800/40 dark:text-slate-300 dark:hover:bg-red-500"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+            {t('workspace')}
+          </button>
+          {activeTool && (
+            <>
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+              <span className="truncate font-medium">{t(toolMap[activeTool].titleKey)}</span>
+            </>
+          )}
         </div>
-      </div>
 
-      {/* 内容区域，要留出顶部标题栏的空间 */}
-      <div id="app-scroll-container" className="pt-14 overflow-auto w-full flex flex-col h-screen">
-        {/* 主要内容 */}
-        <main className="flex-1 flex  justify-center md:px-6">{children}</main>
+        <div
+          className="flex shrink-0 items-center gap-1 px-3"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        >
+          <button
+            type="button"
+            onClick={toggleLanguage}
+            className={chromeButton}
+            title={t('toggleLanguage')}
+            aria-label={t('toggleLanguage')}
+          >
+            <Languages className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => updateSettings({ isDarkMode: !settings.isDarkMode })}
+            className={chromeButton}
+            title={t('darkMode')}
+            aria-label={t('darkMode')}
+          >
+            {settings.isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+          <span className="mx-1.5 h-4 w-px bg-border" />
+          <button
+            type="button"
+            onClick={() => window.system.minimizeWindow()}
+            className={chromeButton}
+            title={t('minimize')}
+            aria-label={t('minimize')}
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => window.system.closeWindow()}
+            className={cn(chromeButton, 'hover:bg-destructive hover:text-destructive-foreground')}
+            title={t('close')}
+            aria-label={t('close')}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </header>
 
-        {/* 页脚 */}
-        {/* <footer className="mt-auto py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-          <div className="px-4">
-            <p>
-              &copy; {new Date().getFullYear()} File Toolkit. {t('allRightsReserved')}
-            </p>
-            <div className="flex justify-center space-x-4 mt-2">
-              <a href="#" className="hover:text-slate-900 dark:hover:text-slate-100 transition">
-                {t('privacyPolicy')}
-              </a>
-              <span>•</span>
-              <a href="#" className="hover:text-slate-900 dark:hover:text-slate-100 transition">
-                {t('termsOfService')}
-              </a>
-              <span>•</span>
-              <a href="#" className="hover:text-slate-900 dark:hover:text-slate-100 transition">
-                {t('contact')}
-              </a>
-            </div>
+      <div className="flex min-h-0 flex-1">
+        <aside className="flex w-60 shrink-0 flex-col border-r border-white/[0.06] bg-[#1c2420] text-white/70 max-lg:w-[72px]">
+          <div className="p-3 max-lg:px-2.5">
+            <button
+              type="button"
+              onClick={() => onSearchOpenChange(true)}
+              className="flex h-9 w-full items-center gap-2.5 rounded-md border border-white/10 bg-white/[0.04] px-3 text-xs text-white/45 transition-colors hover:bg-white/[0.08] hover:text-white/80 max-lg:justify-center max-lg:px-0"
+              title={t('searchTools')}
+            >
+              <Search className="h-3.5 w-3.5 shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-left max-lg:hidden">
+                {t('searchTools')}
+              </span>
+              <kbd className="font-sans text-[10px] text-white/30 max-lg:hidden">⌘K</kbd>
+            </button>
           </div>
-        </footer> */}
+
+          <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 max-lg:px-2.5">
+            <button
+              type="button"
+              onClick={() => onSelectTool(null)}
+              className={cn(
+                'mb-4 flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-xs font-medium transition-colors hover:bg-white/[0.06] hover:text-white max-lg:justify-center max-lg:px-0',
+                !activeTool && 'bg-white/[0.09] text-white'
+              )}
+              title={t('workspace')}
+            >
+              <LayoutDashboard className="h-4 w-4 shrink-0" strokeWidth={1.7} />
+              <span className="max-lg:hidden">{t('workspace')}</span>
+            </button>
+
+            <div className="mb-5">
+              <div className="mb-1.5 flex h-6 items-center justify-between px-2.5 max-lg:justify-center max-lg:px-0">
+                <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/35 max-lg:hidden">
+                  {t('frequentTools')}
+                </span>
+                <Star className="hidden h-3 w-3 text-white/35 max-lg:block" />
+                <button
+                  type="button"
+                  onClick={onEditFavorites}
+                  className="text-white/35 transition-colors hover:text-white max-lg:hidden"
+                  title={t('customize')}
+                >
+                  <SlidersHorizontal className="h-3 w-3" />
+                </button>
+              </div>
+              {favorites.map((id) => {
+                const tool = toolMap[id]
+                const Icon = tool.icon
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => onSelectTool(id)}
+                    className={cn(
+                      'flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-xs transition-colors hover:bg-white/[0.06] hover:text-white max-lg:justify-center max-lg:px-0',
+                      activeTool === id && 'bg-white/[0.09] text-white'
+                    )}
+                    title={t(tool.titleKey)}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.7} />
+                    <span className="truncate max-lg:hidden">{t(tool.titleKey)}</span>
+                  </button>
+                )
+              })}
+              <button
+                type="button"
+                onClick={onEditFavorites}
+                className="mt-1 hidden h-8 w-full items-center justify-center rounded-md text-white/35 hover:bg-white/[0.06] hover:text-white max-lg:flex"
+                title={t('customize')}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {toolGroups.map((group) => (
+              <div key={group.id} className="mb-4">
+                <div className="mb-1.5 flex h-6 items-center gap-2 px-2.5 max-lg:justify-center max-lg:px-0">
+                  <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/35 max-lg:hidden">
+                    {t(group.labelKey)}
+                  </span>
+                  <span className="hidden h-px w-5 bg-white/15 max-lg:block" />
+                </div>
+                {toolDefinitions
+                  .filter((tool) => tool.group === group.id)
+                  .map((tool) => {
+                    const Icon = tool.icon
+                    return (
+                      <button
+                        key={tool.id}
+                        type="button"
+                        onClick={() => onSelectTool(tool.id)}
+                        className={cn(
+                          'group relative flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-xs transition-colors hover:bg-white/[0.06] hover:text-white max-lg:justify-center max-lg:px-0',
+                          activeTool === tool.id && 'bg-white/[0.1] text-white'
+                        )}
+                        title={t(tool.titleKey)}
+                      >
+                        {activeTool === tool.id && (
+                          <span className="absolute left-0 h-4 w-0.5 rounded-r bg-[#a3ccb6]" />
+                        )}
+                        <Icon
+                          className="h-4 w-4 shrink-0 opacity-75 group-hover:opacity-100"
+                          strokeWidth={1.7}
+                        />
+                        <span className="truncate max-lg:hidden">{t(tool.titleKey)}</span>
+                      </button>
+                    )
+                  })}
+              </div>
+            ))}
+          </nav>
+
+          <div className="border-t border-white/[0.07] p-3 max-lg:px-2.5">
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[11px] text-white/50 transition-colors hover:bg-white/[0.05] hover:text-white/80 max-lg:justify-center max-lg:px-0"
+              title={t('settings')}
+            >
+              <Settings2 className="h-3.5 w-3.5 shrink-0" />
+              <span className="max-lg:hidden">{t('settings')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onVersionClick}
+              className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[11px] text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70 max-lg:justify-center max-lg:px-0"
+              title={t('clickToViewChangelog')}
+            >
+              <Blocks className="h-3.5 w-3.5 shrink-0" />
+              <span className="max-lg:hidden">
+                v{version || '…'} · {t('changelog')}
+              </span>
+            </button>
+          </div>
+        </aside>
+
+        <main
+          id="workspace-scroll"
+          className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-background"
+        >
+          {children}
+        </main>
       </div>
+
+      <Dialog open={searchOpen} onOpenChange={onSearchOpenChange}>
+        <DialogContent
+          className="top-[16%] max-w-xl translate-y-0 gap-0 overflow-hidden p-0"
+          hideClose
+        >
+          <DialogTitle className="sr-only">{t('searchTools')}</DialogTitle>
+          <DialogDescription className="sr-only">{t('searchToolsDescription')}</DialogDescription>
+          <div className="flex h-14 items-center gap-3 border-b border-border px-4">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <input
+              autoFocus
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={searchOpen}
+              aria-controls="tool-search-listbox"
+              aria-activedescendant={activeOptionId}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setHighlightedIndex(0)
+              }}
+              onKeyDown={handleSearchKeyDown}
+              placeholder={t('searchTools')}
+              className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/70"
+            />
+            <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+              ESC
+            </kbd>
+          </div>
+          <div
+            id="tool-search-listbox"
+            role="listbox"
+            aria-label={t('searchTools')}
+            className="max-h-[55vh] overflow-y-auto p-2"
+          >
+            {searchResults.map((tool, index) => {
+              const Icon = tool.icon
+              return (
+                <button
+                  key={tool.id}
+                  id={`tool-search-option-${tool.id}`}
+                  type="button"
+                  role="option"
+                  aria-selected={index === highlightedIndex}
+                  tabIndex={-1}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                  onClick={() => openTool(tool.id)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-md px-3 py-3 text-left transition-colors',
+                    index === highlightedIndex ? 'bg-accent' : 'hover:bg-muted'
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.7} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-medium text-foreground">
+                      {t(tool.titleKey)}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                      {t(tool.descriptionKey)}
+                    </span>
+                  </span>
+                  <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                </button>
+              )
+            })}
+            {searchResults.length === 0 && (
+              <p className="px-4 py-10 text-center text-xs text-muted-foreground">
+                {t('noToolsFoundDescription')}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-4 border-t border-border bg-muted/40 px-4 py-2.5 text-[10px] text-muted-foreground">
+            <span>↑↓ {t('navigate')}</span>
+            <span>↵ {t('openTool')}</span>
+            <span className="ml-auto">{t('toolsCount', { count: searchResults.length })}</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <SettingsMenu open={settingsOpen} onOpenChange={setSettingsOpen} trigger={null} />
     </div>
   )
 }

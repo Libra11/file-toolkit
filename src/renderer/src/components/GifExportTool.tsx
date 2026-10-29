@@ -1,35 +1,42 @@
-/**
- * Author: Libra
- * Date: 2025-07-21 14:03:08
- * LastEditors: Libra
- * Description:
- */
-/*
- * @Author: Libra
- * @Date: 2025-07-21 11:19:27
- * @LastEditors: Libra
- * @Description: GIF 导出工具组件
- */
-import { useState, useCallback, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import {
+  Download,
+  Eye,
+  FileImage,
+  Film,
+  FolderOpen,
+  Loader2,
+  ScanSearch,
+  Settings2
+} from 'lucide-react'
 import { Button } from './ui/button'
+import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
-import { Label } from './ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Slider } from './ui/slider'
-import { Progress } from './ui/progress'
-import { Badge } from './ui/badge'
-import { Separator } from './ui/separator'
-import { Switch } from './ui/switch'
-import { BackToHomeButton } from './ui/BackToHomeButton'
-import { FolderOpen, Download, Eye, Settings, FileImage, Sparkles, Loader2 } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { Panel, PanelBody, PanelHeader, Field, DataRow } from './ui/panel'
+import { SegmentedControl } from './ui/segmented-control'
+import { EmptyState, Notice, StatusDot } from './ui/states'
+import { cn } from '@renderer/lib/utils'
 import type { GifExportOptions, CardInfo } from '../../../shared/types'
 
 interface GifExportToolProps {
   className?: string
   onBack?: () => void
+}
+
+interface GifExportProgress {
+  type?: 'analyzing' | 'exporting' | 'capturing' | 'completed' | 'error'
+  message?: string
+  cardCount?: number
+  totalCards?: number
+  currentCard?: number
+  frameProgress?: number
+}
+
+function fileNameFromPath(filePath: string): string {
+  return filePath.split(/[\\/]/).pop() || filePath
 }
 
 export function GifExportTool({ className, onBack }: GifExportToolProps): JSX.Element {
@@ -44,8 +51,8 @@ export function GifExportTool({ className, onBack }: GifExportToolProps): JSX.El
   const [progressMessage, setProgressMessage] = useState('')
   const [currentCard, setCurrentCard] = useState(0)
   const [totalCards, setTotalCards] = useState(0)
-
-  // 导出选项
+  const [exportedFiles, setExportedFiles] = useState<string[]>([])
+  const [operationError, setOperationError] = useState('')
   const [options, setOptions] = useState<GifExportOptions>({
     frameRate: 30,
     duration: 8000,
@@ -54,10 +61,11 @@ export function GifExportTool({ className, onBack }: GifExportToolProps): JSX.El
     outputDir: ''
   })
 
-  // 监听进度事件
+  // The host still owns navigation; keep accepting onBack without rendering legacy navigation.
+  void onBack
+
   useEffect(() => {
-    const handleProgress = (progress: any): void => {
-      console.log('Progress:', progress)
+    const handleProgress = (progress: GifExportProgress): void => {
       setProgressMessage(progress.message || '')
 
       switch (progress.type) {
@@ -70,15 +78,13 @@ export function GifExportTool({ className, onBack }: GifExportToolProps): JSX.El
           if (progress.totalCards) {
             setTotalCards(progress.totalCards)
           }
-          if (progress.currentCard) {
+          if (progress.currentCard && progress.totalCards) {
             setCurrentCard(progress.currentCard)
-            const overallProgress = Math.round((progress.currentCard / progress.totalCards) * 100)
-            setExportProgress(overallProgress)
+            setExportProgress(Math.round((progress.currentCard / progress.totalCards) * 100))
           }
           break
         case 'capturing':
-          if (progress.frameProgress) {
-            // 对于帧截取进度，我们可以更细粒度地更新进度
+          if (progress.frameProgress && totalCards > 0) {
             const cardProgress = ((currentCard - 1) / totalCards) * 100
             const frameProgress = progress.frameProgress / totalCards
             setExportProgress(Math.round(cardProgress + frameProgress))
@@ -90,129 +96,129 @@ export function GifExportTool({ className, onBack }: GifExportToolProps): JSX.El
         case 'error':
           setIsExporting(false)
           setExportProgress(0)
+          setOperationError(progress.message || t('exportFailed'))
           break
       }
     }
 
     window.gifExport.onProgress(handleProgress)
-
     return (): void => {
       window.gifExport.removeProgressListener()
     }
-  }, [currentCard, totalCards])
+  }, [currentCard, totalCards, t])
 
-  // 选择输出目录
   const handleSelectOutputDir = useCallback(async () => {
     try {
       const dir = await window.gifExport.selectOutputDir()
-      console.log('选择的目录:', dir)
       if (dir) {
-        console.log('设置目录为:', dir)
         setOutputDir(dir)
-        setOptions((prev) => {
-          const newOptions = { ...prev, outputDir: dir }
-          console.log('更新后的 options:', newOptions)
-          return newOptions
-        })
-      } else {
-        console.log('用户取消了目录选择')
+        setOptions((prev) => ({ ...prev, outputDir: dir }))
+        setOperationError('')
       }
     } catch (error) {
       console.error('选择输出目录失败:', error)
-      alert(t('selectOutputDirFailed'))
+      setOperationError(t('selectOutputDirFailed'))
     }
-  }, [])
+  }, [t])
 
-  // 分析 HTML 中的卡片
   const handleAnalyzeCards = useCallback(async () => {
     if (!htmlString.trim()) {
-      alert(t('pleaseEnterHtml'))
+      setOperationError(t('pleaseEnterHtml'))
       return
     }
 
     setIsAnalyzing(true)
+    setOperationError('')
+    setExportedFiles([])
+    setExportProgress(0)
+    setCurrentCard(0)
+    setProgressMessage('')
+
     try {
-      const currentOptions = { ...options, outputDir }
-      console.log('options', currentOptions)
-      const cards = await window.gifExport.getCardInfo(htmlString, currentOptions)
+      const cards = await window.gifExport.getCardInfo(htmlString, { ...options, outputDir })
       setCardInfo(cards)
-      console.log('发现卡片:', cards)
+      setTotalCards(cards.length)
     } catch (error) {
       console.error('分析卡片失败:', error)
-      alert(t('analyzeCardsFailed'))
+      setOperationError(t('analyzeCardsFailed'))
     } finally {
       setIsAnalyzing(false)
     }
   }, [htmlString, options, outputDir, t])
 
-  // 导出所有卡片
   const handleExportAll = useCallback(async () => {
     if (!htmlString.trim()) {
-      alert(t('pleaseEnterHtml'))
+      setOperationError(t('pleaseEnterHtml'))
       return
     }
-
     if (cardInfo.length === 0) {
-      alert(t('pleaseAnalyzeCards'))
+      setOperationError(t('pleaseAnalyzeCards'))
       return
     }
 
     setIsExporting(true)
+    setSelectedCardIndex(null)
+    setExportedFiles([])
+    setOperationError('')
     setExportProgress(0)
+    setCurrentCard(0)
+    setTotalCards(cardInfo.length)
     setProgressMessage(t('exportStarting'))
 
     try {
-      const currentOptions = { ...options, outputDir }
-      console.log('导出选项:', currentOptions)
-      const outputPaths = await window.gifExport.exportAll(htmlString, currentOptions)
-
-      console.log('导出完成:', outputPaths)
-      const fileType = options.singleFrame ? 'PNG' : 'GIF'
-      alert(t('exportCompleted', { count: outputPaths.length, type: fileType }))
+      const outputPaths = await window.gifExport.exportAll(htmlString, { ...options, outputDir })
+      setExportedFiles(outputPaths)
+      setExportProgress(100)
+      setProgressMessage(
+        t('exportCompleted', {
+          count: outputPaths.length,
+          type: options.singleFrame ? 'PNG' : 'GIF'
+        })
+      )
     } catch (error) {
       console.error('导出失败:', error)
-      alert(t('exportFailed'))
+      setOperationError(t('exportFailed'))
+      setExportProgress(0)
     } finally {
       setIsExporting(false)
-      setTimeout(() => {
-        setExportProgress(0)
-        setProgressMessage('')
-        setCurrentCard(0)
-        setTotalCards(0)
-      }, 2000)
     }
   }, [htmlString, cardInfo, options, outputDir, t])
 
-  // 导出单张卡片
   const handleExportSingle = useCallback(
     async (cardIndex: number) => {
       if (!htmlString.trim()) {
-        alert(t('pleaseEnterHtml'))
+        setOperationError(t('pleaseEnterHtml'))
         return
       }
 
       setIsExporting(true)
       setSelectedCardIndex(cardIndex)
+      setExportedFiles([])
+      setOperationError('')
+      setExportProgress(0)
+      setCurrentCard(cardIndex + 1)
+      setTotalCards(cardInfo.length)
+      setProgressMessage(t('exportStarting'))
 
       try {
-        const currentOptions = { ...options, outputDir }
-        const outputPath = await window.gifExport.exportSingle(
-          htmlString,
-          cardIndex,
-          currentOptions
+        const outputPath = await window.gifExport.exportSingle(htmlString, cardIndex, {
+          ...options,
+          outputDir
+        })
+        setExportedFiles([outputPath])
+        setExportProgress(100)
+        setProgressMessage(
+          t('singleExportCompleted', { type: options.singleFrame ? 'PNG' : 'GIF' })
         )
-        console.log('单张导出完成:', outputPath)
-        const fileType = options.singleFrame ? 'PNG' : 'GIF'
-        alert(t('singleExportCompleted', { type: fileType }))
       } catch (error) {
         console.error('单张导出失败:', error)
-        alert(t('singleExportFailed'))
+        setOperationError(t('singleExportFailed'))
       } finally {
         setIsExporting(false)
         setSelectedCardIndex(null)
       }
     },
-    [htmlString, options, outputDir, t]
+    [htmlString, cardInfo.length, options, outputDir, t]
   )
 
   const qualityLabelKey =
@@ -221,401 +227,352 @@ export function GifExportTool({ className, onBack }: GifExportToolProps): JSX.El
       : options.quality === 'medium'
         ? 'mediumQuality'
         : 'lowQuality'
+  const outputType = options.singleFrame ? 'PNG' : 'GIF'
+  const visibleProgress = isExporting || exportedFiles.length > 0 ? exportProgress : 0
 
   return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-pink-900/10 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/60 md:p-8">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-pink-100/60 via-white to-transparent dark:from-pink-900/25 dark:via-slate-900" />
-        <div className="space-y-8">
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-3 flex-row items-center justify-between">
-              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-pink-100/70 px-3 py-1 text-sm font-medium text-pink-600 dark:bg-pink-900/40 dark:text-pink-100">
-                <FileImage className="h-4 w-4" />
-                {t('htmlCardGifExportTool')}
-              </div>
-              {onBack && (
-                <BackToHomeButton
-                  onClick={onBack}
-                  className="bg-pink-100/70 text-pink-600 hover:bg-pink-100 hover:text-pink-700 dark:bg-pink-900/30 dark:text-pink-100 dark:hover:bg-pink-900/50"
-                />
-              )}
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
-                {t('htmlCardGifExportTool')}
-              </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {t('htmlCardGifExportDescription')}
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 rounded-2xl border border-pink-100/70 bg-pink-50/60 p-4 text-sm text-pink-700 shadow-inner dark:border-pink-500/30 dark:bg-pink-900/20 dark:text-pink-100 md:flex-row md:items-start md:gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-pink-500 shadow-sm dark:bg-white/10 dark:text-pink-200">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-base font-semibold">{t('htmlCardGifExportTipTitle')}</p>
-                <p className="text-xs leading-relaxed text-pink-600/80 dark:text-pink-100/80">
-                  {t('htmlCardGifExportTipDescription')}
+    <div className={cn('min-h-full bg-background text-foreground', className)}>
+      <header className="border-b border-border bg-card">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-end gap-3 px-4 py-2.5 text-xs text-muted-foreground md:px-6">
+          <StatusDot tone={isExporting || isAnalyzing ? 'active' : 'neutral'} />
+          <span>
+            {cardInfo.length} {t('discoveredCards')}
+          </span>
+          <span className="border-l border-border pl-3 font-medium text-foreground">
+            HTML / {outputType}
+          </span>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-[1600px] space-y-5 p-4 md:p-6">
+        {operationError && <Notice tone="error" title={t('error')} description={operationError} />}
+
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,0.65fr)]">
+          <Panel>
+            <PanelHeader
+              eyebrow="01"
+              title={t('htmlString')}
+              description={t('htmlCardGifExportTipDescription')}
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAnalyzeCards}
+                  disabled={!htmlString.trim() || isAnalyzing || isExporting}
+                >
+                  {isAnalyzing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Eye className="mr-2 h-4 w-4" />
+                  )}
+                  {isAnalyzing ? t('analyzing') : t('analyzeCards')}
+                </Button>
+              }
+            />
+            <PanelBody className="space-y-4">
+              <Textarea
+                id="html-input"
+                aria-label={t('htmlString')}
+                placeholder={t('htmlStringPlaceholder')}
+                value={htmlString}
+                onChange={(event) => setHtmlString(event.target.value)}
+                className="min-h-[360px] resize-y bg-background/50 font-mono text-xs leading-6"
+                spellCheck={false}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                <p className="text-xs text-muted-foreground">
+                  {t('discoveredCards')} · {cardInfo.length}
+                </p>
+                <p className="font-mono text-[11px] text-muted-foreground">
+                  HTML · {htmlString.length}
                 </p>
               </div>
-            </div>
-          </div>
+            </PanelBody>
+          </Panel>
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
-            <Card className="border border-pink-100/70 bg-white/90 shadow-xl shadow-pink-900/10 dark:border-pink-500/30 dark:bg-slate-900/70">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                      {t('htmlString')}
-                    </CardTitle>
-                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                      {t('htmlStringPlaceholder')}
-                    </CardDescription>
+          <div className="space-y-5">
+            <Panel>
+              <PanelHeader
+                eyebrow="02"
+                title={t('exportSettings')}
+                description={t('singleFramePngDescription')}
+                action={<Settings2 className="h-4 w-4 text-muted-foreground" />}
+              />
+              <PanelBody className="space-y-5">
+                <Field label={t('vsFormat')} hint={outputType}>
+                  <SegmentedControl
+                    value={options.singleFrame ? 'png' : 'gif'}
+                    onChange={(value) =>
+                      setOptions((prev) => ({ ...prev, singleFrame: value === 'png' }))
+                    }
+                    options={[
+                      { value: 'gif', label: 'GIF', icon: Film },
+                      { value: 'png', label: 'PNG', icon: FileImage }
+                    ]}
+                    ariaLabel={t('vsFormat')}
+                    className="grid w-full grid-cols-2"
+                  />
+                </Field>
+
+                {!options.singleFrame && (
+                  <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                    <Field
+                      label={t('htmlGifFrameRate')}
+                      hint={`${options.frameRate || 30} ${t('frameRateUnit')}`}
+                    >
+                      <Slider
+                        value={[options.frameRate || 30]}
+                        onValueChange={([value]) =>
+                          setOptions((prev) => ({ ...prev, frameRate: value }))
+                        }
+                        min={10}
+                        max={60}
+                        step={5}
+                        className="py-2"
+                      />
+                    </Field>
+                    <Field
+                      label={t('htmlGifDuration')}
+                      hint={`${(options.duration || 8000) / 1000}${t('durationUnit')}`}
+                    >
+                      <Slider
+                        value={[(options.duration || 8000) / 1000]}
+                        onValueChange={([value]) =>
+                          setOptions((prev) => ({ ...prev, duration: value * 1000 }))
+                        }
+                        min={3}
+                        max={15}
+                        step={1}
+                        className="py-2"
+                      />
+                    </Field>
                   </div>
-                  {cardInfo.length > 0 && (
-                    <Badge className="rounded-full bg-pink-100/80 text-pink-600 dark:bg-pink-900/40 dark:text-pink-100">
-                      {t('discoveredCards')} · {cardInfo.length}
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <Textarea
-                  id="html-input"
-                  placeholder={t('htmlStringPlaceholder')}
-                  value={htmlString}
-                  onChange={(e) => setHtmlString(e.target.value)}
-                  rows={10}
-                  className="min-h-[220px] rounded-2xl border border-pink-100/60 bg-white/80 p-4 font-mono text-sm text-slate-700 shadow-inner placeholder:text-pink-300 focus-visible:ring-2 focus-visible:ring-pink-200 dark:border-pink-500/30 dark:bg-slate-900/60 dark:text-slate-100"
-                />
+                )}
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                    {t('gifOutputDirectory')}
-                  </Label>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Field label={t('htmlGifQuality')} hint={t(qualityLabelKey)}>
+                  <Select
+                    value={options.quality}
+                    onValueChange={(value: 'high' | 'medium' | 'low') =>
+                      setOptions((prev) => ({ ...prev, quality: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">{t('highQuality')}</SelectItem>
+                      <SelectItem value="medium">{t('mediumQuality')}</SelectItem>
+                      <SelectItem value="low">{t('lowQuality')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                <Field label={t('gifOutputDirectory')}>
+                  <div className="flex gap-2">
+                    <Input
+                      value={outputDir}
+                      readOnly
+                      placeholder={t('selectGifDirectory')}
+                      className="min-w-0 bg-background/50 font-mono text-xs"
+                    />
                     <Button
                       variant="outline"
+                      size="icon"
                       onClick={handleSelectOutputDir}
-                      className="inline-flex w-full items-center gap-2 rounded-2xl border-pink-100/70 bg-white/90 px-4 py-2 text-pink-600 hover:bg-pink-50 dark:border-pink-500/30 dark:bg-transparent dark:text-pink-200 sm:w-auto"
+                      title={t('selectGifDirectory')}
+                      aria-label={t('selectGifDirectory')}
                     >
                       <FolderOpen className="h-4 w-4" />
-                      {t('selectGifDirectory')}
                     </Button>
-                    <div className="flex-1 rounded-2xl border border-dashed border-pink-200/70 bg-white/70 px-3 py-2 text-sm text-slate-500 dark:border-pink-500/30 dark:bg-slate-900/40 dark:text-slate-300">
-                      {outputDir || t('selectGifDirectory')}
-                    </div>
                   </div>
-                </div>
+                </Field>
 
-                <Separator className="border-pink-100/60 dark:border-pink-500/30" />
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button
-                    onClick={handleAnalyzeCards}
-                    disabled={!htmlString.trim() || isAnalyzing}
-                    variant="outline"
-                    className="inline-flex items-center gap-2 rounded-2xl border-pink-200/70 px-4 py-2 text-pink-600 hover:bg-pink-50 dark:border-pink-500/40 dark:text-pink-100"
-                  >
-                    {isAnalyzing ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                    {isAnalyzing ? t('analyzing') : t('analyzeCards')}
-                  </Button>
-                  <Button
-                    onClick={handleExportAll}
-                    disabled={!htmlString.trim() || cardInfo.length === 0 || isExporting}
-                    className="flex-1 rounded-2xl bg-pink-500/90 text-white shadow-lg shadow-pink-500/30 transition hover:bg-pink-500 disabled:bg-pink-400/60 sm:flex-none sm:px-6"
-                  >
-                    {isExporting ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {t('exporting')}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Download className="h-4 w-4" />
-                        {options.singleFrame ? t('exportAllPng') : t('exportAllGif')}
-                      </span>
-                    )}
-                  </Button>
-                </div>
-
-                <div className="flex flex-wrap gap-3 text-xs text-pink-700 dark:text-pink-100">
-                  <Badge className="rounded-full bg-pink-100/80 px-3 py-1 text-pink-600 dark:bg-pink-900/40 dark:text-pink-100">
-                    {options.singleFrame ? 'PNG' : 'GIF'}
-                  </Badge>
-                  <Badge className="rounded-full bg-pink-100/60 px-3 py-1 text-pink-700 dark:bg-pink-900/40 dark:text-pink-100">
-                    {t('htmlGifQuality')} · {t(qualityLabelKey)}
-                  </Badge>
-                  {!options.singleFrame && (
-                    <>
-                      <Badge className="rounded-full bg-pink-100/60 px-3 py-1 text-pink-700 dark:bg-pink-900/40 dark:text-pink-100">
-                        {t('htmlGifFrameRate')} · {options.frameRate} {t('frameRateUnit')}
-                      </Badge>
-                      <Badge className="rounded-full bg-pink-100/60 px-3 py-1 text-pink-700 dark:bg-pink-900/40 dark:text-pink-100">
-                        {t('htmlGifDuration')} · {(options.duration || 8000) / 1000}
-                        {t('durationUnit')}
-                      </Badge>
-                    </>
+                <Button
+                  className="w-full"
+                  onClick={handleExportAll}
+                  disabled={
+                    !htmlString.trim() || cardInfo.length === 0 || isExporting || isAnalyzing
+                  }
+                >
+                  {isExporting && selectedCardIndex === null ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
                   )}
-                </div>
-              </CardContent>
-            </Card>
+                  {isExporting && selectedCardIndex === null
+                    ? t('exporting')
+                    : options.singleFrame
+                      ? t('exportAllPng')
+                      : t('exportAllGif')}
+                </Button>
+              </PanelBody>
+            </Panel>
 
-            <div className="space-y-6">
-              <Card className="border border-pink-100/70 bg-white/90 shadow-xl shadow-pink-900/10 dark:border-pink-500/30 dark:bg-slate-900/70">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-100/70 text-pink-600 dark:bg-pink-900/40 dark:text-pink-100">
-                      <Settings className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                        {t('exportSettings')}
-                      </CardTitle>
-                      <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                        {t('htmlCardGifExportDescription')}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between rounded-2xl border border-pink-100/70 bg-white/80 p-4 dark:border-pink-500/30 dark:bg-slate-900/50">
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold text-slate-700 dark:text-white">
-                        {t('singleFramePng')}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {t('singleFramePngDescription')}
-                      </p>
-                    </div>
-                    <Switch
-                      id="single-frame"
-                      checked={options.singleFrame || false}
-                      onCheckedChange={(checked) =>
-                        setOptions((prev) => ({ ...prev, singleFrame: checked }))
+            <Panel>
+              <PanelHeader
+                title={t('exportProgress')}
+                action={
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <StatusDot
+                      tone={
+                        operationError
+                          ? 'error'
+                          : exportedFiles.length > 0
+                            ? 'success'
+                            : isExporting
+                              ? 'active'
+                              : 'neutral'
                       }
                     />
+                    {isExporting ? t('exporting') : outputType}
                   </div>
-
-                  {!options.singleFrame ? (
-                    <div className="space-y-4">
-                      <div className="rounded-2xl border border-pink-100/70 bg-white/80 p-4 dark:border-pink-500/30 dark:bg-slate-900/50">
-                        <Label className="text-xs font-medium uppercase tracking-wide text-pink-600 dark:text-pink-200">
-                          {t('htmlGifFrameRate')} · {options.frameRate} {t('frameRateUnit')}
-                        </Label>
-                        <Slider
-                          className="mt-3"
-                          value={[options.frameRate || 30]}
-                          onValueChange={([value]) =>
-                            setOptions((prev) => ({ ...prev, frameRate: value }))
-                          }
-                          min={10}
-                          max={60}
-                          step={5}
-                        />
-                      </div>
-                      <div className="rounded-2xl border border-pink-100/70 bg-white/80 p-4 dark:border-pink-500/30 dark:bg-slate-900/50">
-                        <Label className="text-xs font-medium uppercase tracking-wide text-pink-600 dark:text-pink-200">
-                          {t('htmlGifDuration')} · {(options.duration || 8000) / 1000}
-                          {t('durationUnit')}
-                        </Label>
-                        <Slider
-                          className="mt-3"
-                          value={[(options.duration || 8000) / 1000]}
-                          onValueChange={([value]) =>
-                            setOptions((prev) => ({ ...prev, duration: value * 1000 }))
-                          }
-                          min={3}
-                          max={15}
-                          step={1}
-                        />
-                      </div>
-                      <div className="rounded-2xl border border-pink-100/70 bg-white/80 p-4 dark:border-pink-500/30 dark:bg-slate-900/50">
-                        <Label className="text-xs font-medium uppercase tracking-wide text-pink-600 dark:text-pink-200">
-                          {t('htmlGifQuality')}
-                        </Label>
-                        <Select
-                          value={options.quality}
-                          onValueChange={(value: 'high' | 'medium' | 'low') =>
-                            setOptions((prev) => ({ ...prev, quality: value }))
-                          }
-                        >
-                          <SelectTrigger className="mt-3 rounded-xl border-pink-100/70 dark:border-pink-500/30">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="high">{t('highQuality')}</SelectItem>
-                            <SelectItem value="medium">{t('mediumQuality')}</SelectItem>
-                            <SelectItem value="low">{t('lowQuality')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl border border-pink-100/70 bg-white/80 p-4 dark:border-pink-500/30 dark:bg-slate-900/50">
-                      <Label className="text-xs font-medium uppercase tracking-wide text-pink-600 dark:text-pink-200">
-                        {t('htmlGifQuality')}
-                      </Label>
-                      <Select
-                        value={options.quality}
-                        onValueChange={(value: 'high' | 'medium' | 'low') =>
-                          setOptions((prev) => ({ ...prev, quality: value }))
-                        }
-                      >
-                        <SelectTrigger className="mt-3 rounded-xl border-pink-100/70 dark:border-pink-500/30">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="high">{t('highQuality')}</SelectItem>
-                          <SelectItem value="medium">{t('mediumQuality')}</SelectItem>
-                          <SelectItem value="low">{t('lowQuality')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="border border-pink-100/70 bg-white/90 shadow-xl shadow-pink-900/10 dark:border-pink-500/30 dark:bg-slate-900/70">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                    {t('exportProgress')}
-                  </CardTitle>
-                  <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                    {progressMessage ||
-                      (cardInfo.length > 0
-                        ? `${cardInfo.length} ${t('discoveredCards')}`
-                        : t('pleaseAnalyzeCards'))}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-pink-100/70 bg-white/80 p-3 dark:border-pink-500/30 dark:bg-slate-900/50">
-                      <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        {t('discoveredCards')}
-                      </p>
-                      <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-                        {cardInfo.length}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-pink-100/70 bg-white/80 p-3 dark:border-pink-500/30 dark:bg-slate-900/50">
-                      <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        {t('htmlGifQuality')}
-                      </p>
-                      <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-                        {t(qualityLabelKey)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <Separator className="border-pink-100/60 dark:border-pink-500/30" />
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
-                      <span>{isExporting ? t('exporting') : t('analyzeCards')}</span>
-                      <span>
-                        {isExporting ? `${exportProgress}%` : options.singleFrame ? 'PNG' : 'GIF'}
-                      </span>
-                    </div>
-                    <Progress
-                      value={isExporting ? exportProgress : cardInfo.length > 0 ? 100 : 0}
-                      className="h-2"
-                    />
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                }
+              />
+              <PanelBody className="space-y-4" aria-live="polite">
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+                    <span className="text-muted-foreground">
                       {progressMessage ||
                         (cardInfo.length > 0
                           ? `${cardInfo.length} ${t('discoveredCards')}`
-                          : t('pleaseEnterHtml'))}
-                    </div>
-                    {totalCards > 0 && (
-                      <div className="text-xs text-pink-600 dark:text-pink-200">
-                        {currentCard > 0
-                          ? t('processingCard', { current: currentCard, total: totalCards })
-                          : t('totalCards', { total: totalCards })}
-                      </div>
-                    )}
+                          : t('pleaseAnalyzeCards'))}
+                    </span>
+                    <span className="shrink-0 font-mono font-medium text-foreground">
+                      {visibleProgress}%
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {cardInfo.length > 0 && (
-            <Card className="border border-pink-100/70 bg-white/90 shadow-xl shadow-pink-900/10 dark:border-pink-500/30 dark:bg-slate-900/70">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                    {t('discoveredCards')}
-                  </CardTitle>
-                  <Badge className="rounded-full bg-pink-100/80 text-pink-600 dark:bg-pink-900/40 dark:text-pink-100">
-                    {cardInfo.length}
-                  </Badge>
-                </div>
-                <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                  {t('singleFramePngDescription')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {cardInfo.map((card, index) => (
+                  <div
+                    className="h-1.5 overflow-hidden rounded-sm bg-muted"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={visibleProgress}
+                  >
                     <div
-                      key={index}
-                      className={`flex flex-col rounded-2xl border border-pink-100/70 bg-white/90 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-pink-500/30 dark:bg-slate-900/70 ${
-                        selectedCardIndex === index ? 'border-pink-400/70 shadow-pink-500/30' : ''
-                      }`}
+                      className={cn(
+                        'h-full bg-primary transition-[width]',
+                        operationError && 'bg-destructive'
+                      )}
+                      style={{ width: `${Math.min(100, Math.max(0, visibleProgress))}%` }}
+                    />
+                  </div>
+                </div>
+                <dl className="divide-y divide-border border-y border-border">
+                  <DataRow label={t('discoveredCards')} value={cardInfo.length} />
+                  <DataRow label={t('htmlGifQuality')} value={t(qualityLabelKey)} />
+                  {totalCards > 0 && (
+                    <DataRow
+                      label={t('exportProgress')}
+                      value={
+                        currentCard > 0
+                          ? t('processingCard', { current: currentCard, total: totalCards })
+                          : t('totalCards', { total: totalCards })
+                      }
+                    />
+                  )}
+                </dl>
+                {exportedFiles.length > 0 && (
+                  <Notice
+                    tone="success"
+                    title={t('exportCompleted', {
+                      count: exportedFiles.length,
+                      type: outputType
+                    })}
+                    description={outputDir || fileNameFromPath(exportedFiles[0])}
+                  />
+                )}
+              </PanelBody>
+            </Panel>
+          </div>
+        </div>
+
+        <Panel>
+          <PanelHeader
+            eyebrow="03"
+            title={t('discoveredCards')}
+            description={t('htmlCardGifExportTipTitle')}
+            action={
+              <span className="font-mono text-xs text-muted-foreground">{cardInfo.length}</span>
+            }
+          />
+          <PanelBody>
+            {cardInfo.length === 0 ? (
+              <EmptyState
+                icon={ScanSearch}
+                title={t('analyzeCards')}
+                description={t('pleaseAnalyzeCards')}
+              />
+            ) : (
+              <div className="space-y-5">
+                {exportedFiles.length > 0 && (
+                  <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-border bg-muted/30 p-2">
+                    {exportedFiles.map((filePath) => (
+                      <div
+                        key={filePath}
+                        className="flex items-start gap-3 rounded-md bg-card px-3 py-2 text-xs"
+                      >
+                        <FileImage className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground">
+                            {fileNameFromPath(filePath)}
+                          </p>
+                          <p className="mt-0.5 break-all font-mono text-[11px] text-muted-foreground">
+                            {filePath}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+                  {cardInfo.map((card, index) => (
+                    <article
+                      key={`${card.index}-${index}`}
+                      className={cn(
+                        'rounded-lg border border-border bg-background/40 p-4',
+                        selectedCardIndex === index && 'border-primary/50'
+                      )}
                     >
-                      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <Badge className="rounded-full bg-pink-100/80 px-2 py-0.5 text-pink-600 dark:bg-pink-900/40 dark:text-pink-100">
-                          #{index + 1}
-                        </Badge>
-                        <span>
+                      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                        <span className="font-mono font-medium text-primary">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                        <span className="font-mono">
                           {card.boundingBox.width} × {card.boundingBox.height}
                         </span>
                       </div>
-                      <div
-                        className="mt-3 line-clamp-1 text-sm font-semibold text-slate-900 dark:text-white"
+                      <h3
+                        className="mt-3 truncate text-sm font-medium text-foreground"
                         title={card.title}
                       >
-                        {card.title || t('htmlCardGifExportTool')}
-                      </div>
+                        {card.title || `${t('htmlCardGifExportTool')} ${index + 1}`}
+                      </h3>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleExportSingle(index)}
-                        disabled={isExporting}
-                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl border-pink-200/70 text-pink-600 hover:bg-pink-50 dark:border-pink-500/40 dark:text-pink-100"
+                        disabled={isExporting || isAnalyzing}
+                        className="mt-4 w-full"
                       >
                         {selectedCardIndex === index && isExporting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            {t('exporting')}
-                          </>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
-                          <>
-                            <Download className="h-4 w-4" />
-                            {options.singleFrame ? t('exportSinglePng') : t('exportSingleGif')}
-                          </>
+                          <Download className="mr-2 h-4 w-4" />
                         )}
+                        {selectedCardIndex === index && isExporting
+                          ? t('exporting')
+                          : options.singleFrame
+                            ? t('exportSinglePng')
+                            : t('exportSingleGif')}
                       </Button>
-                    </div>
+                    </article>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              </div>
+            )}
+          </PanelBody>
+        </Panel>
       </div>
-    </motion.div>
+    </div>
   )
 }

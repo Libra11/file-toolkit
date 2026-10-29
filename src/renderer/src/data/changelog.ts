@@ -17,6 +17,58 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.2.5',
+    date: '2026-10-29',
+    changes: {
+      features: [
+        '全新工作台界面：左侧工具导航 + 右侧工作区，统一暖白与石墨配色，15 个工具全部重写',
+        'Brand new workbench UI: left tool navigation with a dedicated workspace, a unified warm-white and graphite palette, and all 15 tools rebuilt',
+        '新增命令面板（⌘/Ctrl + K），支持按名称与描述模糊搜索工具',
+        'Added a command palette (⌘/Ctrl + K) with fuzzy search across tool names and descriptions'
+      ],
+      improvements: [
+        '统一面板、字段、分段控件、空状态与提示等基础组件，表单、弹窗、进度与结果反馈风格一致',
+        'Unified panels, fields, segmented controls, empty states, and notices so forms, dialogs, progress, and results share one visual language',
+        '完善键盘与读屏支持：搜索高亮自动滚动、关闭弹窗后焦点回到触发按钮、收藏项暴露选中状态',
+        'Improved keyboard and screen-reader support: highlighted search results scroll into view, focus returns to the trigger on close, and favorites expose their selected state',
+        '更新通知的下载进度不再反复播报，关闭后不会因后续进度事件重新弹出',
+        'Download progress is no longer re-announced repeatedly, and dismissing the update notice no longer lets later progress events reopen it',
+        'M3U8 下载器将平均速度并入统计卡片，窄窗口下不再出现空白状态栏',
+        'M3U8 downloader now shows average speed inside the statistics grid, removing the empty status bar on narrow windows'
+      ],
+      fixes: [
+        '修复写入剪贴板被权限策略拒绝的问题，文件校验结果现在可以正常复制',
+        'Fixed clipboard writes being rejected by the permission policy, so file hash results can be copied again',
+        '修复部分工具内嵌重复的页面主区域与标题，避免出现重复标题和错误的读屏结构',
+        'Fixed duplicated page landmarks and titles inside some tools, removing repeated headings and incorrect screen-reader structure'
+      ]
+    }
+  },
+  {
+    version: '1.2.4',
+    date: '2026-08-28',
+    changes: {
+      fixes: [
+        '修复 macOS 打包后 Sharp 原生运行库未完整解包导致应用无法启动的问题',
+        'Fixed the packaged macOS app failing to launch because the Sharp native runtime was not fully unpacked'
+      ]
+    }
+  },
+  {
+    version: '1.2.3',
+    date: '2026-08-27',
+    changes: {
+      improvements: [
+        'Word 转 Excel 选择题固定输出题目内容、选项 A-H、选项数量和参考答案，缺失选项自动留空',
+        'Word-to-Excel multiple-choice output now uses fixed columns for question content, options A-H, option count, and reference answer, with missing options left blank'
+      ],
+      fixes: [
+        '修复 Word 转 Excel 宽表预览超出弹窗的问题，表格区域现支持横向滚动',
+        'Fixed the Word-to-Excel wide-table preview overflowing its dialog by adding horizontal scrolling within the table area'
+      ]
+    }
+  },
+  {
     version: '1.2.2',
     date: '2026-05-21',
     changes: {

@@ -1,34 +1,19 @@
-/**
- * Author: Libra
- * Date: 2024-10-07 01:16:09
- * LastEditors: Libra
- * Description:
- */
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import {
   ArrowRight,
-  Loader2,
-  CheckCircle2,
-  FileUp,
   Download,
-  Files,
-  Upload,
   File,
-  Check,
-  X,
-  AlertCircle,
-  Music
+  Files,
+  FileUp,
+  FolderOpen,
+  Loader2,
+  Music,
+  Settings,
+  Upload,
+  X
 } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription
-} from '@renderer/components/ui/card'
 import ConversionTypeSelect from '@renderer/components/ConversionTypeSelect'
 import FileInput from '@renderer/components/FileInput'
 import {
@@ -38,28 +23,25 @@ import {
   getDefaultOutputExtension
 } from '@renderer/lib/conversionTypes'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@renderer/components/ui/tooltip'
-import { Badge } from '@renderer/components/ui/badge'
-import { cn } from '@renderer/lib/utils'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { Label } from '@renderer/components/ui/label'
-import { Settings } from 'lucide-react'
+import { DataRow, Field, Panel, PanelBody, PanelHeader } from '@renderer/components/ui/panel'
+import { SegmentedControl } from '@renderer/components/ui/segmented-control'
+import { EmptyState, Notice } from '@renderer/components/ui/states'
 
 interface ConversionFormProps {
   categories: ConversionCategory[]
   activeCategory: string
 }
+
+type ConversionMode = 'single' | 'batch'
+
+const ACCEPTED_FILE_TYPES =
+  '.mp4, .png, .jpg, .jpeg, .gif, .webp, .mp3, .wav, .m4a, .flac, .avi, .mov, .webm'
 
 export default function ConversionForm({
   categories,
@@ -83,6 +65,7 @@ export default function ConversionForm({
     quality: 'normal', // low, normal, high
     frameRate: 10 // fps
   })
+  const batchFileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const resolvedCategory =
@@ -101,7 +84,7 @@ export default function ConversionForm({
     const defaultFileName = `output.${extension}`
     const outputPath = await window.system.saveFile(defaultFileName)
     if (!outputPath) {
-      throw new Error('No output file selected')
+      throw new Error(t('noOutputFileSelected'))
     }
     return outputPath
   }
@@ -219,14 +202,14 @@ export default function ConversionForm({
 
       // 默认处理
       default:
-        throw new Error(`未支持的转换类型: ${conversionType}`)
+        throw new Error(t('unsupportedConversionType', { type: conversionType }))
     }
   }
 
   const selectBatchOutputDirectory = async (): Promise<string> => {
     const outputDir = await window.system.selectDirectory()
     if (!outputDir) {
-      throw new Error('未选择输出目录')
+      throw new Error(t('noOutputDirectorySelected'))
     }
     return outputDir
   }
@@ -271,7 +254,7 @@ export default function ConversionForm({
       const fileExists = await window.system.checkFileExists(inputPath)
       if (!fileExists) {
         console.error('输入文件不存在:', inputPath)
-        throw new Error('输入文件不存在')
+        throw new Error(t('inputFileNotFound'))
       }
 
       // 保存文件对话框
@@ -331,674 +314,570 @@ export default function ConversionForm({
     setConvertedFilePath(null)
   }
 
+  const handleModeChange = (mode: ConversionMode): void => {
+    const isBatch = mode === 'batch'
+    setIsBatchMode(isBatch)
+
+    // 清除相关状态
+    setConvertedFilePath(null)
+    setBatchResults([])
+
+    if (!isBatch) {
+      setSelectedFiles([])
+    } else {
+      setSelectedFile(null)
+    }
+  }
+
+  const handleBatchFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    if (event.target.files && event.target.files.length > 0) {
+      setSelectedFiles([...selectedFiles, ...Array.from(event.target.files)])
+    }
+    event.target.value = ''
+  }
+
+  const handleBatchDrop = (event: DragEvent<HTMLDivElement>): void => {
+    event.preventDefault()
+    const files = Array.from(event.dataTransfer.files)
+    setSelectedFiles(files)
+  }
+
+  const removeBatchFile = (index: number): void => {
+    const newFiles = [...selectedFiles]
+    newFiles.splice(index, 1)
+    setSelectedFiles(newFiles.length ? newFiles : [])
+  }
+
+  const currentCategory = categories.find((category) => category.name === selectedCategory)
+  const CurrentCategoryIcon = currentCategory?.icon
+  const convertedExtension = convertedFilePath?.split('.').pop()?.toLowerCase() ?? ''
+  const isImageOutput = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(convertedExtension)
+  const isAudioOutput = ['mp3', 'wav', 'flac', 'm4a'].includes(convertedExtension)
+  const isVideoOutput = ['mp4', 'avi', 'mov', 'webm'].includes(convertedExtension)
+  const isUnknownOutput =
+    convertedFilePath !== null && !isImageOutput && !isAudioOutput && !isVideoOutput
+
   return (
-    <div className="space-y-6">
-      <Card className="border border-blue-100/70 bg-white/90 shadow-xl shadow-blue-900/10 dark:border-blue-500/20 dark:bg-slate-900/70">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-            {t('conversionType')}
-          </CardTitle>
-          <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-            {t('selectConversion')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="min-w-0 space-y-4">
+      <Panel>
+        <PanelHeader
+          eyebrow="01"
+          title={t('conversionType')}
+          description={t('selectConversion')}
+          action={
+            selectedConversion ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+                <ArrowRight className="h-3.5 w-3.5" />
+                {t(selectedConversion)}
+              </span>
+            ) : undefined
+          }
+        />
+        <PanelBody className="grid gap-4 md:grid-cols-[minmax(160px,0.35fr)_minmax(0,1fr)]">
+          <Field label={t('category')}>
+            <div className="flex h-10 min-w-0 items-center gap-2 rounded-md border border-border bg-muted/30 px-3 text-sm text-foreground">
+              {CurrentCategoryIcon && (
+                <CurrentCategoryIcon className="h-4 w-4 shrink-0 text-primary" />
+              )}
+              <span className="truncate">{selectedCategory ? t(selectedCategory) : '—'}</span>
+            </div>
+          </Field>
           <ConversionTypeSelect
             categories={categories}
             selectedCategory={selectedCategory}
             selectedConversion={selectedConversion}
             onConversionChange={handleConversionChange}
           />
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
-      <AnimatePresence mode="wait">
-        {selectedConversion && (
-          <motion.div
-            key="conversion-details"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-6"
-          >
-            <Card className="border border-slate-200/70 bg-white/95 shadow-xl shadow-blue-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                      {t('selectSourceFile')}
-                    </CardTitle>
-                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                      {isBatchMode ? t('selectFilesToConvert') : t('selectFile')}
-                    </CardDescription>
-                  </div>
-                  {selectedConversion && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white border-none shadow-sm">
-                            {t(selectedConversion)}
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>
-                            {t('conversionType')}: {t(selectedConversion)}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Tabs
-                  defaultValue="single"
-                  className="w-full"
-                  onValueChange={(value) => {
-                    const isBatch = value === 'batch'
-                    setIsBatchMode(isBatch)
-
-                    // 清除相关状态
-                    setConvertedFilePath(null)
-                    setBatchResults([])
-
-                    if (!isBatch) {
-                      setSelectedFiles([])
-                    } else {
-                      setSelectedFile(null)
-                    }
-                  }}
+      {!selectedConversion ? (
+        <EmptyState
+          icon={ArrowRight}
+          title={t('selectConversion')}
+          description={t('fileConversionDescription')}
+          className="min-h-36 bg-card"
+        />
+      ) : (
+        <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+          <Panel className="min-w-0">
+            <PanelHeader
+              eyebrow="02"
+              title={t('selectSourceFile')}
+              description={isBatchMode ? t('selectFilesToConvert') : t('selectFile')}
+              action={
+                <SegmentedControl<ConversionMode>
+                  value={isBatchMode ? 'batch' : 'single'}
+                  onChange={handleModeChange}
+                  ariaLabel={t('selectSourceFile')}
+                  options={[
+                    { value: 'single', label: t('singleFileMode'), icon: File },
+                    { value: 'batch', label: t('batchMode'), icon: Files }
+                  ]}
+                />
+              }
+            />
+            <PanelBody>
+              {isBatchMode ? (
+                <div
+                  className="rounded-lg border border-dashed border-input bg-muted/20 p-2 transition-colors hover:border-primary/40"
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={handleBatchDrop}
                 >
-                  <div className="flex justify-center">
-                    <TabsList className="mb-6 h-[3.2rem] grid w-full max-w-lg grid-cols-2 items-center overflow-hidden rounded-full bg-blue-100/60 p-1 text-sm font-medium dark:bg-blue-900/40">
-                      <TabsTrigger
-                        value="single"
-                        className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-blue-300"
-                      >
-                        {t('singleFileMode')}
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="batch"
-                        className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-blue-300"
-                      >
-                        {t('batchMode')}
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
+                  <input
+                    ref={batchFileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    accept={ACCEPTED_FILE_TYPES}
+                    onChange={handleBatchFileChange}
+                  />
 
-                  <TabsContent value="single" className="space-y-4">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <FileUp className="h-5 w-5 text-indigo-500" />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {t('selectFile')}
-                      </span>
-                    </div>
-                    <FileInput onFileSelect={setSelectedFile} />
-                  </TabsContent>
-
-                  <TabsContent value="batch" className="space-y-4">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <Files className="h-5 w-5 text-indigo-500" />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {t('batchConversion')}
-                      </span>
-                    </div>
-
-                    <div
-                      className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-4 text-center hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors"
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault()
-                        const files = Array.from(e.dataTransfer.files)
-                        setSelectedFiles(files)
-                      }}
-                    >
-                      {selectedFiles.length === 0 ? (
-                        <>
-                          <input
-                            type="file"
-                            multiple
-                            className="hidden"
-                            id="batch-file-input"
-                            accept=".mp4, .png, .jpg, .jpeg, .gif, .webp, .mp3, .wav, .m4a, .flac, .avi, .mov, .webm"
-                            onChange={(e) => {
-                              if (e.target.files && e.target.files.length > 0) {
-                                setSelectedFiles(Array.from(e.target.files))
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor="batch-file-input"
-                            className="cursor-pointer flex flex-col items-center justify-center py-3"
+                  {selectedFiles.length === 0 ? (
+                    <EmptyState
+                      icon={Upload}
+                      title={t('selectFilesToConvert')}
+                      description={t('dropFilesHere')}
+                      className="min-h-36 border-0 bg-transparent px-3 py-4"
+                      action={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-md"
+                          onClick={() => batchFileInputRef.current?.click()}
+                        >
+                          <Upload className="mr-1.5 h-3.5 w-3.5" />
+                          {t('selectFile')}
+                        </Button>
+                      }
+                    />
+                  ) : (
+                    <div className="overflow-hidden rounded-md border border-border bg-card">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/30 px-3 py-2.5">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Files className="h-4 w-4 shrink-0 text-primary" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-foreground">
+                              {selectedFiles.length} {t('selectedFiles')}
+                            </p>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                              {t('readyForConversion')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 rounded-md px-2 text-xs"
+                            onClick={() => batchFileInputRef.current?.click()}
                           >
-                            <div className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 p-4 rounded-full mb-3">
-                              <Upload className="h-6 w-6" />
-                            </div>
-                            <p className="font-medium text-indigo-600 dark:text-indigo-400">
-                              {t('selectFile')}
-                            </p>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
-                              {t('dropFilesHere')}
-                            </p>
-                          </label>
-                        </>
-                      ) : (
-                        <div className="bg-white dark:bg-slate-800/70 backdrop-blur-sm rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 p-3 rounded-full">
-                                <File size={20} />
-                              </div>
-                              <div>
-                                <div className="flex items-center">
-                                  <h4 className="font-medium text-sm line-clamp-1 mr-2">
-                                    {selectedFiles.length} {t('selectedFiles')}
-                                  </h4>
-                                  <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs px-2 py-0.5 rounded-full flex items-center">
-                                    <Check size={12} className="mr-1" />
-                                    {t('selected')}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center">
-                                  <AlertCircle size={12} className="mr-1" />
-                                  {t('readyForConversion')}
-                                </p>
-                              </div>
-                            </div>
+                            <Upload className="mr-1.5 h-3.5 w-3.5" />
+                            {t('selectFile')}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-md hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setSelectedFiles([])}
+                            aria-label={t('remove')}
+                            title={t('remove')}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <ol className="max-h-56 divide-y divide-border/70 overflow-y-auto">
+                        {selectedFiles.map((file, index) => (
+                          <li
+                            key={`${file.name}-${file.lastModified}-${index}`}
+                            className="group flex min-w-0 items-center gap-2 px-3 py-2 hover:bg-muted/30"
+                          >
+                            <span className="w-5 shrink-0 font-mono text-[10px] text-muted-foreground">
+                              {String(index + 1).padStart(2, '0')}
+                            </span>
+                            <File className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                            <span
+                              className="min-w-0 flex-1 truncate text-xs text-foreground"
+                              title={file.name}
+                            >
+                              {file.name}
+                            </span>
                             <Button
+                              type="button"
                               variant="ghost"
                               size="icon"
-                              onClick={() => setSelectedFiles([])}
-                              className="hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-full h-8 w-8"
+                              className="h-7 w-7 shrink-0 rounded-md hover:bg-destructive/10 hover:text-destructive"
+                              onClick={() => removeBatchFile(index)}
+                              aria-label={`${t('remove')} ${file.name}`}
+                              title={t('remove')}
                             >
-                              <X size={16} />
+                              <X className="h-3.5 w-3.5" />
                             </Button>
-                          </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <FileInput onFileSelect={setSelectedFile} />
+              )}
+            </PanelBody>
+          </Panel>
 
-                          <div className="mt-3 max-h-32 overflow-y-auto bg-slate-50 dark:bg-slate-900/50 rounded-md border border-slate-100 dark:border-slate-700/50 p-1">
-                            {selectedFiles.map((file, index) => (
-                              <div
-                                key={index}
-                                className="text-xs p-2 rounded mb-1 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
-                              >
-                                <span className="truncate max-w-[280px] text-slate-700 dark:text-slate-300">
-                                  {file.name}
-                                </span>
-                                <button
-                                  className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    const newFiles = [...selectedFiles]
-                                    newFiles.splice(index, 1)
-                                    setSelectedFiles(newFiles.length ? newFiles : [])
-                                  }}
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
+          <div className="min-w-0 space-y-4">
+            <Panel>
+              <PanelHeader
+                eyebrow="03"
+                title={`${t('settings')} / ${t('preview')}`}
+                description={
+                  selectedConversion === CONVERSION_TYPES.MP4_TO_GIF
+                    ? t('gifSettingsDescription')
+                    : t(selectedConversion)
+                }
+              />
+              <PanelBody className="space-y-4">
+                <dl className="divide-y divide-border/70 rounded-md border border-border bg-muted/20 px-3">
+                  <DataRow
+                    label={t('category')}
+                    value={selectedCategory ? t(selectedCategory) : '—'}
+                  />
+                  <DataRow label={t('conversionType')} value={t(selectedConversion)} />
+                  <DataRow
+                    label={t('selectSourceFile')}
+                    value={
+                      isBatchMode
+                        ? `${selectedFiles.length} ${t('selectedFiles')}`
+                        : (selectedFile?.name ?? t('selectFile'))
+                    }
+                  />
+                </dl>
 
-                          <div className="mt-3 flex justify-center">
-                            <label
-                              htmlFor="batch-file-input-more"
-                              className="cursor-pointer"
-                            ></label>
-                            <input
-                              type="file"
-                              multiple
-                              className="hidden"
-                              id="batch-file-input-more"
-                              accept=".mp4, .png, .jpg, .jpeg, .gif, .webp, .mp3, .wav, .m4a, .flac, .avi, .mov, .webm"
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files.length > 0) {
-                                  setSelectedFiles([
-                                    ...selectedFiles,
-                                    ...Array.from(e.target.files)
-                                  ])
-                                }
-                              }}
-                            />
-                          </div>
-                        </div>
+                {selectedConversion === CONVERSION_TYPES.MP4_TO_GIF && (
+                  <div className="space-y-3 border-t border-border pt-4">
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-primary" />
+                      <h3 className="text-xs font-medium text-foreground">{t('gifSettings')}</h3>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <Field label={t('gifSize')}>
+                        <Select
+                          value={gifSettings.size}
+                          onValueChange={(value) =>
+                            setGifSettings((prev) => ({ ...prev, size: value }))
+                          }
+                        >
+                          <SelectTrigger className="h-9 rounded-md bg-card">
+                            <SelectValue placeholder={t('gifSize')} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-md">
+                            <SelectItem value="small">{t('small')}</SelectItem>
+                            <SelectItem value="medium">{t('medium')}</SelectItem>
+                            <SelectItem value="large">{t('large')}</SelectItem>
+                            <SelectItem value="original">{t('original')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+
+                      <Field label={t('gifQuality')}>
+                        <Select
+                          value={gifSettings.quality}
+                          onValueChange={(value) =>
+                            setGifSettings((prev) => ({ ...prev, quality: value }))
+                          }
+                        >
+                          <SelectTrigger className="h-9 rounded-md bg-card">
+                            <SelectValue placeholder={t('gifQuality')} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-md">
+                            <SelectItem value="low">{t('low')}</SelectItem>
+                            <SelectItem value="normal">{t('normal')}</SelectItem>
+                            <SelectItem value="high">{t('high')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+
+                      <Field label={t('gifFrameRate')}>
+                        <Select
+                          value={gifSettings.frameRate.toString()}
+                          onValueChange={(value) =>
+                            setGifSettings((prev) => ({ ...prev, frameRate: parseInt(value) }))
+                          }
+                        >
+                          <SelectTrigger className="h-9 rounded-md bg-card">
+                            <SelectValue placeholder={t('gifFrameRate')} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-md">
+                            <SelectItem value="5">5 {t('fps')}</SelectItem>
+                            <SelectItem value="10">10 {t('fps')}</SelectItem>
+                            <SelectItem value="15">15 {t('fps')}</SelectItem>
+                            <SelectItem value="24">24 {t('fps')}</SelectItem>
+                            <SelectItem value="30">30 {t('fps')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    </div>
+
+                    <dl className="divide-y divide-border/70 rounded-md border border-border bg-muted/30 px-3">
+                      <DataRow label={t('gifSize')} value={t(gifSettings.size)} />
+                      <DataRow label={t('gifQuality')} value={t(gifSettings.quality)} />
+                      <DataRow
+                        label={t('gifFrameRate')}
+                        value={`${gifSettings.frameRate} ${t('fps')}`}
+                      />
+                    </dl>
+                  </div>
+                )}
+
+                <div className="border-t border-border pt-4">
+                  {isBatchMode ? (
+                    <Button
+                      type="button"
+                      className="h-11 w-full rounded-md"
+                      onClick={handleBatchConvert}
+                      disabled={isBatchConverting || selectedFiles.length === 0}
+                    >
+                      {isBatchConverting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <span>{t('batchConverting')}</span>
+                          <span className="ml-1">{batchProgress}%</span>
+                        </>
+                      ) : (
+                        <>
+                          <Files className="mr-2 h-4 w-4" />
+                          {t('batchConvertFiles')}
+                        </>
                       )}
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      className="h-11 w-full rounded-md"
+                      onClick={handleConvert}
+                      disabled={isConverting || !selectedFile}
+                    >
+                      {isConverting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <span>{t('converting')}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          {t('convertFile')}
+                        </>
+                      )}
+                    </Button>
+                  )}
 
-            {/* GIF Settings Panel - Only show for MP4 to GIF conversion */}
-            {selectedConversion === CONVERSION_TYPES.MP4_TO_GIF && (
-              <Card className="border border-purple-100/70 bg-white/95 shadow-xl shadow-purple-900/10 dark:border-purple-500/30 dark:bg-slate-900/70">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center">
-                    <Settings className="mr-2 h-5 w-5 text-purple-500" />
-                    {t('gifSettings')}
-                  </CardTitle>
-                  <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                    {t('gifSettingsDescription')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* GIF Size Selection */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {t('gifSize')}
-                      </Label>
-                      <Select
-                        value={gifSettings.size}
-                        onValueChange={(value) =>
-                          setGifSettings((prev) => ({ ...prev, size: value }))
-                        }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder={t('gifSize')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="small">{t('small')}</SelectItem>
-                          <SelectItem value="medium">{t('medium')}</SelectItem>
-                          <SelectItem value="large">{t('large')}</SelectItem>
-                          <SelectItem value="original">{t('original')}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  {isBatchMode && isBatchConverting && (
+                    <div
+                      className="mt-3 h-1.5 overflow-hidden rounded-sm bg-muted"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={batchProgress}
+                    >
+                      <div
+                        className="h-full bg-primary transition-[width]"
+                        style={{ width: `${batchProgress}%` }}
+                      />
                     </div>
+                  )}
+                </div>
+              </PanelBody>
+            </Panel>
 
-                    {/* Quality Selection */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {t('gifQuality')}
-                      </Label>
-                      <Select
-                        value={gifSettings.quality}
-                        onValueChange={(value) =>
-                          setGifSettings((prev) => ({ ...prev, quality: value }))
-                        }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder={t('gifQuality')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">{t('low')}</SelectItem>
-                          <SelectItem value="normal">{t('normal')}</SelectItem>
-                          <SelectItem value="high">{t('high')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+            {isBatchMode && batchResults.length > 0 && (
+              <Panel>
+                <PanelHeader eyebrow={t('preview')} title={t('outputFiles')} />
+                <PanelBody className="space-y-4">
+                  <Notice
+                    tone="success"
+                    title={t('batchConversionSuccess')}
+                    description={t('successCount', {
+                      count: batchResults.length,
+                      total: selectedFiles.length
+                    })}
+                  />
 
-                    {/* Frame Rate Selection */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {t('gifFrameRate')}
-                      </Label>
-                      <Select
-                        value={gifSettings.frameRate.toString()}
-                        onValueChange={(value) =>
-                          setGifSettings((prev) => ({ ...prev, frameRate: parseInt(value) }))
-                        }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder={t('gifFrameRate')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="5">5 {t('fps')}</SelectItem>
-                          <SelectItem value="10">10 {t('fps')}</SelectItem>
-                          <SelectItem value="15">15 {t('fps')}</SelectItem>
-                          <SelectItem value="24">24 {t('fps')}</SelectItem>
-                          <SelectItem value="30">30 {t('fps')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Settings Preview */}
-                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                    <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
-                      <div className="flex justify-between">
-                        <span>{t('gifSize')}:</span>
-                        <span>{t(gifSettings.size)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{t('gifQuality')}:</span>
-                        <span>{t(gifSettings.quality)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{t('gifFrameRate')}:</span>
-                        <span>
-                          {gifSettings.frameRate} {t('fps')}
+                  <ol className="max-h-48 divide-y divide-border/70 overflow-y-auto rounded-md border border-border bg-muted/20">
+                    {batchResults.map((path, index) => (
+                      <li key={`${path}-${index}`} className="flex items-start gap-2 px-3 py-2">
+                        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                          {String(index + 1).padStart(2, '0')}
                         </span>
-                      </div>
-                    </div>
+                        <span className="min-w-0 break-all font-mono text-[11px] leading-relaxed text-foreground">
+                          {path}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-md"
+                      onClick={async () => {
+                        if (batchResults.length > 0) {
+                          // 打开第一个文件所在的文件夹
+                          try {
+                            await openFileLocation(batchResults[0])
+                          } catch (error) {
+                            console.error('打开文件位置失败:', error)
+                          }
+                        }
+                      }}
+                    >
+                      <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
+                      {t('openOutputFolder')}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-md"
+                      onClick={() => {
+                        setSelectedFiles([])
+                        setBatchResults([])
+                      }}
+                    >
+                      {t('convertMoreFiles')}
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </PanelBody>
+              </Panel>
             )}
 
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="relative"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl blur-md opacity-20 -z-10 group-hover:opacity-30 transition-opacity" />
-              {isBatchMode ? (
-                <Button
-                  className={cn(
-                    'w-full h-14 relative overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-md rounded-xl border-none',
-                    isBatchConverting && 'from-indigo-500 to-indigo-700',
-                    selectedFiles.length === 0 && 'opacity-80'
-                  )}
-                  onClick={handleBatchConvert}
-                  disabled={isBatchConverting || selectedFiles.length === 0}
-                >
-                  <span
-                    className="absolute inset-0 w-full h-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)] group-hover:animate-shimmer"
-                    style={{ transform: 'translateX(-100%)' }}
-                  ></span>
-                  <span className="relative z-10 flex items-center justify-center w-full h-full font-medium text-lg">
-                    {isBatchConverting ? (
-                      <>
-                        <Loader2 className="mr-3 h-6 w-6 animate-spin" />
-                        <span>{t('batchConverting')}</span>
-                        <span className="ml-1">{batchProgress}%</span>
-                      </>
-                    ) : (
-                      <>
-                        <Files className="mr-3 h-6 w-6" />
-                        {t('batchConvertFiles')}
-                      </>
-                    )}
-                  </span>
-                </Button>
-              ) : (
-                <Button
-                  className={cn(
-                    'w-full h-14 relative overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-md rounded-xl border-none',
-                    isConverting && 'from-indigo-500 to-indigo-700',
-                    !selectedFile && 'opacity-80'
-                  )}
-                  onClick={handleConvert}
-                  disabled={isConverting || !selectedFile}
-                >
-                  <span
-                    className="absolute inset-0 w-full h-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)] group-hover:animate-shimmer"
-                    style={{ transform: 'translateX(-100%)' }}
-                  ></span>
-                  <span className="relative z-10 flex items-center justify-center w-full h-full font-medium text-lg">
-                    {isConverting ? (
-                      <>
-                        <Loader2 className="mr-3 h-6 w-6 animate-spin" />
-                        <span>{t('converting')}</span>
-                        <span className="ml-1 animate-pulse">...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Download className="mr-3 h-6 w-6" />
-                        {t('convertFile')}
-                      </>
-                    )}
-                  </span>
-                </Button>
-              )}
-            </motion.div>
+            {!isBatchMode && convertedFilePath && (
+              <Panel>
+                <PanelHeader eyebrow={t('preview')} title={t('outputFile')} />
+                <PanelBody className="space-y-4">
+                  <Notice
+                    tone="success"
+                    title={t('conversionSuccess')}
+                    description={t(selectedConversion)}
+                  />
 
-            <AnimatePresence>
-              {isBatchMode && batchResults.length > 0 ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="rounded-xl border-2 border-green-200 dark:border-green-800/30 overflow-hidden bg-white dark:bg-slate-800 shadow-lg"
-                >
-                  <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 p-4 border-b border-green-200 dark:border-green-800/30">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-500 text-white p-2 rounded-lg shadow-sm mr-3">
-                          <CheckCircle2 className="h-5 w-5" />
-                        </div>
-                        <h3 className="font-medium text-green-800 dark:text-green-300 text-lg">
-                          {t('batchConversionSuccess')}
-                        </h3>
+                  <div className="flex min-h-32 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/30 p-3">
+                    {isImageOutput && (
+                      <img
+                        src={`myapp:///${convertedFilePath}`}
+                        alt={t('preview')}
+                        className="max-h-52 max-w-full object-contain"
+                        onError={(event) => {
+                          console.error('图片加载失败:', convertedFilePath)
+                          event.currentTarget.src =
+                            'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWltYWdlIj48cmVjdCB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHg9IjMiIHk9IjMiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBvbHlsaW5lIHBvaW50cz0iMjEgMTUgMTYgMTAgNSAyMSIvPjwvc3ZnPg=='
+                        }}
+                      />
+                    )}
+
+                    {isAudioOutput && (
+                      <div className="flex w-full flex-col items-center justify-center py-2 text-center">
+                        <Music className="mb-2 h-8 w-8 text-primary" />
+                        <p className="mb-3 text-xs text-muted-foreground">{t('audioConverted')}</p>
+                        <audio
+                          controls
+                          className="w-full max-w-[360px]"
+                          src={`myapp:///${convertedFilePath}`}
+                        >
+                          <source src={`myapp:///${convertedFilePath}`} />
+                          {t('audioConverted')}
+                        </audio>
                       </div>
-                      <div className="text-xs px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-800/40 text-green-800 dark:text-green-300 font-medium border border-green-200 dark:border-green-700/30">
-                        {t('successCount', {
-                          count: batchResults.length,
-                          total: selectedFiles.length
-                        })}
+                    )}
+
+                    {isVideoOutput && (
+                      <div className="flex w-full flex-col items-center justify-center text-center">
+                        <p className="mb-2 text-xs text-muted-foreground">{t('videoConverted')}</p>
+                        <video
+                          controls
+                          className="max-h-52 max-w-full object-contain"
+                          src={`myapp:///${convertedFilePath}`}
+                        >
+                          <source src={`myapp:///${convertedFilePath}`} />
+                          {t('videoConverted')}
+                        </video>
                       </div>
-                    </div>
+                    )}
+
+                    {isUnknownOutput && (
+                      <div className="py-3 text-center">
+                        <FileUp className="mx-auto mb-2 h-10 w-10 text-primary" />
+                        <p className="text-xs text-muted-foreground">{t('fileConverted')}</p>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="p-5 space-y-4">
-                    <div className="bg-slate-50 dark:bg-slate-800/80 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                      <div className="text-sm font-medium flex items-center text-green-700 dark:text-green-400 mb-1.5">
-                        <ArrowRight className="h-4 w-4 mr-1.5" />
-                        {t('outputFiles')}
-                      </div>
-                      <div className="text-xs bg-white dark:bg-slate-900/50 text-slate-800 dark:text-slate-300 mt-1 break-all p-2 rounded border border-slate-200 dark:border-slate-700 font-mono max-h-32 overflow-y-auto">
-                        {batchResults.map((path, index) => (
-                          <div
-                            key={index}
-                            className="mb-1 pb-1 border-b border-slate-100 dark:border-slate-800 last:border-0"
-                          >
-                            {path}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  <div className="rounded-md border border-border bg-muted/20 p-3">
+                    <p className="text-[11px] font-medium text-muted-foreground">
+                      {t('outputFile')}
+                    </p>
+                    <p className="mt-1.5 break-all font-mono text-[11px] leading-relaxed text-foreground">
+                      {convertedFilePath}
+                    </p>
+                  </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/50 hover:border-green-300 dark:hover:border-green-700 transition-all duration-200"
-                        onClick={async () => {
-                          if (batchResults.length > 0) {
-                            // 打开第一个文件所在的文件夹
-                            try {
-                              await openFileLocation(batchResults[0])
-                            } catch (error) {
-                              console.error('打开文件位置失败:', error)
-                            }
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-md"
+                      onClick={async () => {
+                        if (convertedFilePath) {
+                          console.log('打开文件位置:', convertedFilePath)
+                          // 使用electron.shell.showItemInFolder API
+                          try {
+                            await openFileLocation(convertedFilePath)
+                          } catch (error) {
+                            console.error('打开文件位置失败:', error)
                           }
-                        }}
-                      >
-                        <Download className="mr-1.5 h-4 w-4" />
-                        {t('openOutputFolder')}
-                      </Button>
+                        }
+                      }}
+                    >
+                      <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
+                      {t('openFileLocation')}
+                    </Button>
 
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                        onClick={() => {
-                          setSelectedFiles([])
-                          setBatchResults([])
-                        }}
-                      >
-                        {t('convertMoreFiles')}
-                      </Button>
-                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-md"
+                      onClick={() => {
+                        // 保留转换类型，但清除文件选择
+                        setSelectedFile(null)
+                        setConvertedFilePath(null)
+
+                        // 重新聚焦到文件输入框，提示用户选择新文件
+                        const fileInput = document.querySelector(
+                          'input[type="file"]'
+                        ) as HTMLInputElement | null
+                        if (fileInput) {
+                          fileInput.click()
+                        }
+                      }}
+                    >
+                      {t('convertAnother')}
+                    </Button>
                   </div>
-                </motion.div>
-              ) : (
-                convertedFilePath &&
-                !isBatchMode && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="rounded-xl border-2 border-green-200 dark:border-green-800/30 overflow-hidden bg-white dark:bg-slate-800 shadow-lg"
-                  >
-                    <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 p-4 border-b border-green-200 dark:border-green-800/30">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-500 text-white p-2 rounded-lg shadow-sm mr-3">
-                            <CheckCircle2 className="h-5 w-5" />
-                          </div>
-                          <h3 className="font-medium text-green-800 dark:text-green-300 text-lg">
-                            {t('conversionSuccess')}
-                          </h3>
-                        </div>
-                        <div className="text-xs px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-800/40 text-green-800 dark:text-green-300 font-medium border border-green-200 dark:border-green-700/30">
-                          {selectedConversion ? t(selectedConversion) : ''}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-5 space-y-4">
-                      <div className="flex flex-col gap-4">
-                        <div className="w-full h-auto bg-slate-100 dark:bg-slate-700/30 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner p-2">
-                          {convertedFilePath && (
-                            <>
-                              {/* 图片类型 */}
-                              {['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(
-                                convertedFilePath.split('.').pop()?.toLowerCase() || ''
-                              ) && (
-                                <img
-                                  src={`myapp:///${convertedFilePath}`}
-                                  alt="图片预览"
-                                  className="max-w-full max-h-48 object-contain"
-                                  onError={(e) => {
-                                    console.error('图片加载失败:', convertedFilePath)
-                                    ;(e.target as HTMLImageElement).src =
-                                      'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWltYWdlIj48cmVjdCB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHg9IjMiIHk9IjMiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBvbHlsaW5lIHBvaW50cz0iMjEgMTUgMTYgMTAgNSAyMSIvPjwvc3ZnPg=='
-                                  }}
-                                />
-                              )}
-
-                              {/* 音频类型 */}
-                              {['mp3', 'wav', 'flac', 'm4a'].includes(
-                                convertedFilePath.split('.').pop()?.toLowerCase() || ''
-                              ) && (
-                                <div className="text-center w-full flex flex-col items-center justify-center py-2">
-                                  <Music className="h-10 w-10 text-indigo-500 mb-2" />
-                                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
-                                    {t('audioConverted')}
-                                  </p>
-                                  <audio
-                                    controls
-                                    className="w-full max-w-[360px]"
-                                    src={`myapp:///${convertedFilePath}`}
-                                  >
-                                    <source src={`myapp:///${convertedFilePath}`} />
-                                    {t('audioConverted')}
-                                  </audio>
-                                </div>
-                              )}
-
-                              {/* 视频类型 */}
-                              {['mp4', 'avi', 'mov', 'webm'].includes(
-                                convertedFilePath.split('.').pop()?.toLowerCase() || ''
-                              ) && (
-                                <div className="text-center w-full flex flex-col items-center justify-center">
-                                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
-                                    {t('videoConverted')}
-                                  </p>
-                                  <video
-                                    controls
-                                    className="max-w-full max-h-48 object-contain"
-                                    src={`myapp:///${convertedFilePath}`}
-                                  >
-                                    <source src={`myapp:///${convertedFilePath}`} />
-                                    {t('videoConverted')}
-                                  </video>
-                                </div>
-                              )}
-
-                              {/* 默认类型（未知文件类型） */}
-                              {![
-                                'jpg',
-                                'jpeg',
-                                'png',
-                                'webp',
-                                'mp3',
-                                'wav',
-                                'flac',
-                                'm4a',
-                                'mp4',
-                                'avi',
-                                'mov',
-                                'webm',
-                                'gif'
-                              ].includes(
-                                convertedFilePath.split('.').pop()?.toLowerCase() || ''
-                              ) && (
-                                <div className="text-center">
-                                  <FileUp className="h-16 w-16 text-indigo-500 mb-2" />
-                                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                                    {t('fileConverted')}
-                                  </p>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        <div className="flex-1 space-y-4">
-                          <div className="bg-slate-50 dark:bg-slate-800/80 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                            <div className="text-sm font-medium flex items-center text-green-700 dark:text-green-400 mb-1.5">
-                              <ArrowRight className="h-4 w-4 mr-1.5" />
-                              {t('outputFile')}
-                            </div>
-                            <div className="text-xs bg-white dark:bg-slate-900/50 text-slate-800 dark:text-slate-300 mt-1 break-all p-2 rounded border border-slate-200 dark:border-slate-700 font-mono">
-                              {convertedFilePath}
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/50 hover:border-green-300 dark:hover:border-green-700 transition-all duration-200"
-                              onClick={async () => {
-                                if (convertedFilePath) {
-                                  console.log('打开文件位置:', convertedFilePath)
-                                  // 使用electron.shell.showItemInFolder API
-                                  try {
-                                    await openFileLocation(convertedFilePath)
-                                  } catch (error) {
-                                    console.error('打开文件位置失败:', error)
-                                  }
-                                }
-                              }}
-                            >
-                              <Download className="mr-1.5 h-4 w-4" />
-                              {t('openFileLocation')}
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                              onClick={() => {
-                                // 保留转换类型，但清除文件选择
-                                setSelectedFile(null)
-                                setConvertedFilePath(null)
-
-                                // 重新聚焦到文件输入框，提示用户选择新文件
-                                const fileInput = document.querySelector(
-                                  'input[type="file"]'
-                                ) as HTMLInputElement | null
-                                if (fileInput) {
-                                  fileInput.click()
-                                }
-                              }}
-                            >
-                              {t('convertAnother')}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )
-              )}
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                </PanelBody>
+              </Panel>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

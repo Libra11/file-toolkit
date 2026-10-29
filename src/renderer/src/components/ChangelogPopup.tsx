@@ -1,18 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AlertTriangle, Bug, Calendar, ScrollText, Star, Wrench } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogFooter
+  DialogTitle
 } from './ui/dialog'
 import { Button } from './ui/button'
-import { Badge } from './ui/badge'
-import { Separator } from './ui/separator'
 import { ScrollArea } from './ui/scroll-area'
-import { Calendar, Star, Bug, Wrench, AlertTriangle } from 'lucide-react'
-import { ChangelogEntry, getChangelogForVersion, hasNewChangelog } from '../data/changelog'
+import {
+  ChangelogEntry,
+  changelog,
+  getChangelogForVersion,
+  hasNewChangelog
+} from '../data/changelog'
 
 interface ChangelogPopupProps {
   isOpen: boolean
@@ -20,7 +24,7 @@ interface ChangelogPopupProps {
   version?: string
 }
 
-const ChangelogPopup: React.FC<ChangelogPopupProps> = ({ isOpen, onClose, version }) => {
+function ChangelogPopup({ isOpen, onClose, version }: ChangelogPopupProps): JSX.Element | null {
   const { t, i18n } = useTranslation()
   const [changelogEntry, setChangelogEntry] = useState<ChangelogEntry | null>(null)
   const language = (i18n.language || '').toLowerCase()
@@ -29,20 +33,20 @@ const ChangelogPopup: React.FC<ChangelogPopupProps> = ({ isOpen, onClose, versio
   useEffect(() => {
     if (version && isOpen) {
       const entry = getChangelogForVersion(version)
-      setChangelogEntry(entry || null)
+      setChangelogEntry(entry || changelog[0] || null)
     }
   }, [version, isOpen])
 
   const getChangeIcon = (type: string): JSX.Element | null => {
     switch (type) {
       case 'features':
-        return <Star className="h-4 w-4 text-green-500" />
+        return <Star className="h-4 w-4" strokeWidth={1.8} />
       case 'improvements':
-        return <Wrench className="h-4 w-4 text-blue-500" />
+        return <Wrench className="h-4 w-4" strokeWidth={1.8} />
       case 'fixes':
-        return <Bug className="h-4 w-4 text-orange-500" />
+        return <Bug className="h-4 w-4" strokeWidth={1.8} />
       case 'breaking':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />
+        return <AlertTriangle className="h-4 w-4" strokeWidth={1.8} />
       default:
         return null
     }
@@ -60,17 +64,15 @@ const ChangelogPopup: React.FC<ChangelogPopupProps> = ({ isOpen, onClose, versio
 
   const renderChangeItems = (items: string[]): JSX.Element[] => {
     const containsChinese = (text: string): boolean => /[\u4e00-\u9fff]/.test(text)
-
-    const filtered = items.filter(item =>
+    const filtered = items.filter((item) =>
       isChineseLocale ? containsChinese(item) : !containsChinese(item)
     )
-
     const displayItems = filtered.length > 0 ? filtered : items
 
     return displayItems.map((item, idx) => (
-      <li key={`${item}-${idx}`} className="flex items-start gap-2 text-sm">
-        <span className="text-muted-foreground">•</span>
-        <span>{item}</span>
+      <li key={`${item}-${idx}`} className="flex items-start gap-3 text-sm leading-6">
+        <span className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-muted-foreground/50" />
+        <span className="min-w-0 text-secondary-foreground">{item}</span>
       </li>
     ))
   }
@@ -88,75 +90,139 @@ const ChangelogPopup: React.FC<ChangelogPopupProps> = ({ isOpen, onClose, versio
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none">
-        <div className="relative overflow-hidden rounded-[24px] border border-slate-200/70 bg-gradient-to-br from-white via-slate-50/80 to-white/70 shadow-2xl shadow-indigo-900/15 dark:border-white/15 dark:from-[#0f172a] dark:via-[#111a37] dark:to-[#0c1326]">
-          <div className="pointer-events-none absolute inset-0 opacity-70">
-            <div className="absolute -left-10 top-0 h-40 w-40 rounded-full bg-indigo-300/40 blur-3xl dark:bg-indigo-500/30" />
-            <div className="absolute bottom-0 right-0 h-48 w-48 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/25" />
+      <DialogContent className="flex h-[calc(100vh-2rem)] max-h-[42rem] max-w-4xl flex-col gap-0 overflow-hidden rounded-lg border-border bg-card p-0 shadow-xl">
+        <DialogHeader className="shrink-0 border-b border-border px-5 py-4 pr-12 text-left sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/[0.06] text-primary">
+              <ScrollText className="h-4 w-4" strokeWidth={1.8} />
+            </div>
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                {t('changelog')}
+              </p>
+              <DialogTitle className="text-base font-semibold text-foreground">
+                {t('whatsNew')}
+              </DialogTitle>
+            </div>
           </div>
-          <div className="relative px-6 py-6 sm:px-8 sm:py-8">
-            <DialogHeader className="mb-6 text-left">
-              <div className="flex items-center justify-between">
-                <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-slate-900 dark:text-white">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100/80 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
-                    <Calendar className="h-5 w-5" />
-                  </div>
-                  {t('whatsNew')}
-                </DialogTitle>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                    {changelogEntry.date}
-                  </span>
-                  <Badge
-                    variant="secondary"
-                    className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
-                  >
-                    v{changelogEntry.version}
-                  </Badge>
-                </div>
-              </div>
-            </DialogHeader>
+          <DialogDescription className="sr-only">
+            {t('whatsNew')} · v{changelogEntry.version}
+          </DialogDescription>
+        </DialogHeader>
 
-            <ScrollArea className="max-h-[50vh] pr-4">
-              <div className="space-y-4">
-                {Object.entries(changelogEntry.changes).map(([type, items]) => {
-                  if (!items || items.length === 0) return null
+        <div className="grid min-h-0 flex-1 grid-rows-[10rem_minmax(0,1fr)] md:grid-cols-[13rem_minmax(0,1fr)] md:grid-rows-1">
+          <aside className="flex min-h-0 flex-col border-b border-border bg-muted/20 md:border-b-0 md:border-r">
+            <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+              <span className="text-xs font-medium text-foreground">{t('changelog')}</span>
+              <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                {String(changelog.length).padStart(2, '0')}
+              </span>
+            </div>
+            <ScrollArea className="min-h-0 flex-1">
+              <nav aria-label={t('changelog')} className="space-y-1 p-2">
+                {changelog.map((entry) => {
+                  const isSelected = entry.version === changelogEntry.version
 
                   return (
-                    <div key={type} className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        {getChangeIcon(type)}
-                        <h4 className="font-semibold text-sm text-slate-900 dark:text-white">
-                          {getChangeTypeLabel(type)}
-                        </h4>
-                      </div>
-                      <ul className="space-y-1 pl-6 text-sm text-slate-600 dark:text-slate-200">
-                        {renderChangeItems(items)}
-                      </ul>
-                      <Separator className="my-3" />
-                    </div>
+                    <button
+                      key={entry.version}
+                      type="button"
+                      aria-current={isSelected ? 'true' : undefined}
+                      onClick={() => setChangelogEntry(entry)}
+                      className={`flex w-full items-center gap-2.5 rounded-md border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 ${
+                        isSelected
+                          ? 'border-primary/20 bg-accent text-accent-foreground'
+                          : 'border-transparent text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                          isSelected ? 'bg-primary' : 'bg-border'
+                        }`}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-mono text-xs font-medium">
+                          v{entry.version}
+                        </span>
+                        <span className="mt-0.5 block text-[10px] tabular-nums text-muted-foreground">
+                          {entry.date}
+                        </span>
+                      </span>
+                    </button>
                   )
                 })}
+              </nav>
+            </ScrollArea>
+          </aside>
+
+          <section className="flex min-h-0 flex-col bg-card">
+            <header className="shrink-0 border-b border-border px-5 py-4 sm:px-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                {t('whatsNew')}
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-mono text-xl font-semibold tracking-tight text-foreground">
+                  v{changelogEntry.version}
+                </h2>
+                <time className="flex items-center gap-1.5 text-xs tabular-nums text-muted-foreground">
+                  <Calendar className="h-3.5 w-3.5" strokeWidth={1.8} />
+                  {changelogEntry.date}
+                </time>
+              </div>
+            </header>
+
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="px-5 py-5 sm:px-6">
+                <div className="divide-y divide-border">
+                  {Object.entries(changelogEntry.changes).map(([type, items]) => {
+                    if (!items || items.length === 0) return null
+                    const isBreaking = type === 'breaking'
+
+                    return (
+                      <section key={type} className="py-5 first:pt-0 last:pb-0">
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className={`flex h-7 w-7 items-center justify-center rounded-md border ${
+                              isBreaking
+                                ? 'border-destructive/20 bg-destructive/[0.06] text-destructive'
+                                : 'border-border bg-muted/40 text-primary'
+                            }`}
+                          >
+                            {getChangeIcon(type)}
+                          </span>
+                          <h3 className="text-sm font-semibold text-foreground">
+                            {getChangeTypeLabel(type)}
+                          </h3>
+                        </div>
+                        <ul className="mt-3 space-y-2.5 pl-[2.35rem]">
+                          {renderChangeItems(items)}
+                        </ul>
+                      </section>
+                    )
+                  })}
+                </div>
               </div>
             </ScrollArea>
-
-            <DialogFooter className="flex flex-row gap-3 mt-4">
-              <Button
-                variant="ghost"
-                onClick={handleDontShowAgain}
-                className="h-11 flex-1 rounded-2xl border border-slate-200/80 bg-white/70 text-slate-700 shadow-sm transition-all duration-200 hover:bg-white hover:scale-[1.02] active:scale-[0.98] dark:border-white/20 dark:bg-transparent dark:text-white"
-              >
-                {t('dontShowAgain')}
-              </Button>
-              <Button
-                onClick={onClose}
-                className="h-11 flex-1 rounded-2xl bg-slate-900 text-white shadow-lg shadow-indigo-900/20 transition-all duration-200 hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-white/90"
-              >
-                {t('close')}
-              </Button>
-            </DialogFooter>
-          </div>
+          </section>
         </div>
+
+        <DialogFooter className="shrink-0 flex-col-reverse gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:space-x-0 sm:px-6">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleDontShowAgain}
+            className="w-full rounded-md text-xs sm:w-auto"
+          >
+            {t('dontShowAgain')}
+          </Button>
+          <Button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-md shadow-none sm:w-auto"
+          >
+            {t('close')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
@@ -174,29 +240,28 @@ export const useChangelogPopup = (): {
   const [isOpen, setIsOpen] = useState(false)
   const [currentVersion, setCurrentVersion] = useState<string>('')
 
-  const showChangelog = (version: string): void => {
+  const showChangelog = useCallback((version: string): void => {
     setCurrentVersion(version)
     setIsOpen(true)
-  }
+  }, [])
 
-  const checkForNewChangelog = async (): Promise<void> => {
+  const checkForNewChangelog = useCallback(async (): Promise<void> => {
     try {
       const version = await window.system.getAppVersion()
       const lastSeenVersion = localStorage.getItem('changelog-last-seen') || '0.0.0'
 
       if (hasNewChangelog(lastSeenVersion, version)) {
         showChangelog(version)
-        // 自动标记为已查看，避免重复弹出
         localStorage.setItem('changelog-last-seen', version)
       }
     } catch (error) {
       console.error('Failed to check for changelog:', error)
     }
-  }
+  }, [showChangelog])
 
-  const hideChangelog = (): void => {
+  const hideChangelog = useCallback((): void => {
     setIsOpen(false)
-  }
+  }, [])
 
   return {
     isOpen,

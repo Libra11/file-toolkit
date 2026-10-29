@@ -1,28 +1,23 @@
-/**
- * Author: Libra
- * Date: 2025-07-03 17:08:54
- * LastEditors: Libra
- * Description:
- */
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  DownloadCloud,
-  Sparkles,
-  ShieldCheck,
   Activity,
-  Clock,
+  AlertCircle,
+  CheckCircle2,
+  Clock3,
+  DownloadCloud,
   Gauge,
-  AlertCircle
+  ListChecks,
+  ListPlus,
+  X
 } from 'lucide-react'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
-import { Badge } from '@renderer/components/ui/badge'
-import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
-import { bytesToSize } from '@renderer/lib/utils'
-import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
+import { Button } from '@renderer/components/ui/button'
+import { SegmentedControl } from '@renderer/components/ui/segmented-control'
+import { Notice } from '@renderer/components/ui/states'
+import { bytesToSize, cn } from '@renderer/lib/utils'
 import TaskList from './TaskList'
 import DownloadForm from './DownloadForm'
-import { DownloadTask, DownloadOptions } from './types'
+import type { DownloadTask, DownloadOptions } from './types'
 import { DownloadStatus } from '@shared/types'
 
 interface M3u8DownloadToolProps {
@@ -31,20 +26,28 @@ interface M3u8DownloadToolProps {
 
 export default function M3u8DownloadTool({ onBack }: M3u8DownloadToolProps): JSX.Element {
   const { t } = useTranslation()
-  const [mainTab, setMainTab] = useState<string>('create')
+  const [mainTab, setMainTab] = useState('create')
   const [error, setError] = useState('')
   const [activeTasks, setActiveTasks] = useState<DownloadTask[]>([])
-
-  // 用于轮询任务状态
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
-  // 监听任务状态变化
-  useEffect(() => {
-    // 组件挂载时立即获取一次状态
-    fetchTasksStatus()
+  // Navigation remains host-owned; the legacy home button is intentionally not rendered.
+  void onBack
 
-    // 启动轮询（不论是否有活动任务）
-    pollingRef.current = setInterval(fetchTasksStatus, 1000)
+  const fetchTasksStatus = useCallback(async (): Promise<void> => {
+    try {
+      const tasks = await window.m3u8Download.getAllTasks()
+      if (tasks && Array.isArray(tasks)) {
+        setActiveTasks(tasks)
+      }
+    } catch (fetchError) {
+      console.error('获取任务状态错误:', fetchError)
+    }
+  }, [])
+
+  useEffect(() => {
+    void fetchTasksStatus()
+    pollingRef.current = setInterval(() => void fetchTasksStatus(), 1000)
 
     return (): void => {
       if (pollingRef.current) {
@@ -52,28 +55,8 @@ export default function M3u8DownloadTool({ onBack }: M3u8DownloadToolProps): JSX
         pollingRef.current = null
       }
     }
-  }, []) // 空依赖数组，只在组件挂载和卸载时执行
+  }, [fetchTasksStatus])
 
-  // 轮询获取任务状态
-  const fetchTasksStatus = async (): Promise<void> => {
-    try {
-      console.log('正在获取下载任务状态...')
-      const tasks = await window.m3u8Download.getAllTasks()
-      console.log('获取到任务:', tasks)
-
-      if (tasks && Array.isArray(tasks)) {
-        setActiveTasks(tasks)
-      } else {
-        console.error('获取任务状态失败: 未返回有效数据')
-      }
-    } catch (error) {
-      console.error('获取任务状态错误:', error)
-      // 5秒后自动重试一次
-      setTimeout(fetchTasksStatus, 5000)
-    }
-  }
-
-  // 处理单个下载
   const handleSingleDownload = async (
     url: string,
     fileName: string,
@@ -82,25 +65,16 @@ export default function M3u8DownloadTool({ onBack }: M3u8DownloadToolProps): JSX
   ): Promise<void> => {
     try {
       setError('')
-
-      // 实际调用下载API
-      const taskId = await window.m3u8Download.downloadM3u8(url, outputDir, fileName, options)
-
-      console.log('开始下载任务，ID:', taskId)
-
-      // 立即获取一次状态，不等待轮询
+      await window.m3u8Download.downloadM3u8(url, outputDir, fileName, options)
       await fetchTasksStatus()
-
-      // 下载开始后自动切换到下载列表标签页
       setMainTab('tasks')
-    } catch (error) {
-      console.error('下载错误:', error)
-      setError(`${t('downloadError')}: ${error}`)
-      throw error // 向上抛出错误让表单组件处理
+    } catch (downloadError) {
+      console.error('下载错误:', downloadError)
+      setError(`${t('downloadError')}: ${downloadError}`)
+      throw downloadError
     }
   }
 
-  // 处理批量下载
   const handleBatchDownload = async (
     batchInput: string,
     outputDir: string,
@@ -108,8 +82,6 @@ export default function M3u8DownloadTool({ onBack }: M3u8DownloadToolProps): JSX
   ): Promise<void> => {
     try {
       setError('')
-
-      // 解析输入行
       const lines = batchInput
         .trim()
         .split('\n')
@@ -121,14 +93,11 @@ export default function M3u8DownloadTool({ onBack }: M3u8DownloadToolProps): JSX
         throw new Error(t('noBatchInputFound'))
       }
 
-      // 解析并标准化每一行
       const processedLines = lines.map((line) => {
-        // 如果包含分隔符
         if (line.includes('----')) {
           return line
         }
 
-        // 如果是纯URL，尝试从URL中提取文件名
         try {
           const url = new URL(line)
           const pathParts = url.pathname.split('/')
@@ -136,243 +105,172 @@ export default function M3u8DownloadTool({ onBack }: M3u8DownloadToolProps): JSX
             pathParts[pathParts.length - 1].replace(/\.[^/.]+$/, '') || `下载文件_${Date.now()}`
           return `${line}----${fileName}`
         } catch {
-          // 如果不是有效URL，直接返回
           return `${line}----视频_${Date.now()}`
         }
       })
 
-      console.log('处理后的批量下载行:', processedLines)
-
-      // 调用批量下载
-      const taskIds = await window.m3u8Download.batchDownloadM3u8(
-        processedLines,
-        outputDir,
-        options
-      )
-
-      console.log('开始批量下载任务，ID列表:', taskIds)
-
-      // 立即获取一次状态，不等待轮询
+      await window.m3u8Download.batchDownloadM3u8(processedLines, outputDir, options)
       await fetchTasksStatus()
-
-      // 下载开始后自动切换到下载列表标签页
       setMainTab('tasks')
-    } catch (error) {
-      console.error('批量下载错误:', error)
-      setError(`${t('batchDownloadError')}: ${error}`)
-      throw error // 向上抛出错误让表单组件处理
+    } catch (downloadError) {
+      console.error('批量下载错误:', downloadError)
+      setError(`${t('batchDownloadError')}: ${downloadError}`)
+      throw downloadError
     }
   }
 
-  // 暂停任务
   const handlePauseTask = async (taskId: string): Promise<void> => {
     try {
       await window.m3u8Download.pauseTask(taskId)
-      await fetchTasksStatus() // 刷新任务状态
-    } catch (error) {
-      console.error('暂停任务错误:', error)
-      setError(`${t('pauseTaskError')}: ${error}`)
+      await fetchTasksStatus()
+    } catch (taskError) {
+      console.error('暂停任务错误:', taskError)
+      setError(`${t('pauseTaskError')}: ${taskError}`)
     }
   }
 
-  // 恢复任务
   const handleResumeTask = async (taskId: string): Promise<void> => {
     try {
       await window.m3u8Download.resumeTask(taskId)
-      await fetchTasksStatus() // 刷新任务状态
-    } catch (error) {
-      console.error('恢复任务错误:', error)
-      setError(`${t('resumeTaskError')}: ${error}`)
+      await fetchTasksStatus()
+    } catch (taskError) {
+      console.error('恢复任务错误:', taskError)
+      setError(`${t('resumeTaskError')}: ${taskError}`)
     }
   }
 
-  // 取消任务
   const handleCancelTask = async (taskId: string): Promise<void> => {
     try {
       await window.m3u8Download.cancelTask(taskId)
-      await fetchTasksStatus() // 刷新任务状态
-    } catch (error) {
-      console.error('取消任务错误:', error)
-      setError(`${t('cancelTaskError')}: ${error}`)
+      await fetchTasksStatus()
+    } catch (taskError) {
+      console.error('取消任务错误:', taskError)
+      setError(`${t('cancelTaskError')}: ${taskError}`)
     }
   }
 
-  // 重试任务
   const handleRetryTask = async (taskId: string): Promise<void> => {
     try {
       await window.m3u8Download.retryTask(taskId)
-      await fetchTasksStatus() // 刷新任务状态
-    } catch (error) {
-      console.error('重试任务错误:', error)
-      setError(`${t('retryTaskError')}: ${error}`)
+      await fetchTasksStatus()
+    } catch (taskError) {
+      console.error('重试任务错误:', taskError)
+      setError(`${t('retryTaskError')}: ${taskError}`)
     }
   }
 
-  // 打开文件位置
   const handleOpenFileLocation = async (filePath: string): Promise<void> => {
     try {
       await window.system.openFileLocation(filePath)
-    } catch (error) {
-      console.error('打开文件位置错误:', error)
-      setError(`${t('openFileLocationError')}: ${error}`)
+    } catch (openError) {
+      console.error('打开文件位置错误:', openError)
+      setError(`${t('openFileLocationError')}: ${openError}`)
     }
   }
 
-  // 清除任务
   const handleClearTasks = (taskIds: string[]): void => {
     window.m3u8Download.clearTasks(taskIds)
-
-    // 更新本地状态
     setActiveTasks((prev) => prev.filter((task) => !taskIds.includes(task.id)))
   }
 
   const summary = useMemo(() => {
     const downloading = activeTasks.filter((task) => task.status === DownloadStatus.DOWNLOADING)
-    const completed = activeTasks.filter((task) => task.status === DownloadStatus.COMPLETED).length
-    const failed = activeTasks.filter((task) =>
-      [DownloadStatus.FAILED, DownloadStatus.CANCELLED].includes(task.status)
-    ).length
-    const waiting = activeTasks.filter((task) => task.status === DownloadStatus.WAITING).length
-    const totalSpeed = downloading.reduce((acc, task) => acc + (task.speed || 0), 0)
+    const totalSpeed = downloading.reduce((total, task) => total + (task.speed || 0), 0)
 
     return {
       total: activeTasks.length,
       downloading: downloading.length,
-      completed,
-      waiting,
-      failed,
+      completed: activeTasks.filter((task) => task.status === DownloadStatus.COMPLETED).length,
+      waiting: activeTasks.filter((task) => task.status === DownloadStatus.WAITING).length,
+      failed: activeTasks.filter((task) =>
+        [DownloadStatus.FAILED, DownloadStatus.CANCELLED].includes(task.status)
+      ).length,
       avgSpeed: downloading.length > 0 ? totalSpeed / downloading.length : 0
     }
   }, [activeTasks])
 
-  const heroStats = [
+  const stats = [
+    { key: 'total', label: t('allTasks'), value: summary.total, Icon: DownloadCloud },
     {
       key: 'downloading',
-      label: t('downloadingTasks') || '下载中',
+      label: t('downloadingTasks'),
       value: summary.downloading,
-      Icon: Activity,
-      helper: t('maxConcurrentDownloads') || '并发执行'
+      Icon: Activity
     },
-    {
-      key: 'waiting',
-      label: t('waitingTasks') || '等待中',
-      value: summary.waiting,
-      Icon: Clock,
-      helper: t('queueHint', { defaultValue: '排队等待合并' })
-    },
+    { key: 'waiting', label: t('waitingTasks'), value: summary.waiting, Icon: Clock3 },
     {
       key: 'completed',
-      label: t('completedTasks') || '已完成',
+      label: t('completedTasks'),
       value: summary.completed,
-      Icon: ShieldCheck,
-      helper: t('integrityCheckLabel', { defaultValue: '完整校验通过' })
+      Icon: CheckCircle2
     },
+    { key: 'failed', label: t('failedTasks'), value: summary.failed, Icon: AlertCircle },
     {
-      key: 'speed',
-      label: t('averageSpeed', { defaultValue: '平均速度' }),
+      key: 'averageSpeed',
+      label: t('averageSpeed'),
       value: summary.avgSpeed > 0 ? `${bytesToSize(summary.avgSpeed)}/s` : '--',
-      Icon: Gauge,
-      helper: t('throughputLabel', { defaultValue: '实时吞吐' })
+      Icon: Gauge
     }
   ]
 
   return (
-    <div className="relative mx-auto overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-blue-900/10 backdrop-blur-sm dark:border-white/5 dark:bg-slate-900/60 md:p-8">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-blue-100/60 via-white to-transparent dark:from-blue-900/25 dark:via-slate-900" />
-      <div className="space-y-6">
-        <div className="flex flex-col gap-5">
-          <div className="flex gap-3 flex-row items-center justify-between">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-blue-100/70 px-3 py-1 text-sm font-medium text-blue-600 dark:bg-blue-900/40 dark:text-blue-200">
-              <DownloadCloud className="h-4 w-4" />
-              {t('m3u8Download')}
-            </div>
-            {onBack && (
-              <BackToHomeButton
-                onClick={onBack}
-                className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-800/40 dark:hover:text-indigo-300"
-              />
-            )}
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
-              {t('m3u8Download')}
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {t('m3u8DownloadDescription')}
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {heroStats.map(({ key, label, value, helper, Icon }) => (
-              <div
-                key={key}
-                className="rounded-2xl border border-blue-100/60 bg-white/80 p-4 shadow-sm dark:border-blue-500/20 dark:bg-slate-900/60"
-              >
-                <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    {label}
-                  </p>
-                  <Icon className="h-4 w-4 text-blue-500" />
-                </div>
-                <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-                  {value}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{helper}</p>
+    <div className="min-h-full bg-background text-foreground">
+      <div className="mx-auto max-w-[1700px] space-y-5 p-4 md:p-6">
+        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3 lg:grid-cols-6">
+          {stats.map(({ key, label, value, Icon }) => (
+            <div key={key} className="flex items-center justify-between gap-3 bg-card px-4 py-3">
+              <div>
+                <dt className="text-[11px] text-muted-foreground">{label}</dt>
+                <dd className="mt-1 font-mono text-xl font-semibold text-foreground">{value}</dd>
               </div>
-            ))}
-          </div>
-          <div className="flex flex-col gap-3 rounded-2xl border border-blue-100/70 bg-blue-50/60 p-4 text-sm text-blue-700 shadow-inner dark:border-blue-500/30 dark:bg-blue-900/20 dark:text-blue-100 md:flex-row md:items-start md:gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-blue-500 shadow-sm dark:bg-white/10 dark:text-blue-200">
-              <Sparkles className="h-5 w-5" />
+              <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
             </div>
-            <div className="space-y-1">
-              <p className="text-base font-semibold">{t('batchDownload') || '批量下载提示'}</p>
-              <p className="text-xs leading-relaxed text-blue-600/80 dark:text-blue-100/80">
-                {t('batchInputFormat')}
-              </p>
-            </div>
-          </div>
-        </div>
+          ))}
+        </dl>
 
         {error && (
-          <Alert className="rounded-2xl border border-destructive/40 bg-destructive/10 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>{t('downloadError') || '操作失败'}</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <Notice
+            tone="error"
+            title={t('downloadError')}
+            description={error}
+            action={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setError('')}
+                aria-label={t('close')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            }
+          />
         )}
 
-        <Tabs defaultValue="create" value={mainTab} onValueChange={setMainTab} className="w-full">
-          <div className="flex justify-center">
-            <TabsList className="mb-6 grid h-[3.4rem] w-full max-w-lg grid-cols-2 items-center overflow-hidden rounded-full bg-blue-100/70 p-1 text-sm font-medium dark:bg-blue-900/40">
-              <TabsTrigger
-                value="create"
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-blue-200"
-              >
-                {t('createDownload') || '创建下载'}
-              </TabsTrigger>
-              <TabsTrigger
-                value="tasks"
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-blue-200"
-              >
-                {t('downloadTasks') || '下载任务'}
-                {activeTasks.length > 0 && (
-                  <Badge variant="outline" className="ml-1">
-                    {activeTasks.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        <SegmentedControl
+          value={mainTab}
+          onChange={setMainTab}
+          options={[
+            { value: 'create', label: t('createDownload'), icon: ListPlus },
+            {
+              value: 'tasks',
+              label: `${t('downloadTasks')} · ${activeTasks.length}`,
+              icon: ListChecks
+            }
+          ]}
+          ariaLabel={t('m3u8Download')}
+          className="grid w-full grid-cols-2 xl:hidden"
+        />
 
-          <TabsContent value="create">
+        <div className="grid items-start gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
+          <div className={cn('min-w-0', mainTab === 'tasks' && 'hidden xl:block')}>
             <DownloadForm
               onSingleDownload={handleSingleDownload}
               onBatchDownload={handleBatchDownload}
               onSetActiveTab={setMainTab}
             />
-          </TabsContent>
-
-          <TabsContent value="tasks">
+          </div>
+          <div className={cn('min-w-0', mainTab === 'create' && 'hidden xl:block')}>
             <TaskList
               activeTasks={activeTasks}
               onPauseTask={handlePauseTask}
@@ -382,8 +280,8 @@ export default function M3u8DownloadTool({ onBack }: M3u8DownloadToolProps): JSX
               onOpenFileLocation={handleOpenFileLocation}
               onClearTasks={handleClearTasks}
             />
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -1,863 +1,292 @@
-/**
- * Author: Libra
- * Date: 2025-03-30 11:37:05
- * LastEditors: Libra
- * Description:
- */
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'framer-motion'
 import {
-  FileType2,
-  FileDown,
-  ImageIcon,
-  Video,
-  Music,
-  Archive,
-  School,
-  Images,
-  FileText,
-  Download,
-  Edit3,
+  ArrowRight,
   ArrowUpRight,
-  Sparkles,
-  Wrench,
-  Target,
-  FileImage,
-  VideoIcon,
-  Fingerprint,
-  Settings2,
-  Check,
-  Code2,
-  Monitor,
-  Unlock,
-  FileSpreadsheet,
-  Grid3x3
+  ChevronRight,
+  FileInput,
+  FileOutput,
+  Search,
+  SlidersHorizontal,
+  Star
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
-import CompactToolCard from '@renderer/components/ui/card/CompactToolCard'
-import FileConversionTool from '@renderer/components/FileConversionTool'
-import ImageCompressionTool from '@renderer/components/ImageCompressionTool'
-import AudioCompressionTool from '@renderer/components/AudioCompressionTool'
-import VideoCompressionTool from '@renderer/components/VideoCompressionTool'
-import ArchiveCompressionTool from '@renderer/components/ArchiveCompressionTool'
-import ExamCreationTool from '@renderer/components/ExamCreationTool'
-import ImageOrganizeTool from '@renderer/components/ImageOrganizeTool'
-import WordToExcelTool from '@renderer/components/WordToExcelTool/index'
-import M3u8DownloadTool from '@renderer/components/M3u8DownloadTool'
-import BatchRenameTool from '@renderer/components/BatchRenameTool'
-import { GifExportTool } from '@renderer/components/GifExportTool'
-// import { WebRTCTool } from '@renderer/components/WebRTCTool'
-import FileHashTool from '@renderer/components/FileHashTool'
-import JsonFormatterTool from '@renderer/components/JsonFormatterTool'
-import ScreenRecorderTool from '@renderer/components/ScreenRecorderTool'
-import CandidateAnswerDecryptionTool from '@renderer/components/CandidateAnswerDecryptionTool'
-import ExcelMatchRenameTool from '@renderer/components/ExcelMatchRenameTool'
-import { VideoSpriteTool } from '@renderer/components/VideoSpriteTool'
-import { conversionCategories } from '@renderer/lib/conversionTypes'
-import { Button } from '@renderer/components/ui/button'
-import { cn } from '@renderer/lib/utils'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@renderer/components/ui/dialog'
+  toolDefinitions,
+  toolGroups,
+  toolMap,
+  type ToolGroup,
+  type ToolId
+} from '@renderer/lib/toolRegistry'
+import { cn } from '@renderer/lib/utils'
+import { Panel } from '@renderer/components/ui/panel'
+import { Button } from '@renderer/components/ui/button'
+import { SegmentedControl } from '@renderer/components/ui/segmented-control'
+import { EmptyState } from '@renderer/components/ui/states'
 
-enum ActiveTool {
-  None,
-  Conversion,
-  Compression,
-  ArchiveCompression,
-  ExamCreation,
-  ImageOrganize,
-  WordToExcel,
-  M3u8Download,
-  JsonFormatter,
-  BatchRename,
-  GifExport,
-  WebRTC,
-  FileHash,
-  ScreenRecorder,
-  CandidateAnswerDecryption,
-  ExcelMatchRename,
-  VideoSprite
+interface HomePageProps {
+  onSelectTool: (id: ToolId) => void
+  favorites: ToolId[]
+  onOpenSearch: () => void
+  onEditFavorites: () => void
 }
 
-type ToolKey = Exclude<ActiveTool, ActiveTool.None>
+type Filter = 'all' | ToolGroup
 
-type ToolConfig = {
-  id: ToolKey
-  icon: LucideIcon
-  iconColor: string
-  titleKey?: string
-  title?: string
-  descriptionKey?: string
-  description?: string
-}
-
-const DEFAULT_FAVORITE_TOOLS: ToolKey[] = [
-  ActiveTool.Conversion,
-  ActiveTool.Compression,
-  ActiveTool.FileHash
-]
-
-const MAX_FAVORITES = 6
-const FAVORITE_TOOLS_STORAGE_KEY = 'fileToolkit.favoriteTools'
-
-const toolConfigs: Record<ToolKey, ToolConfig> = {
-  [ActiveTool.Conversion]: {
-    id: ActiveTool.Conversion,
-    icon: FileType2,
-    iconColor: 'text-blue-500',
-    titleKey: 'fileConversion',
-    descriptionKey: 'fileConversionDescription'
-  },
-  [ActiveTool.Compression]: {
-    id: ActiveTool.Compression,
-    icon: FileDown,
-    iconColor: 'text-emerald-500',
-    titleKey: 'fileCompression',
-    descriptionKey: 'fileCompressionDescription'
-  },
-  [ActiveTool.ArchiveCompression]: {
-    id: ActiveTool.ArchiveCompression,
-    icon: Archive,
-    iconColor: 'text-purple-500',
-    titleKey: 'archiveCompression',
-    descriptionKey: 'archiveCompressionDescription'
-  },
-  [ActiveTool.ExamCreation]: {
-    id: ActiveTool.ExamCreation,
-    icon: School,
-    iconColor: 'text-amber-500',
-    titleKey: 'examCreation',
-    descriptionKey: 'examCreationDescription'
-  },
-  [ActiveTool.ImageOrganize]: {
-    id: ActiveTool.ImageOrganize,
-    icon: Images,
-    iconColor: 'text-cyan-500',
-    titleKey: 'imageOrganize',
-    descriptionKey: 'imageOrganizeDescription'
-  },
-  [ActiveTool.WordToExcel]: {
-    id: ActiveTool.WordToExcel,
-    icon: FileText,
-    iconColor: 'text-rose-500',
-    titleKey: 'wordToExcel',
-    descriptionKey: 'wordToExcelDescription'
-  },
-  [ActiveTool.M3u8Download]: {
-    id: ActiveTool.M3u8Download,
-    icon: Download,
-    iconColor: 'text-indigo-500',
-    titleKey: 'm3u8Download',
-    descriptionKey: 'm3u8DownloadDescription'
-  },
-  [ActiveTool.JsonFormatter]: {
-    id: ActiveTool.JsonFormatter,
-    icon: Code2,
-    iconColor: 'text-lime-500',
-    titleKey: 'jsonFormatter',
-    descriptionKey: 'jsonFormatterDescription'
-  },
-  [ActiveTool.BatchRename]: {
-    id: ActiveTool.BatchRename,
-    icon: Edit3,
-    iconColor: 'text-teal-500',
-    titleKey: 'batchRename',
-    descriptionKey: 'batchRenameDescription'
-  },
-  [ActiveTool.GifExport]: {
-    id: ActiveTool.GifExport,
-    icon: FileImage,
-    iconColor: 'text-pink-500',
-    titleKey: 'htmlCardGifExportTool',
-    descriptionKey: 'htmlCardGifExportDescription'
-  },
-  [ActiveTool.FileHash]: {
-    id: ActiveTool.FileHash,
-    icon: Fingerprint,
-    iconColor: 'text-indigo-500',
-    titleKey: 'fileHashTool',
-    descriptionKey: 'fileHashDescription'
-  },
-  [ActiveTool.WebRTC]: {
-    id: ActiveTool.WebRTC,
-    icon: VideoIcon,
-    iconColor: 'text-orange-500',
-    titleKey: 'webrtcTool',
-    descriptionKey: 'webrtcToolDescription'
-  },
-  [ActiveTool.ExcelMatchRename]: {
-    id: ActiveTool.ExcelMatchRename,
-    icon: FileSpreadsheet,
-    iconColor: 'text-emerald-600',
-    titleKey: 'excelMatchRename',
-    descriptionKey: 'excelMatchRenameDescription'
-  },
-  [ActiveTool.ScreenRecorder]: {
-    id: ActiveTool.ScreenRecorder,
-    icon: Monitor,
-    iconColor: 'text-violet-500',
-    titleKey: 'screenRecorder',
-    descriptionKey: 'screenRecorderDescription'
-  },
-  [ActiveTool.CandidateAnswerDecryption]: {
-    id: ActiveTool.CandidateAnswerDecryption,
-    icon: Unlock,
-    iconColor: 'text-indigo-500',
-    titleKey: 'candidateAnswerDecryption',
-    descriptionKey: 'candidateAnswerDecryptionDescription'
-  },
-  [ActiveTool.VideoSprite]: {
-    id: ActiveTool.VideoSprite,
-    icon: Grid3x3,
-    iconColor: 'text-violet-500',
-    titleKey: 'videoSpriteTool',
-    descriptionKey: 'videoSpriteDescription'
-  }
-}
-
-const practicalTools: ToolKey[] = [
-  ActiveTool.BatchRename,
-  ActiveTool.ArchiveCompression,
-  ActiveTool.WordToExcel,
-  ActiveTool.JsonFormatter
-]
-
-const professionalTools: ToolKey[] = [
-  ActiveTool.ExamCreation,
-  ActiveTool.ImageOrganize,
-  ActiveTool.M3u8Download,
-  ActiveTool.GifExport,
-  ActiveTool.WebRTC,
-  ActiveTool.ScreenRecorder,
-  ActiveTool.CandidateAnswerDecryption,
-  ActiveTool.ExcelMatchRename,
-  ActiveTool.VideoSprite
-]
-
-const availableToolIds = Object.values(toolConfigs).map((config) => config.id)
-const availableToolIdSet = new Set<ToolKey>(availableToolIds)
-
-enum CompressionTab {
-  Image = 'image',
-  Audio = 'audio',
-  Video = 'video'
-}
-
-export default function HomePage(): JSX.Element {
+export default function HomePage({
+  onSelectTool,
+  favorites,
+  onOpenSearch,
+  onEditFavorites
+}: HomePageProps): JSX.Element {
   const { t } = useTranslation()
-  const [activeTool, setActiveTool] = useState<ActiveTool>(ActiveTool.None)
-  const [compressionTab, setCompressionTab] = useState<CompressionTab>(CompressionTab.Image)
-  const [conversionTab, setConversionTab] = useState<string>(
-    conversionCategories[0]?.name ?? 'image'
-  )
-  const [favoriteTools, setFavoriteTools] = useState<ToolKey[]>(DEFAULT_FAVORITE_TOOLS)
-  const [favoritesLoaded, setFavoritesLoaded] = useState(false)
-  const [isFavoritesDialogOpen, setFavoritesDialogOpen] = useState(false)
-  const [pendingFavorites, setPendingFavorites] = useState<ToolKey[]>(DEFAULT_FAVORITE_TOOLS)
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<Filter>('all')
 
-  useEffect(() => {
-    if (activeTool === ActiveTool.Conversion) {
-      setConversionTab(conversionCategories[0]?.name ?? 'image')
-    }
-    if (activeTool === ActiveTool.Compression) {
-      setCompressionTab(CompressionTab.Image)
-    }
-    
-    // Scroll to top when switching tools
-    const scrollContainer = document.getElementById('app-scroll-container')
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }, [activeTool])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      setFavoritesLoaded(true)
-      return
-    }
-
-    try {
-      const stored = window.localStorage.getItem(FAVORITE_TOOLS_STORAGE_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        if (Array.isArray(parsed)) {
-          const valid = parsed.reduce<ToolKey[]>((acc, value) => {
-            const numericValue = Number(value)
-            if (availableToolIdSet.has(numericValue as ToolKey)) {
-              acc.push(numericValue as ToolKey)
-            }
-            return acc
-          }, [])
-          setFavoriteTools(valid)
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load favorite tools', error)
-    } finally {
-      setFavoritesLoaded(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!favoritesLoaded || typeof window === 'undefined') {
-      return
-    }
-
-    try {
-      window.localStorage.setItem(
-        FAVORITE_TOOLS_STORAGE_KEY,
-        JSON.stringify(favoriteTools.map((tool) => Number(tool)))
+  const visibleTools = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase()
+    return toolDefinitions.filter((tool) => {
+      if (filter !== 'all' && tool.group !== filter) return false
+      return (
+        !normalized ||
+        `${t(tool.titleKey)} ${t(tool.descriptionKey)}`.toLocaleLowerCase().includes(normalized)
       )
-    } catch (error) {
-      console.error('Failed to save favorite tools', error)
-    }
-  }, [favoriteTools, favoritesLoaded])
-
-  const compressionTabsConfig = [
-    {
-      key: CompressionTab.Image,
-      labelKey: 'imageCompression',
-      descriptionKey: 'imageCompressionDescription',
-      icon: ImageIcon,
-      activeTextClass: 'text-sky-600 dark:text-sky-400',
-      activeIconClass: 'text-sky-500'
-    },
-    {
-      key: CompressionTab.Audio,
-      labelKey: 'audioCompression',
-      descriptionKey: 'audioCompressionDescription',
-      icon: Music,
-      activeTextClass: 'text-indigo-600 dark:text-indigo-400',
-      activeIconClass: 'text-indigo-500'
-    },
-    {
-      key: CompressionTab.Video,
-      labelKey: 'videoCompression',
-      descriptionKey: 'videoCompressionDescription',
-      icon: Video,
-      activeTextClass: 'text-purple-600 dark:text-purple-400',
-      activeIconClass: 'text-purple-500'
-    }
-  ]
-
-  // const activeCompressionTab =
-  //   compressionTabsConfig.find((tab) => tab.key === compressionTab) ?? compressionTabsConfig[0]
-
-  const conversionTabsConfig = conversionCategories.map((category) => {
-    const baseConfig = {
-      key: category.name,
-      icon: category.icon,
-      labelKey: '',
-      descriptionKey: '',
-      activeTextClass: '',
-      activeIconClass: ''
-    }
-
-    switch (category.name) {
-      case 'image':
-        return {
-          ...baseConfig,
-          labelKey: 'imageConversion',
-          descriptionKey: 'imageConversionDescription',
-          activeTextClass: 'text-sky-600 dark:text-sky-400',
-          activeIconClass: 'text-sky-500'
-        }
-      case 'video':
-        return {
-          ...baseConfig,
-          labelKey: 'videoConversion',
-          descriptionKey: 'videoConversionDescription',
-          activeTextClass: 'text-purple-600 dark:text-purple-400',
-          activeIconClass: 'text-purple-500'
-        }
-      case 'audio':
-        return {
-          ...baseConfig,
-          labelKey: 'audioConversion',
-          descriptionKey: 'audioConversionDescription',
-          activeTextClass: 'text-indigo-600 dark:text-indigo-400',
-          activeIconClass: 'text-indigo-500'
-        }
-      default:
-        return {
-          ...baseConfig,
-          labelKey: category.name,
-          descriptionKey: 'fileConversionDescription',
-          activeTextClass: 'text-blue-600 dark:text-blue-400',
-          activeIconClass: 'text-blue-500'
-        }
-    }
-  })
-
-  // const activeConversionTab =
-  //   conversionTabsConfig.find((tab) => tab.key === conversionTab) ?? conversionTabsConfig[0]
-
-  const handleFavoritesDialogOpen = (open: boolean): void => {
-    if (open) {
-      setPendingFavorites(favoriteTools)
-    }
-    setFavoritesDialogOpen(open)
-  }
-
-  const togglePendingFavorite = (toolId: ToolKey): void => {
-    setPendingFavorites((prev) => {
-      if (prev.includes(toolId)) {
-        return prev.filter((id) => id !== toolId)
-      }
-
-      if (prev.length >= MAX_FAVORITES) {
-        return prev
-      }
-
-      return [...prev, toolId]
     })
-  }
-
-  const handleSaveFavorites = (): void => {
-    setFavoriteTools(pendingFavorites)
-    setFavoritesDialogOpen(false)
-  }
-
-  const renderCompactToolCard = (toolId: ToolKey): JSX.Element | null => {
-    const config = toolConfigs[toolId]
-    if (!config) {
-      return null
-    }
-
-    const Icon = config.icon
-    const title = config.titleKey ? t(config.titleKey) : (config.title ?? '')
-    const description = config.descriptionKey
-      ? t(config.descriptionKey)
-      : (config.description ?? '')
-
-    return (
-      <CompactToolCard
-        key={toolId}
-        icon={<Icon size={20} />}
-        title={title}
-        description={description}
-        onClick={() => setActiveTool(toolId)}
-        iconColor={config.iconColor}
-      />
-    )
-  }
-
-  const toolOptions = Object.values(toolConfigs)
-  const selectionLimitReached = pendingFavorites.length >= MAX_FAVORITES
-
-  // 动画变体
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  }
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 }
-  }
-
-  const handleBackToHome = (): void => {
-    setActiveTool(ActiveTool.None)
-  }
+  }, [filter, query, t])
 
   return (
-    <>
-      <Dialog open={isFavoritesDialogOpen} onOpenChange={handleFavoritesDialogOpen}>
-        <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none">
-          <div className="relative overflow-hidden rounded-[24px] border border-slate-200/70 bg-gradient-to-br from-white via-slate-50/80 to-white/70 shadow-2xl shadow-indigo-900/15  dark:border-white/15 dark:from-[#0f172a] dark:via-[#111a37] dark:to-[#0c1326]">
-            <div className="pointer-events-none absolute inset-0 opacity-70">
-              <div className="absolute -left-10 top-0 h-40 w-40 rounded-full bg-indigo-300/40 blur-3xl dark:bg-indigo-500/30" />
-              <div className="absolute bottom-0 right-0 h-48 w-48 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/25" />
-            </div>
-            <div className="relative px-6 py-6 sm:px-8 sm:py-8">
-              <DialogHeader className="space-y-3 text-left">
-                <DialogTitle className="text-2xl font-semibold text-slate-900 dark:text-white">
-                  {t('customizeFrequentTools')}
-                </DialogTitle>
-                <DialogDescription className="text-sm text-slate-500 dark:text-white/70">
-                  {t('customizeFrequentToolsDescription')}
-                </DialogDescription>
-              </DialogHeader>
+    <div className="mx-auto w-full max-w-[1440px] px-5 py-7 sm:px-7 lg:px-9 lg:py-9">
+      <section className="flex flex-wrap items-end justify-between gap-5 border-b border-border pb-7">
+        <div>
+          <div className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            {t('workspaceEyebrow')}
+          </div>
+          <h1 className="max-w-2xl text-[28px] font-semibold leading-[1.2] tracking-[-0.04em] text-foreground sm:text-[34px]">
+            {t('workspaceWelcome')}
+          </h1>
+          <p className="mt-3 max-w-xl text-[13px] leading-relaxed text-muted-foreground">
+            {t('workspaceIntro')}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onOpenSearch}
+          className="group flex h-10 items-center gap-3 rounded-md border border-border bg-card px-3 text-xs text-muted-foreground shadow-sm transition-colors hover:border-input hover:text-foreground"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span>{t('findTool')}</span>
+          <kbd className="ml-3 rounded border border-border bg-muted px-1.5 py-0.5 font-sans text-[10px]">
+            ⌘ K
+          </kbd>
+        </button>
+      </section>
 
-              <div className="mt-6 space-y-5">
-                <div className="grid max-h-[30vh] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
-                  {toolOptions.map((config) => {
-                    const Icon = config.icon
-                    const isSelected = pendingFavorites.includes(config.id)
-                    const isDisabled = !isSelected && selectionLimitReached
-                    const title = config.titleKey ? t(config.titleKey) : (config.title ?? '')
-                    const description = config.descriptionKey
-                      ? t(config.descriptionKey)
-                      : (config.description ?? '')
+      <section className="mt-7 grid gap-4 md:grid-cols-2" aria-label={t('quickStart')}>
+        <button
+          type="button"
+          onClick={() => onSelectTool('conversion')}
+          className="group relative overflow-hidden rounded-lg border border-primary/20 bg-accent/65 p-5 text-left transition-colors hover:border-primary/45 hover:bg-accent sm:p-6"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <span className="flex h-10 w-10 items-center justify-center rounded-md border border-primary/15 bg-card text-primary">
+              <FileOutput className="h-5 w-5" strokeWidth={1.6} />
+            </span>
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+          </div>
+          <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+            01 / {t('coreTools')}
+          </p>
+          <h2 className="mt-1.5 text-lg font-semibold tracking-[-0.02em]">{t('fileConversion')}</h2>
+          <p className="mt-1.5 max-w-md text-xs leading-relaxed text-muted-foreground">
+            {t('fileConversionDescription')}
+          </p>
+          <div className="mt-5 flex items-center gap-2 text-[10px] font-medium tracking-wide text-muted-foreground">
+            {['JPG', 'PNG', 'WEBP', 'MP4', 'MP3'].map((format) => (
+              <span key={format} className="border-r border-primary/15 pr-2 last:border-0">
+                {format}
+              </span>
+            ))}
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => onSelectTool('compression')}
+          className="group rounded-lg border border-border bg-card p-5 text-left transition-colors hover:border-primary/35 hover:bg-accent/30 sm:p-6"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <span className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-muted/60 text-foreground">
+              <FileInput className="h-5 w-5" strokeWidth={1.6} />
+            </span>
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+          </div>
+          <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            02 / {t('coreTools')}
+          </p>
+          <h2 className="mt-1.5 text-lg font-semibold tracking-[-0.02em]">
+            {t('fileCompression')}
+          </h2>
+          <p className="mt-1.5 max-w-md text-xs leading-relaxed text-muted-foreground">
+            {t('fileCompressionDescription')}
+          </p>
+          <div className="mt-5 flex items-center gap-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            {[t('image'), t('audio'), t('video')].map((format) => (
+              <span key={format} className="border-r border-border pr-2 last:border-0">
+                {format}
+              </span>
+            ))}
+          </div>
+        </button>
+      </section>
 
-                    return (
-                      <button
-                        key={config.id}
-                        type="button"
-                        onClick={() => togglePendingFavorite(config.id)}
-                        disabled={isDisabled}
-                        aria-pressed={isSelected}
-                        className={cn(
-                          'group flex items-center gap-3 rounded-2xl border border-white/70 bg-white/80 p-3 text-left shadow-sm shadow-indigo-900/5 transition-all hover:border-white hover:bg-white dark:border-white/15 dark:bg-white/5 dark:hover:bg-white/10',
-                          'focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-emerald-400/70 dark:focus-visible:ring-offset-slate-900',
-                          isSelected &&
-                            'border-emerald-300 bg-emerald-50/70 shadow-emerald-200/40 dark:border-emerald-400/50 dark:bg-emerald-500/10',
-                          isDisabled && 'cursor-not-allowed opacity-50 hover:translate-y-0'
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white',
-                            config.iconColor
-                          )}
-                        >
-                          <Icon size={18} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                            {title}
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-white/70">{description}</p>
-                        </div>
-                        {isSelected ? (
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-600 dark:bg-emerald-500/30 dark:text-emerald-200">
-                            <Check className="h-3.5 w-3.5" />
-                          </span>
-                        ) : null}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <div className="rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 text-xs text-slate-600 shadow-inner dark:border-white/15 dark:bg-white/5 dark:text-white/70 sm:flex sm:items-center sm:justify-between">
-                  <span>{t('favoriteToolsSelectionHint', { count: MAX_FAVORITES })}</span>
-                  <span className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 shadow-sm dark:bg-white/10 dark:text-white sm:mt-0">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                    {t('favoriteToolsSelectionCount', {
-                      count: pendingFavorites.length,
-                      max: MAX_FAVORITES
-                    })}
+      <section className="mt-9">
+        <div className="mb-3 flex items-end justify-between gap-4">
+          <div>
+            <h2 className="flex items-center gap-2 text-sm font-semibold">
+              <Star className="h-3.5 w-3.5 text-muted-foreground" />
+              {t('frequentTools')}
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">{t('frequentToolsSubtitle')}</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onEditFavorites}>
+            <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
+            {t('customize')}
+          </Button>
+        </div>
+        {favorites.length > 0 ? (
+          <div className="grid overflow-hidden rounded-lg border border-border bg-card md:grid-cols-3">
+            {favorites.slice(0, 3).map((id, index) => {
+              const tool = toolMap[id]
+              const Icon = tool.icon
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => onSelectTool(id)}
+                  className={cn(
+                    'group flex items-center gap-3 p-4 text-left transition-colors hover:bg-muted/55',
+                    index > 0 && 'border-t border-border md:border-l md:border-t-0'
+                  )}
+                >
+                  <Icon
+                    className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary"
+                    strokeWidth={1.7}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-medium">{t(tool.titleKey)}</span>
+                    <span className="mt-1 block truncate text-[11px] text-muted-foreground">
+                      {t(tool.descriptionKey)}
+                    </span>
                   </span>
-                </div>
-                {selectionLimitReached ? (
-                  <p className="text-xs font-medium text-emerald-600 dark:text-emerald-300">
-                    {t('favoriteToolsSelectionLimitReached', { count: MAX_FAVORITES })}
-                  </p>
-                ) : null}
-              </div>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Star}
+            title={t('noFrequentToolsSelected')}
+            description={t('noFrequentToolsSelectedDescription')}
+            action={
+              <Button variant="outline" size="sm" onClick={onEditFavorites}>
+                {t('customize')}
+              </Button>
+            }
+          />
+        )}
+      </section>
 
-              <DialogFooter className="mt-6 flex flex-row gap-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleFavoritesDialogOpen(false)}
-                  className="h-11 flex-1 rounded-2xl border border-slate-200/80 bg-white/70 text-slate-700 shadow-sm transition-all duration-200 hover:bg-white hover:scale-[1.02] active:scale-[0.98] dark:border-white/20 dark:bg-transparent dark:text-white"
-                >
-                  {t('cancel')}
-                </Button>
-                <Button
-                  onClick={handleSaveFavorites}
-                  className="h-11 flex-1 rounded-2xl bg-slate-900 text-white shadow-lg shadow-indigo-900/20 transition-all duration-200 hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-white/90"
-                >
-                  {t('save')}
-                </Button>
-              </DialogFooter>
+      <section id="tool-library" className="mt-9 pb-8">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold tracking-[-0.02em]">{t('allTools')}</h2>
+            <p className="mt-1 text-xs text-muted-foreground">{t('libraryDescription')}</p>
+          </div>
+          <span className="text-[11px] tabular-nums text-muted-foreground">
+            {t('toolsCount', { count: visibleTools.length })}
+          </span>
+        </div>
+        <Panel>
+          <div className="flex flex-col gap-3 border-b border-border p-3 xl:flex-row xl:items-center xl:justify-between">
+            <SegmentedControl
+              value={filter}
+              onChange={setFilter}
+              ariaLabel={t('category')}
+              options={[
+                { value: 'all', label: t('allTools') },
+                ...toolGroups.map((group) => ({ value: group.id, label: t(group.labelKey) }))
+              ]}
+            />
+            <div className="relative w-full xl:w-64">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t('searchTools')}
+                className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-3 text-xs outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary/50"
+              />
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-      <div className="px-4 py-4 w-full">
-        <div className="w-full mx-auto">
-          {activeTool === ActiveTool.None ? (
-            <motion.div variants={containerVariants} initial="hidden" animate="visible">
-              <motion.div variants={itemVariants} className="mb-6">
-                <div className="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-gradient-to-r from-[#eef2ff] via-[#f8f5ff] to-[#e2f7ff] text-slate-900 shadow-xl shadow-indigo-900/20 dark:border-slate-700/60 dark:from-[#13172b] dark:via-[#161c3a] dark:to-[#10172a] dark:text-white">
-                  <div className="pointer-events-none absolute inset-0 opacity-70">
-                    <div className="absolute -left-16 top-0 h-60 w-60 rounded-full bg-indigo-300/40 blur-3xl dark:bg-indigo-500/30" />
-                    <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-400/20" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.5),_transparent_60%)] dark:bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_60%)]" />
-                  </div>
-                  <div className="relative px-6 py-8 sm:px-8">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-slate-700 dark:border-white/20 dark:bg-white/10 dark:text-white/80">
-                      <Sparkles className="h-4 w-4 text-amber-500 dark:text-amber-200" />
-                      {t('newFeatures')}
-                      <span className="text-slate-500 dark:text-white/60">2025 · Q1</span>
+          <div className="hidden grid-cols-[minmax(190px,0.8fr)_minmax(240px,1.4fr)_130px_24px] gap-5 border-b border-border bg-muted/30 px-5 py-2.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground lg:grid">
+            <span>{t('toolName')}</span>
+            <span>{t('description')}</span>
+            <span>{t('category')}</span>
+            <span />
+          </div>
+          <div className="divide-y divide-border">
+            {visibleTools.map((tool, index) => {
+              const Icon = tool.icon
+              return (
+                <button
+                  key={tool.id}
+                  type="button"
+                  onClick={() => onSelectTool(tool.id)}
+                  className="group grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/40 lg:grid-cols-[minmax(190px,0.8fr)_minmax(240px,1.4fr)_130px_24px] lg:gap-5 lg:px-5"
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="hidden w-5 text-[10px] tabular-nums text-muted-foreground/60 sm:block">
+                      {String(index + 1).padStart(2, '0')}
                     </span>
-                    <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                      <div className="max-w-3xl">
-                        <h1 className="text-3xl font-semibold leading-tight text-slate-900 dark:text-white sm:text-4xl">
-                          {t('powerfulFileTools')}
-                        </h1>
-                        <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-white/80 sm:text-base">
-                          {t('heroSubtitle')}
-                        </p>
-                        <div className="mt-6 flex flex-wrap gap-3">
-                          <Button
-                            type="button"
-                            onClick={() => setActiveTool(ActiveTool.Conversion)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-indigo-200/60 transition hover:-translate-y-0.5 hover:bg-white/90 dark:text-slate-900"
-                          >
-                            {t('fileConversion')}
-                            <ArrowUpRight className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => setActiveTool(ActiveTool.Compression)}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-300/60 bg-white/30 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-400 hover:bg-white/50 dark:border-white/30 dark:bg-transparent dark:text-white"
-                          >
-                            {t('fileCompression')}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-10 grid gap-5 lg:grid-cols-3">
-                      <div className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-2xl shadow-indigo-900/10  dark:border-white/10 dark:bg-white/5">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-white/60">
-                              {t('frequentTools')}
-                            </p>
-                            <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-                              {t('frequentToolsSubtitle', {
-                                defaultValue: 'Quick access to your go-to tools'
-                              })}
-                            </h3>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-9 shrink-0 rounded-full border-slate-200/80 bg-white/80 px-4 text-xs font-semibold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-white dark:border-white/30 dark:bg-transparent dark:text-white"
-                            onClick={() => handleFavoritesDialogOpen(true)}
-                          >
-                            <Settings2 className="mr-1.5 h-4 w-4" />
-                            {t('customize')}
-                          </Button>
-                        </div>
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          {favoriteTools.length > 0 ? (
-                            favoriteTools.map((toolId) => renderCompactToolCard(toolId))
-                          ) : (
-                            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300/80 bg-white/80 px-4 py-6 text-center shadow-inner dark:border-white/20 dark:bg-white/5">
-                              <p className="text-sm font-medium text-slate-700 dark:text-white">
-                                {t('noFrequentToolsSelected')}
-                              </p>
-                              <p className="max-w-xs text-xs text-slate-500 dark:text-white/70">
-                                {t('noFrequentToolsSelectedDescription')}
-                              </p>
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={() => handleFavoritesDialogOpen(true)}
-                              >
-                                {t('customize')}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-2xl shadow-indigo-900/10  dark:border-white/10 dark:bg-white/5">
-                        <div className="mb-4 flex items-start gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 dark:bg-white/10 dark:text-white">
-                            <Wrench className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                              {t('practicalTools')}
-                            </h3>
-                            <p className="mt-1 text-sm text-slate-500 dark:text-white/70">
-                              {t('practicalToolsSubtitle', {
-                                defaultValue: 'Everyday helpers for routine file tasks'
-                              })}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="grid gap-3">
-                          {practicalTools.map(renderCompactToolCard)}
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-2xl shadow-indigo-900/10  dark:border-white/10 dark:bg-white/5">
-                        <div className="mb-4 flex items-start gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-white/10 dark:text-white">
-                            <Target className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                              {t('professionalTools')}
-                            </h3>
-                            <p className="mt-1 text-sm text-slate-500 dark:text-white/70">
-                              {t('professionalToolsSubtitle', {
-                                defaultValue: 'Advanced features for specialized workflows'
-                              })}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="grid gap-3">
-                          {professionalTools.map(renderCompactToolCard)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          ) : (
-            <div className="w-full mx-auto">
-              {activeTool === ActiveTool.Conversion ? (
-                <>
-                  <div>
-                    <div className="flex justify-center">
-                      <div className="mb-6 h-[3.2rem] grid w-full max-w-lg grid-cols-3 items-center overflow-hidden rounded-full bg-blue-100/60 p-1 text-sm font-medium dark:bg-blue-900/40">
-                        {conversionTabsConfig.map((tab) => {
-                          const Icon = tab.icon
-                          const isActive = conversionTab === tab.key
-                          return (
-                            <button
-                              key={tab.key}
-                              type="button"
-                              onClick={() => setConversionTab(tab.key)}
-                              className={`flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition-all ${
-                                isActive
-                                  ? `bg-white shadow-sm dark:bg-slate-900/80 ${tab.activeTextClass}`
-                                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                              }`}
-                            >
-                              <Icon
-                                className={`h-4 w-4 ${
-                                  isActive
-                                    ? tab.activeIconClass
-                                    : 'text-slate-400 dark:text-slate-500'
-                                }`}
-                              />
-                              {t(tab.labelKey)}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                    {/* <div className="text-center">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {t(activeConversionTab.descriptionKey)}
-                      </p>
-                    </div> */}
-                  </div>
-                  <FileConversionTool
-                    activeCategory={conversionTab}
-                    onBack={handleBackToHome}
-                  />
-                </>
-              ) : activeTool === ActiveTool.Compression ? (
-                <>
-                  <div>
-                    <div className="flex justify-center">
-                      <div className="mb-6 h-[3.2rem] grid w-full max-w-lg grid-cols-3 items-center overflow-hidden rounded-full bg-emerald-100/60 p-1 text-sm font-medium dark:bg-emerald-900/40">
-                        {compressionTabsConfig.map((tab) => {
-                          const Icon = tab.icon
-                          const isActive = compressionTab === tab.key
-                          return (
-                            <button
-                              key={tab.key}
-                              type="button"
-                              onClick={() => setCompressionTab(tab.key)}
-                              className={`flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition-all ${
-                                isActive
-                                  ? `bg-white shadow-sm dark:bg-slate-900/80 ${tab.activeTextClass}`
-                                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                              }`}
-                            >
-                              <Icon
-                                className={`h-4 w-4 ${
-                                  isActive
-                                    ? tab.activeIconClass
-                                    : 'text-slate-400 dark:text-slate-500'
-                                }`}
-                              />
-                              {t(tab.labelKey)}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                    {/* <div className="text-center">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {t(activeCompressionTab.descriptionKey)}
-                      </p>
-                    </div> */}
-                  </div>
-                  {compressionTab === CompressionTab.Image ? (
-                    <ImageCompressionTool onBack={handleBackToHome} />
-                  ) : compressionTab === CompressionTab.Audio ? (
-                    <AudioCompressionTool onBack={handleBackToHome} />
-                  ) : (
-                    <VideoCompressionTool onBack={handleBackToHome} />
-                  )}
-                </>
-              ) : activeTool === ActiveTool.ArchiveCompression ? (
-                <>
-                  <ArchiveCompressionTool onBack={handleBackToHome} />
-                </>
-              ) : activeTool === ActiveTool.ExamCreation ? (
-                <>
-                  <ExamCreationTool onBack={handleBackToHome} />
-                </>
-              ) : activeTool === ActiveTool.ImageOrganize ? (
-                <>
-                  <ImageOrganizeTool onBack={handleBackToHome} />
-                </>
-              ) : activeTool === ActiveTool.WordToExcel ? (
-                <>
-                  <WordToExcelTool onBack={handleBackToHome} />
-                </>
-              ) : activeTool === ActiveTool.JsonFormatter ? (
-                <>
-                  <JsonFormatterTool onBack={handleBackToHome} />
-                </>
-              ) : activeTool === ActiveTool.M3u8Download ? (
-                <>
-                  <M3u8DownloadTool onBack={handleBackToHome} />
-                </>
-              ) : activeTool === ActiveTool.FileHash ? (
-                <>
-                  <FileHashTool onBack={handleBackToHome} />
-                </>
-              ) : activeTool === ActiveTool.BatchRename ? (
-                <>
-                  <BatchRenameTool onBack={handleBackToHome} />
-                </>
-              ) : activeTool === ActiveTool.GifExport ? (
-                <>
-                  <GifExportTool onBack={handleBackToHome} />
-                </>
-               ) : activeTool === ActiveTool.ExcelMatchRename ? (
-                <ExcelMatchRenameTool onBack={handleBackToHome} />
-              ) : activeTool === ActiveTool.ScreenRecorder ? (
-                <ScreenRecorderTool onBack={handleBackToHome} />
-              ) : activeTool === ActiveTool.CandidateAnswerDecryption ? (
-                <>
-                  <CandidateAnswerDecryptionTool onBack={handleBackToHome} />
-                </>
-              ) : activeTool === ActiveTool.VideoSprite ? (
-                <VideoSpriteTool onBack={handleBackToHome} />
-              ) : null}
+                    <Icon
+                      className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
+                      strokeWidth={1.7}
+                    />
+                    <span className="truncate text-xs font-medium">{t(tool.titleKey)}</span>
+                  </span>
+                  <span className="hidden truncate text-[11px] text-muted-foreground lg:block">
+                    {t(tool.descriptionKey)}
+                  </span>
+                  <span className="hidden text-[10px] text-muted-foreground lg:block">
+                    {t(toolGroups.find((group) => group.id === tool.group)?.labelKey ?? '')}
+                  </span>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                </button>
+              )
+            })}
+          </div>
+          {visibleTools.length === 0 && (
+            <div className="p-4">
+              <EmptyState
+                icon={Search}
+                title={t('noToolsFound')}
+                description={t('noToolsFoundDescription')}
+                action={
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setQuery('')
+                      setFilter('all')
+                    }}
+                  >
+                    {t('clearFilters')}
+                  </Button>
+                }
+              />
             </div>
           )}
-        </div>
-      </div>
-    </>
+        </Panel>
+      </section>
+    </div>
   )
 }

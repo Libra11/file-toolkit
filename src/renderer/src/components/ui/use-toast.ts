@@ -37,21 +37,25 @@ export function toast(props: Omit<Toast, 'id'>): { id: string; dismiss: () => vo
   // 在实际项目中可以使用状态管理或自定义事件通知系统来处理 toast
   // 这里简化处理，直接使用 DOM API 创建提示
   const toastElement = document.createElement('div')
-  toastElement.className = `fixed bottom-4 right-4 z-50 max-w-md p-4 rounded-lg shadow-lg 
+  toastElement.className = `fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-sm rounded-md border p-4 text-card-foreground shadow-lg animate-in fade-in slide-in-from-bottom-2
     ${
       props.variant === 'destructive'
-        ? 'bg-red-500 text-white'
+        ? 'border-destructive/30 bg-card'
         : props.variant === 'success'
-          ? 'bg-green-500 text-white'
+          ? 'border-primary/30 bg-card'
           : props.variant === 'warning'
-            ? 'bg-amber-500 text-white'
-            : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700'
+            ? 'border-input bg-secondary/60'
+            : 'border-border bg-card'
     }`
+
+  toastElement.setAttribute('role', props.variant === 'destructive' ? 'alert' : 'status')
+  toastElement.setAttribute('aria-live', props.variant === 'destructive' ? 'assertive' : 'polite')
+  toastElement.setAttribute('aria-atomic', 'true')
 
   // 创建标题元素（如果提供）
   if (props.title) {
     const titleElement = document.createElement('div')
-    titleElement.className = 'font-semibold'
+    titleElement.className = 'text-sm font-medium leading-5 text-foreground'
     titleElement.textContent = props.title
     toastElement.appendChild(titleElement)
   }
@@ -59,7 +63,7 @@ export function toast(props: Omit<Toast, 'id'>): { id: string; dismiss: () => vo
   // 创建描述元素（如果提供）
   if (props.description) {
     const descElement = document.createElement('div')
-    descElement.className = 'text-sm'
+    descElement.className = 'mt-1 break-words text-xs leading-5 text-muted-foreground'
     descElement.textContent = props.description
     toastElement.appendChild(descElement)
   }

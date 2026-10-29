@@ -1,12 +1,9 @@
-/**
- * Author: Libra
- * Date: 2024-04-01
- * LastEditors: Libra
- * Description: 视频压缩设置组件
- */
 import { useTranslation } from 'react-i18next'
-import { useState } from 'react'
-import { ChevronDown, ChevronUp, Info } from 'lucide-react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
+import { Field } from '@renderer/components/ui/panel'
+import { Label } from '@renderer/components/ui/label'
+import { Input } from '@renderer/components/ui/input'
+import { SegmentedControl } from '@renderer/components/ui/segmented-control'
 import {
   Select,
   SelectContent,
@@ -16,21 +13,6 @@ import {
 } from '@renderer/components/ui/select'
 import { Slider } from '@renderer/components/ui/slider'
 import { Switch } from '@renderer/components/ui/switch'
-import { Label } from '@renderer/components/ui/label'
-import { Input } from '@renderer/components/ui/input'
-import { Button } from '@renderer/components/ui/button'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from '@renderer/components/ui/accordion'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@renderer/components/ui/tooltip'
 import {
   VIDEO_FORMATS,
   VIDEO_ENCODERS,
@@ -91,310 +73,221 @@ export function CompressionSettings({
   onShowAdvancedChange
 }: CompressionSettingsProps): JSX.Element {
   const { t } = useTranslation()
-  const [accordionValue, setAccordionValue] = useState<string>('')
 
-  // 处理宽度变化并保持宽高比
-  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const newWidth = e.target.value === '' ? '' : parseInt(e.target.value)
-
-    if (onWidthChange) {
-      onWidthChange(newWidth)
-    }
-
-    // 如果保持宽高比且有原始宽高信息，则自动计算高度
-    if (
-      maintainAspectRatio &&
-      onHeightChange &&
-      newWidth !== '' &&
-      videoInfo.width &&
-      videoInfo.height
-    ) {
-      const aspectRatio = videoInfo.width / videoInfo.height
-      const newHeight = Math.round((newWidth as number) / aspectRatio)
-      onHeightChange(newHeight)
+  const handleWidthChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const newWidth = event.target.value === '' ? '' : parseInt(event.target.value)
+    onWidthChange?.(newWidth)
+    if (maintainAspectRatio && newWidth !== '' && videoInfo.width && videoInfo.height) {
+      onHeightChange?.(Math.round(newWidth / (videoInfo.width / videoInfo.height)))
     }
   }
 
-  // 处理高度变化并保持宽高比
-  const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const newHeight = e.target.value === '' ? '' : parseInt(e.target.value)
-
-    if (onHeightChange) {
-      onHeightChange(newHeight)
-    }
-
-    // 如果保持宽高比且有原始宽高信息，则自动计算宽度
-    if (
-      maintainAspectRatio &&
-      onWidthChange &&
-      newHeight !== '' &&
-      videoInfo.width &&
-      videoInfo.height
-    ) {
-      const aspectRatio = videoInfo.width / videoInfo.height
-      const newWidth = Math.round((newHeight as number) * aspectRatio)
-      onWidthChange(newWidth)
+  const handleHeightChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const newHeight = event.target.value === '' ? '' : parseInt(event.target.value)
+    onHeightChange?.(newHeight)
+    if (maintainAspectRatio && newHeight !== '' && videoInfo.width && videoInfo.height) {
+      onWidthChange?.(Math.round(newHeight * (videoInfo.width / videoInfo.height)))
     }
   }
 
-  // 处理CRF值改变
   const handleCrfChange = (value: number[]): void => {
-    if (onCrfChange) {
-      onCrfChange(value[0])
-    }
-
-    // 如果CRF值改变，自动切换到自定义模式
+    onCrfChange?.(value[0])
     if (qualityPreset !== VIDEO_QUALITY_PRESETS.CUSTOM) {
       onQualityPresetChange(VIDEO_QUALITY_PRESETS.CUSTOM)
     }
   }
 
-  // 切换显示高级选项
-  const handleToggleAdvanced = (): void => {
-    if (onShowAdvancedChange) {
-      onShowAdvancedChange(!showAdvanced)
-    }
-  }
-
-  // 编码预设选项
   const encoderPresets = [
-    { value: 'ultrafast', label: t('ultrafast') },
-    { value: 'superfast', label: t('superfast') },
-    { value: 'veryfast', label: t('veryfast') },
-    { value: 'faster', label: t('faster') },
-    { value: 'fast', label: t('fast') },
-    { value: 'medium', label: t('medium') },
-    { value: 'slow', label: t('slow') },
-    { value: 'slower', label: t('slower') },
-    { value: 'veryslow', label: t('veryslow') }
+    'ultrafast',
+    'superfast',
+    'veryfast',
+    'faster',
+    'fast',
+    'medium',
+    'slow',
+    'slower',
+    'veryslow'
   ]
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label className="text-sm font-medium">{t('quality')}</Label>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-3.5 w-3.5 text-slate-400 cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>{t('qualityTooltip')}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-
-        <div className="grid grid-cols-4 gap-2">
-          {Object.values(VIDEO_QUALITY_PRESETS).map((preset) => (
-            <Button
-              key={preset}
-              type="button"
-              variant={qualityPreset === preset ? 'default' : 'outline'}
-              size="sm"
-              className={qualityPreset === preset ? 'bg-red-500 hover:bg-red-600' : ''}
-              onClick={() => onQualityPresetChange(preset)}
-            >
-              {t(preset)}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">{t('outputFormat')}</Label>
-        <Select
-          value={outputFormat}
-          onValueChange={(value) => onFormatChange(value as VideoFormat)}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder={t('selectFormat')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="original">{t('original')}</SelectItem>
-            {Object.entries(VIDEO_FORMATS).map(([key, value]) => (
-              <SelectItem key={key} value={value}>
-                {value.toUpperCase()}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="space-y-5">
+      <section className="space-y-3" aria-label={t('compressionSettings')}>
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          {t('compressionSettings')}
+        </h3>
+        <Field label={t('quality')}>
+          <SegmentedControl<VideoQualityPreset>
+            value={qualityPreset}
+            onChange={onQualityPresetChange}
+            ariaLabel={t('quality')}
+            className="grid w-full grid-cols-4"
+            options={Object.values(VIDEO_QUALITY_PRESETS).map((value) => ({
+              value,
+              label: t(value)
+            }))}
+          />
+        </Field>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{t('qualityTooltip')}</p>
+        <Field label={t('outputFormat')}>
+          <Select
+            value={outputFormat}
+            onValueChange={(value) => onFormatChange(value as VideoFormat)}
+          >
+            <SelectTrigger aria-label={t('outputFormat')}>
+              <SelectValue placeholder={t('selectFormat')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="original">{t('original')}</SelectItem>
+              {Object.values(VIDEO_FORMATS).map((value) => (
+                <SelectItem key={value} value={value}>
+                  {value.toUpperCase()}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      </section>
 
       {!isBatchMode && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">{t('resolutionSettings')}</Label>
+        <section
+          className="space-y-3 border-t border-border pt-4"
+          aria-label={t('resolutionSettings')}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {t('resolutionSettings')}
+            </h3>
             {videoInfo.width && videoInfo.height && (
-              <span className="text-xs text-slate-500">
-                {t('original')}: {videoInfo.width}×{videoInfo.height}
+              <span className="text-[11px] text-muted-foreground">
+                {t('original')}: {videoInfo.width} × {videoInfo.height}
               </span>
             )}
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label className="text-xs" htmlFor="width-input">
-                {t('width')}
-              </Label>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t('width')}>
               <Input
-                id="width-input"
+                id="video-width-input"
                 type="number"
+                min={1}
                 value={width}
                 onChange={handleWidthChange}
                 placeholder={videoInfo.width?.toString() || ''}
-                className="h-8"
               />
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs" htmlFor="height-input">
-                {t('height')}
-              </Label>
+            </Field>
+            <Field label={t('height')}>
               <Input
-                id="height-input"
+                id="video-height-input"
                 type="number"
+                min={1}
                 value={height}
                 onChange={handleHeightChange}
                 placeholder={videoInfo.height?.toString() || ''}
-                className="h-8"
               />
-            </div>
+            </Field>
           </div>
-
-          <div className="flex items-center space-x-2 mt-1">
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="video-maintain-aspect-ratio" className="text-xs text-muted-foreground">
+              {t('maintainAspectRatio')}
+            </Label>
             <Switch
-              id="maintain-aspect-ratio"
+              id="video-maintain-aspect-ratio"
               checked={maintainAspectRatio}
               onCheckedChange={onMaintainAspectRatioChange}
             />
-            <Label htmlFor="maintain-aspect-ratio" className="text-xs">
-              {t('maintainAspectRatio')}
-            </Label>
           </div>
-        </div>
+        </section>
       )}
 
-      <Button
-        variant="ghost"
-        size="sm"
-        className="flex items-center justify-between w-full p-0 h-auto text-xs text-slate-600 dark:text-slate-400 hover:bg-transparent hover:text-slate-900 dark:hover:text-slate-200"
-        onClick={handleToggleAdvanced}
+      <button
+        type="button"
+        className="flex w-full items-center justify-between border-y border-border py-2.5 text-xs font-medium text-foreground transition-colors hover:text-primary"
+        onClick={() => onShowAdvancedChange?.(!showAdvanced)}
+        aria-expanded={showAdvanced}
       >
         <span>{showAdvanced ? t('hideAdvancedSettings') : t('showAdvancedSettings')}</span>
-        {showAdvanced ? (
-          <ChevronUp className="h-4 w-4 ml-1" />
-        ) : (
-          <ChevronDown className="h-4 w-4 ml-1" />
-        )}
-      </Button>
+        {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
 
       {showAdvanced && (
-        <Accordion
-          type="single"
-          collapsible
-          className="w-full"
-          value={accordionValue}
-          onValueChange={setAccordionValue}
-        >
-          <AccordionItem value="encoder" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline">
-              <span className="text-sm font-medium">{t('encoderSettings')}</span>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-3 mt-1">
-                <div className="space-y-1">
-                  <Label className="text-xs">{t('videoEncoder')}</Label>
-                  <Select
-                    value={encoder}
-                    onValueChange={(value) => onEncoderChange?.(value as VideoEncoder)}
-                    disabled={outputFormat === 'original'}
-                  >
-                    <SelectTrigger className="w-full h-8">
-                      <SelectValue placeholder={t('selectEncoder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(VIDEO_ENCODERS).map(([key, value]) => (
-                        <SelectItem key={key} value={value}>
-                          {value}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs">{t('crfValue')}</Label>
-                    <span className="text-xs font-medium">{crf}</span>
-                  </div>
-                  <Slider
-                    value={[crf]}
-                    min={0}
-                    max={51}
-                    step={1}
-                    className="py-1"
-                    onValueChange={handleCrfChange}
-                  />
-                  <div className="flex justify-between text-xs text-slate-500">
-                    <span>{t('higher')}</span>
-                    <span>{t('lower')}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">{t('encoderPreset')}</Label>
-                  <Select value={preset} onValueChange={(value) => onPresetChange?.(value)}>
-                    <SelectTrigger className="w-full h-8">
-                      <SelectValue placeholder={t('selectPreset')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {encoderPresets.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+        <div className="space-y-5">
+          <section className="space-y-4" aria-label={t('encoderSettings')}>
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {t('encoderSettings')}
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+              <Field label={t('videoEncoder')}>
+                <Select
+                  value={encoder}
+                  onValueChange={(value) => onEncoderChange?.(value as VideoEncoder)}
+                  disabled={outputFormat === 'original'}
+                >
+                  <SelectTrigger aria-label={t('videoEncoder')}>
+                    <SelectValue placeholder={t('selectEncoder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(VIDEO_ENCODERS).map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label={t('encoderPreset')}>
+                <Select value={preset} onValueChange={onPresetChange}>
+                  <SelectTrigger aria-label={t('encoderPreset')}>
+                    <SelectValue placeholder={t('selectPreset')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {encoderPresets.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {t(value)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+            <Field label={t('crfValue')} hint={crf}>
+              <div className="space-y-2 pt-1">
+                <Slider value={[crf]} min={0} max={51} step={1} onValueChange={handleCrfChange} />
+                <div className="flex justify-between text-[11px] text-muted-foreground">
+                  <span>{t('higher')}</span>
+                  <span>{t('lower')}</span>
                 </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
+            </Field>
+          </section>
 
-          <AccordionItem value="framerate" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline">
-              <span className="text-sm font-medium">{t('framerateSettings')}</span>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-3 mt-1">
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs" htmlFor="fps-input">
-                      {t('framerate')} (FPS)
-                    </Label>
-                    {videoInfo.fps && (
-                      <span className="text-xs text-slate-500">
-                        {t('original')}: {videoInfo.fps}
-                      </span>
-                    )}
-                  </div>
-                  <Input
-                    id="fps-input"
-                    type="number"
-                    value={fps}
-                    onChange={(e) =>
-                      onFpsChange?.(e.target.value === '' ? '' : parseInt(e.target.value))
-                    }
-                    placeholder={videoInfo.fps?.toString() || ''}
-                    className="h-8"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">{t('fpsDescription')}</p>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+          {!isBatchMode && (
+            <section
+              className="space-y-3 border-t border-border pt-4"
+              aria-label={t('framerateSettings')}
+            >
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                {t('framerateSettings')}
+              </h3>
+              <Field
+                label={`${t('framerate')} (FPS)`}
+                hint={videoInfo.fps ? `${t('original')}: ${videoInfo.fps}` : undefined}
+              >
+                <Input
+                  id="video-fps-input"
+                  type="number"
+                  min={1}
+                  value={fps}
+                  onChange={(event) =>
+                    onFpsChange?.(event.target.value === '' ? '' : parseInt(event.target.value))
+                  }
+                  placeholder={videoInfo.fps?.toString() || ''}
+                />
+              </Field>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                {t('fpsDescription')}
+              </p>
+            </section>
+          )}
+        </div>
       )}
     </div>
   )

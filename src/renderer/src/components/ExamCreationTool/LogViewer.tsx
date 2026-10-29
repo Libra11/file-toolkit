@@ -5,8 +5,9 @@
  * Description: 考试创建日志查看器
  */
 import { useEffect, useState, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Check, Info, AlertTriangle, AlertOctagon, Clock } from 'lucide-react'
+import { cn } from '@renderer/lib/utils'
 
 // 日志消息接口
 interface LogMessage {
@@ -16,6 +17,7 @@ interface LogMessage {
 }
 
 export const LogViewer = (): JSX.Element => {
+  const { t } = useTranslation()
   const [logs, setLogs] = useState<LogMessage[]>([])
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
@@ -40,39 +42,32 @@ export const LogViewer = (): JSX.Element => {
   }, [logs])
 
   // 根据日志类型返回对应的图标和颜色
-  const getLogTypeInfo = (
-    type: LogMessage['type']
-  ): { icon: JSX.Element; color: string; bgColor: string } => {
+  const getLogTypeInfo = (type: LogMessage['type']): { icon: JSX.Element; className: string } => {
     switch (type) {
       case 'info':
         return {
-          icon: <Info className="h-4 w-4" />,
-          color: 'text-blue-500',
-          bgColor: 'bg-blue-50 dark:bg-blue-900/20'
+          icon: <Info className="h-3.5 w-3.5" />,
+          className: 'text-muted-foreground'
         }
       case 'success':
         return {
-          icon: <Check className="h-4 w-4" />,
-          color: 'text-green-500',
-          bgColor: 'bg-green-50 dark:bg-green-900/20'
+          icon: <Check className="h-3.5 w-3.5" />,
+          className: 'text-primary'
         }
       case 'warn':
         return {
-          icon: <AlertTriangle className="h-4 w-4" />,
-          color: 'text-yellow-500',
-          bgColor: 'bg-yellow-50 dark:bg-yellow-900/20'
+          icon: <AlertTriangle className="h-3.5 w-3.5" />,
+          className: 'text-amber-700 dark:text-amber-400'
         }
       case 'error':
         return {
-          icon: <AlertOctagon className="h-4 w-4" />,
-          color: 'text-red-500',
-          bgColor: 'bg-red-50 dark:bg-red-900/20'
+          icon: <AlertOctagon className="h-3.5 w-3.5" />,
+          className: 'text-destructive'
         }
       default:
         return {
-          icon: <Info className="h-4 w-4" />,
-          color: 'text-gray-500',
-          bgColor: 'bg-gray-50 dark:bg-gray-900/20'
+          icon: <Info className="h-3.5 w-3.5" />,
+          className: 'text-muted-foreground'
         }
     }
   }
@@ -86,49 +81,48 @@ export const LogViewer = (): JSX.Element => {
   return (
     <div
       ref={scrollAreaRef}
-      className="h-[400px] overflow-y-auto rounded-md bg-white dark:bg-slate-800/50 border border-green-100 dark:border-green-800/30 shadow-inner"
+      role="log"
+      aria-live="polite"
+      aria-label={t('examLogAria')}
+      className="h-[280px] overflow-y-auto overscroll-contain rounded-md border border-border bg-background/60"
     >
       {logs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6">
-          <div className="animate-pulse bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-3 rounded-full mb-4">
-            <Clock className="h-8 w-8" />
+        <div className="flex h-full flex-col items-center justify-center px-5 py-8 text-center">
+          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/50 text-muted-foreground">
+            <Clock className="h-4 w-4" strokeWidth={1.6} />
           </div>
-          <p className="text-indigo-600 dark:text-indigo-400 font-medium">等待考试创建过程...</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">日志将实时显示在此处</p>
+          <p className="text-xs font-medium text-foreground">{t('examLogEmptyTitle')}</p>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+            {t('examLogEmptyDescription')}
+          </p>
         </div>
       ) : (
-        <div className="space-y-2 p-2">
+        <ol className="divide-y divide-border/70">
           {logs.map((log, index) => {
-            const { icon, color, bgColor } = getLogTypeInfo(log.type)
+            const { icon, className } = getLogTypeInfo(log.type)
             return (
-              <motion.div
+              <li
                 key={`${log.timestamp}-${index}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`flex items-start gap-3 p-2 rounded-lg ${bgColor} border border-slate-100 dark:border-slate-800/50 shadow-sm w-full`}
+                className="flex items-start gap-2.5 px-3 py-2.5"
               >
-                <div
-                  className={`mt-0.5 flex-shrink-0 ${color} p-1.5 rounded-md bg-white/80 dark:bg-slate-800/80`}
-                >
-                  {icon}
+                <span className={cn('mt-0.5 shrink-0', className)}>{icon}</span>
+                <div className="min-w-0 flex-1">
+                  <time className="block font-mono text-[10px] tabular-nums text-muted-foreground">
+                    {formatTimestamp(log.timestamp)}
+                  </time>
+                  <p
+                    className={cn(
+                      'mt-1 whitespace-pre-wrap break-words text-[11px] leading-5 text-foreground',
+                      log.type === 'error' && 'text-destructive'
+                    )}
+                  >
+                    {log.message}
+                  </p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className={`text-xs ${color} font-medium px-1.5 py-0.5 rounded-full bg-white/80 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800/50 flex-shrink-0`}
-                    >
-                      {formatTimestamp(log.timestamp)}
-                    </span>
-                    <span className="font-medium text-slate-700 dark:text-slate-300 break-words">
-                      {log.message}
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
+              </li>
             )
           })}
-        </div>
+        </ol>
       )}
     </div>
   )

@@ -1,17 +1,16 @@
 import { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import {
+  CheckCircle2,
   Download,
   Eye,
-  Settings,
-  Folder,
   FileSpreadsheet,
+  Folder,
   Play,
   RefreshCw,
-  CheckCircle,
-  AlertCircle
+  Settings
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
@@ -22,13 +21,13 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { ScrollArea } from '@renderer/components/ui/scroll-area'
-import { Badge } from '@renderer/components/ui/badge'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { toast } from '@renderer/components/ui/toast'
-import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
+import { DataRow, Field, Panel, PanelBody, PanelHeader } from '@renderer/components/ui/panel'
+import { EmptyState, StatusDot } from '@renderer/components/ui/states'
 
 type MatchMode = 'whole' | 'split' | 'regex'
+type WorkStep = 'source' | 'mapping' | 'preview'
 
 interface PreviewItem {
   originalFile: string
@@ -40,15 +39,12 @@ interface PreviewItem {
   error?: string
 }
 
-
-const itemVariants = {
-  hidden: { opacity: 0, x: -10 },
-  visible: { opacity: 1, x: 0 }
-}
-
+const getFileName = (path: string): string => path.split(/[\\/]/).pop() || path
 
 export default function ExcelMatchRenameTool({ onBack }: { onBack?: () => void }): JSX.Element {
   const { t } = useTranslation()
+  // 导航由外层工作台承载，保留该属性以兼容现有调用方。
+  void onBack
 
   // Data Sources
   const [folderPath, setFolderPath] = useState<string>('')
@@ -74,6 +70,7 @@ export default function ExcelMatchRenameTool({ onBack }: { onBack?: () => void }
 
   // Status
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
+  const [activeStep, setActiveStep] = useState<WorkStep>('source')
 
   // Handlers
   const handleSelectFolder = async (): Promise<void> => {
@@ -83,7 +80,10 @@ export default function ExcelMatchRenameTool({ onBack }: { onBack?: () => void }
       // Scan files
       const fileList = await window.excelMatch.scanFolder(path)
       setFiles(fileList)
-      toast.success({ title: t('folderSelected'), description: `${fileList.length} files found` })
+      toast.success({
+        title: t('folderSelected'),
+        description: t('emrFilesFound', { count: fileList.length })
+      })
     }
   }
 
@@ -103,10 +103,13 @@ export default function ExcelMatchRenameTool({ onBack }: { onBack?: () => void }
             setRenameColumn(result.headers[0])
           }
         }
-        toast.success({ title: t('excelLoaded'), description: `${result.data.length} rows loaded` })
+        toast.success({
+          title: t('excelLoaded'),
+          description: t('emrRowsLoaded', { count: result.data.length })
+        })
       }
     } catch (e) {
-      toast.error({ title: t('error'), description: 'Failed to read Excel file' })
+      toast.error({ title: t('error'), description: t('emrReadExcelFailed') })
     }
   }
 
@@ -146,7 +149,7 @@ export default function ExcelMatchRenameTool({ onBack }: { onBack?: () => void }
       }
 
       key = key.trim()
-      
+
       let matchedRow: any = null
       if (excelData.length > 0 && matchColumn && key) {
         // Try strict match first
@@ -160,46 +163,46 @@ export default function ExcelMatchRenameTool({ onBack }: { onBack?: () => void }
 
       if (matchedRow) {
         if (useRenamePattern && renamePattern) {
-           // Pattern based rename
-           let baseName = renamePattern
-           
-           // Simple template replacement {ColName}
-           // Use a regex that captures content inside {}
-           baseName = baseName.replace(/\{(.+?)\}/g, (_, col) => {
-             const colName = col.trim()
-             const val = matchedRow[colName]
-             return val !== undefined && val !== null ? String(val).trim() : ''
-           })
-           
-           if (baseName && baseName.trim()) {
-             newFilename = baseName.trim() + ext
-             status = 'match'
-           } else {
-             status = 'error'
-             error = 'Empty pattern result'
-           }
+          // Pattern based rename
+          let baseName = renamePattern
+
+          // Simple template replacement {ColName}
+          // Use a regex that captures content inside {}
+          baseName = baseName.replace(/\{(.+?)\}/g, (_, col) => {
+            const colName = col.trim()
+            const val = matchedRow[colName]
+            return val !== undefined && val !== null ? String(val).trim() : ''
+          })
+
+          if (baseName && baseName.trim()) {
+            newFilename = baseName.trim() + ext
+            status = 'match'
+          } else {
+            status = 'error'
+            error = t('emrEmptyPatternResult')
+          }
         } else if (renameColumn) {
-           const newNameBase = String(matchedRow[renameColumn] || '').trim()
-           if (newNameBase) {
-             newFilename = newNameBase + ext
-             status = 'match'
-           } else {
-             status = 'error'
-             error = 'Empty rename value'
-           }
+          const newNameBase = String(matchedRow[renameColumn] || '').trim()
+          if (newNameBase) {
+            newFilename = newNameBase + ext
+            status = 'match'
+          } else {
+            status = 'error'
+            error = t('emrEmptyRenameValue')
+          }
         }
-      } 
-      
+      }
+
       if (!newFilename && !error) {
-         if (!key) {
-            status = 'error'
-            error = 'Key extraction failed'
-         } else if (!matchedRow) {
-            status = 'no-match'
-         } else if (!useRenamePattern && !renameColumn) {
-            status = 'error'
-            error = 'No rename column selected'
-         }
+        if (!key) {
+          status = 'error'
+          error = t('emrKeyExtractionFailed')
+        } else if (!matchedRow) {
+          status = 'no-match'
+        } else if (!useRenamePattern && !renameColumn) {
+          status = 'error'
+          error = t('emrNoRenameColumnSelected')
+        }
       }
 
       return {
@@ -212,9 +215,25 @@ export default function ExcelMatchRenameTool({ onBack }: { onBack?: () => void }
         error
       }
     })
-  }, [files, folderPath, excelData, matchMode, separator, splitIndex, regexPattern, regexGroup, matchColumn, renameColumn, useRenamePattern, renamePattern])
+  }, [
+    files,
+    folderPath,
+    excelData,
+    matchMode,
+    separator,
+    splitIndex,
+    regexPattern,
+    regexGroup,
+    matchColumn,
+    renameColumn,
+    useRenamePattern,
+    renamePattern,
+    t
+  ])
 
   const matchCount = previewList.filter((i) => i.status === 'match').length
+  const noMatchCount = previewList.filter((i) => i.status === 'no-match').length
+  const errorCount = previewList.filter((i) => i.status === 'error').length
 
   const handleExecute = async (): Promise<void> => {
     const tasks = previewList
@@ -237,13 +256,13 @@ export default function ExcelMatchRenameTool({ onBack }: { onBack?: () => void }
         targetDir: targetDir || undefined,
         overwrite
       })
-      
+
       // Minimum loading time for UX (800ms)
       const elapsed = Date.now() - startTime
       if (elapsed < 800) {
-        await new Promise(resolve => setTimeout(resolve, 800 - elapsed))
+        await new Promise((resolve) => setTimeout(resolve, 800 - elapsed))
       }
-      
+
       if (result.errors.length > 0) {
         console.error(result.errors)
         toast.warning({
@@ -256,11 +275,11 @@ export default function ExcelMatchRenameTool({ onBack }: { onBack?: () => void }
           description: `${t('emrSuccessCount')}: ${result.success}`
         })
       }
-      
+
       // Refresh file list if in same dir
       if (!targetDir) {
-          const fileList = await window.excelMatch.scanFolder(folderPath)
-          setFiles(fileList)
+        const fileList = await window.excelMatch.scanFolder(folderPath)
+        setFiles(fileList)
       }
     } catch (e) {
       toast.error({ title: t('error'), description: String(e) })
@@ -269,310 +288,424 @@ export default function ExcelMatchRenameTool({ onBack }: { onBack?: () => void }
     }
   }
 
-  // --- UI Components ---
+  const sourceReady = Boolean(folderPath && excelPath)
+  const mappingReady = Boolean(
+    matchColumn && (useRenamePattern ? renamePattern.trim() : renameColumn)
+  )
+  const steps: { id: WorkStep; label: string; icon: LucideIcon; complete: boolean }[] = [
+    { id: 'source', label: t('emrStepSource'), icon: Folder, complete: sourceReady },
+    { id: 'mapping', label: t('emrStepConfig'), icon: Settings, complete: mappingReady },
+    { id: 'preview', label: t('emrStepPreview'), icon: Eye, complete: matchCount > 0 }
+  ]
 
+  const handleStepNavigate = (step: WorkStep): void => {
+    setActiveStep(step)
+    document
+      .getElementById(`excel-match-${step}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+  }
 
   return (
-    <div className="h-full w-full overflow-hidden">
-      {/* 1. The Large Outer Card (Wraps Header + Content) */}
-      <div className="flex flex-col h-full rounded-[32px] border border-white/60 bg-gradient-to-br from-indigo-50/50 via-white/80 to-blue-50/50 backdrop-blur-sm dark:border-slate-800 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-900 p-6 md:p-8 overflow-hidden">
-          
-          {/* 2. Header Section (Now Inside Outer Card) */}
-          <div className="shrink-0 mb-6 space-y-4">
-              {/* Top Row: Tag & Back */}
-              <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50/50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600 backdrop-blur-sm dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300">
-                      <Settings className="h-3.5 w-3.5" />
-                      {t('excelMatchRename')}
-                  </span>
-                  
-                  {onBack && (
-                     <BackToHomeButton onClick={onBack} className="rounded-full shadow-sm hover:shadow-md transition-all bg-white text-slate-600 hover:text-indigo-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-indigo-400" />
-                  )}
+    <div className="space-y-4 text-foreground">
+      <div className="flex items-center justify-end gap-2 border-b border-border pb-3 text-xs text-muted-foreground">
+        <StatusDot tone={sourceReady ? 'success' : 'neutral'} />
+        <span>{sourceReady ? t('readyForPreview') : t('emrPreviewWait')}</span>
+      </div>
+
+      <nav
+        className="grid grid-cols-3 overflow-hidden rounded-lg border border-border bg-card"
+        aria-label={t('excelMatchRename')}
+      >
+        {steps.map((step, index) => {
+          const Icon = step.icon
+          const active = activeStep === step.id
+          return (
+            <button
+              key={step.id}
+              type="button"
+              aria-current={active ? 'step' : undefined}
+              onClick={() => handleStepNavigate(step.id)}
+              className={`flex min-w-0 items-center gap-3 border-r border-border px-3 py-3 text-left transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/40 sm:px-4 ${
+                active
+                  ? 'bg-muted text-foreground'
+                  : 'bg-card text-muted-foreground hover:bg-muted/40'
+              }`}
+            >
+              <span className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-card text-primary sm:flex">
+                {step.complete ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <Icon className="h-3.5 w-3.5" />
+                )}
+              </span>
+              <span className="min-w-0">
+                <span className="block font-mono text-[10px] text-muted-foreground">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <span className="block truncate text-xs font-medium">{step.label}</span>
+              </span>
+            </button>
+          )
+        })}
+      </nav>
+
+      <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[250px_minmax(280px,0.78fr)_minmax(0,1.35fr)]">
+        <Panel id="excel-match-source" className="min-w-0 scroll-mt-20">
+          <PanelHeader eyebrow="01" title={t('emrStepSource')} description={t('emrSelectFolder')} />
+          <PanelBody className="space-y-4">
+            <Button
+              variant="outline"
+              className="h-auto min-h-14 w-full justify-start px-3 py-2.5 text-left"
+              onClick={handleSelectFolder}
+            >
+              <Folder className="mr-3 h-4 w-4 shrink-0 text-primary" />
+              <span className="min-w-0">
+                <span className="block text-xs font-medium">{t('emrSelectFolder')}</span>
+                <span className="mt-0.5 block truncate text-[11px] font-normal text-muted-foreground">
+                  {folderPath || t('select')}
+                </span>
+              </span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-auto min-h-14 w-full justify-start px-3 py-2.5 text-left"
+              onClick={handleSelectExcel}
+            >
+              <FileSpreadsheet className="mr-3 h-4 w-4 shrink-0 text-primary" />
+              <span className="min-w-0">
+                <span className="block text-xs font-medium">{t('emrSelectExcel')}</span>
+                <span className="mt-0.5 block truncate text-[11px] font-normal text-muted-foreground">
+                  {excelPath ? getFileName(excelPath) : t('select')}
+                </span>
+              </span>
+            </Button>
+
+            <dl className="divide-y divide-border/70 rounded-lg border border-border bg-muted/20 px-3">
+              <DataRow label={t('selectedFiles')} value={files.length} />
+              <DataRow label={t('emrExcelConfig')} value={excelData.length} />
+            </dl>
+
+            <div className="space-y-4 border-t border-border pt-4">
+              <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                <Download className="h-3.5 w-3.5 text-primary" />
+                {t('outputFolder')}
+              </div>
+              <Field label={t('emrTargetDir')}>
+                <div className="flex gap-2">
+                  <Input
+                    value={targetDir}
+                    placeholder={t('emrTargetDir')}
+                    readOnly
+                    aria-label={t('emrTargetDir')}
+                    className="min-w-0 bg-muted/30 font-mono text-[11px]"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-10 shrink-0"
+                    onClick={handleSelectTargetDir}
+                  >
+                    {t('select')}
+                  </Button>
+                </div>
+              </Field>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="overwrite"
+                  checked={overwrite}
+                  onCheckedChange={(checked) => setOverwrite(!!checked)}
+                />
+                <Label htmlFor="overwrite" className="text-xs font-normal text-muted-foreground">
+                  {t('emrOverwrite')}
+                </Label>
+              </div>
+            </div>
+          </PanelBody>
+        </Panel>
+
+        <Panel id="excel-match-mapping" className="min-w-0 scroll-mt-20">
+          <PanelHeader
+            eyebrow="02"
+            title={t('emrExcelConfig')}
+            description={t('emrMatchRuleDesc')}
+          />
+          <PanelBody className="space-y-4">
+            <Field label={t('emrMatchMode')}>
+              <Select value={matchMode} onValueChange={(value) => setMatchMode(value as MatchMode)}>
+                <SelectTrigger aria-label={t('emrMatchMode')}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="whole">{t('emrModeWhole')}</SelectItem>
+                  <SelectItem value="split">{t('emrModeSplit')}</SelectItem>
+                  <SelectItem value="regex">{t('emrModeRegex')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+
+            {matchMode === 'split' && (
+              <div className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-muted/20 p-3">
+                <Field label={t('emrSeparator')}>
+                  <Input
+                    aria-label={t('emrSeparator')}
+                    value={separator}
+                    onChange={(event) => setSeparator(event.target.value)}
+                    className="font-mono"
+                  />
+                </Field>
+                <Field label={t('emrIndex')}>
+                  <Input
+                    aria-label={t('emrIndex')}
+                    type="number"
+                    value={splitIndex}
+                    onChange={(event) => setSplitIndex(Number(event.target.value))}
+                  />
+                </Field>
+              </div>
+            )}
+
+            {matchMode === 'regex' && (
+              <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+                <Field label={t('emrRegexPattern')}>
+                  <Input
+                    aria-label={t('emrRegexPattern')}
+                    className="font-mono text-xs"
+                    value={regexPattern}
+                    onChange={(event) => setRegexPattern(event.target.value)}
+                    placeholder="^([a-z]+)_"
+                  />
+                </Field>
+                <Field label={t('emrRegexGroup')}>
+                  <Input
+                    aria-label={t('emrRegexGroup')}
+                    type="number"
+                    value={regexGroup}
+                    onChange={(event) => setRegexGroup(Number(event.target.value))}
+                  />
+                </Field>
+              </div>
+            )}
+
+            <div className="border-t border-border pt-4">
+              <Field label={t('emrMatchColumn')}>
+                <Select value={matchColumn} onValueChange={setMatchColumn}>
+                  <SelectTrigger aria-label={t('emrMatchColumn')}>
+                    <SelectValue placeholder={t('select')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {excelHeaders.map((header) => (
+                      <SelectItem key={header} value={header}>
+                        {header}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-xs font-medium text-foreground">{t('emrRenameColumn')}</span>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="usePattern"
+                    checked={useRenamePattern}
+                    onCheckedChange={(checked) => setUseRenamePattern(!!checked)}
+                  />
+                  <Label
+                    htmlFor="usePattern"
+                    className="text-[11px] font-normal text-muted-foreground"
+                  >
+                    {t('emrUseCustomPattern')}
+                  </Label>
+                </div>
               </div>
 
-              {/* Title & Description */}
-              <div className="space-y-1">
-                  <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white md:text-4xl">
-                      {t('excelMatchRename')}
-                  </h1>
-                  <p className="text-base text-slate-500 dark:text-slate-400 max-w-2xl">
-                      {t('excelMatchRenameDescription')}
-                  </p>
+              {!useRenamePattern ? (
+                <Select value={renameColumn} onValueChange={setRenameColumn}>
+                  <SelectTrigger aria-label={t('emrRenameColumn')} className="bg-card">
+                    <SelectValue placeholder={t('select')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {excelHeaders.map((header) => (
+                      <SelectItem key={header} value={header}>
+                        {header}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="space-y-3">
+                  <Input
+                    aria-label={t('emrRenamePattern')}
+                    className="bg-card font-mono text-xs"
+                    value={renamePattern}
+                    onChange={(event) => setRenamePattern(event.target.value)}
+                    placeholder={t('emrPatternPlaceholder')}
+                  />
+                  <p className="text-[11px] text-muted-foreground">{t('emrPatternHelp')}</p>
+                  <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto">
+                    {excelHeaders.map((header) => (
+                      <button
+                        key={header}
+                        type="button"
+                        className="rounded-md border border-border bg-card px-2 py-1 font-mono text-[10px] text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                        onClick={() => setRenamePattern((pattern) => pattern + `{${header}}`)}
+                      >
+                        {header}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </PanelBody>
+        </Panel>
+
+        <Panel
+          id="excel-match-preview"
+          className="min-w-0 scroll-mt-20 lg:col-span-2 xl:col-span-1"
+        >
+          <PanelHeader
+            eyebrow="03"
+            title={t('emrStepPreview')}
+            action={
+              <span className="font-mono text-xs text-muted-foreground">
+                {matchCount} / {files.length}
+              </span>
+            }
+          />
+
+          <dl className="grid grid-cols-3 divide-x divide-border border-b border-border bg-muted/20">
+            <div className="px-3 py-3">
+              <dt className="truncate text-[10px] text-muted-foreground">{t('emrStatusMatch')}</dt>
+              <dd className="mt-1 font-mono text-lg font-semibold text-primary">{matchCount}</dd>
+            </div>
+            <div className="px-3 py-3">
+              <dt className="truncate text-[10px] text-muted-foreground">
+                {t('emrStatusNoMatch')}
+              </dt>
+              <dd className="mt-1 font-mono text-lg font-semibold text-foreground">
+                {noMatchCount}
+              </dd>
+            </div>
+            <div className="px-3 py-3">
+              <dt className="truncate text-[10px] text-muted-foreground">{t('emrStatusError')}</dt>
+              <dd className="mt-1 font-mono text-lg font-semibold text-foreground">{errorCount}</dd>
+            </div>
+          </dl>
+
+          <div className="p-4">
+            {files.length === 0 ? (
+              <EmptyState
+                icon={Folder}
+                title={t('emrSelectFolder')}
+                description={t('emrPreviewWait')}
+                action={
+                  <Button variant="outline" size="sm" onClick={handleSelectFolder}>
+                    <Folder className="mr-2 h-3.5 w-3.5" />
+                    {t('emrSelectFolder')}
+                  </Button>
+                }
+                className="min-h-[360px]"
+              />
+            ) : (
+              <div className="max-h-[480px] min-h-[360px] overflow-auto rounded-lg border border-border">
+                <table className="w-full min-w-[580px] border-collapse text-left text-xs">
+                  <thead className="sticky top-0 z-10 bg-muted text-muted-foreground">
+                    <tr>
+                      <th className="w-[31%] border-b border-border px-3 py-2.5 font-medium">
+                        {t('emrOriginalFile')}
+                      </th>
+                      <th className="w-[20%] border-b border-border px-3 py-2.5 font-medium">
+                        {t('emrExtractedKey')}
+                      </th>
+                      <th className="w-[32%] border-b border-border px-3 py-2.5 font-medium">
+                        {t('emrNewFilename')}
+                      </th>
+                      <th className="border-b border-border px-3 py-2.5 font-medium">
+                        {t('emrStatus')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/70 bg-card">
+                    {previewList.map((item, index) => (
+                      <tr key={`${item.originalPath}-${index}`} className="align-top">
+                        <td className="max-w-0 px-3 py-3">
+                          <span className="block truncate font-medium" title={item.originalFile}>
+                            {item.originalFile}
+                          </span>
+                        </td>
+                        <td className="max-w-0 px-3 py-3">
+                          <code
+                            className="block truncate font-mono text-[11px] text-muted-foreground"
+                            title={item.extractedKey}
+                          >
+                            {item.extractedKey || '—'}
+                          </code>
+                        </td>
+                        <td className="max-w-0 px-3 py-3">
+                          <span
+                            className={`block truncate font-mono text-[11px] ${
+                              item.newFilename ? 'text-primary' : 'text-muted-foreground'
+                            }`}
+                            title={item.newFilename || undefined}
+                          >
+                            {item.newFilename || '—'}
+                          </span>
+                          {item.error && (
+                            <span className="mt-1 block whitespace-normal text-[10px] leading-relaxed text-destructive">
+                              {item.error}
+                            </span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3">
+                          <span
+                            className="inline-flex items-center gap-2 text-[10px] text-muted-foreground"
+                            title={item.error}
+                          >
+                            <StatusDot
+                              tone={
+                                item.status === 'match'
+                                  ? 'success'
+                                  : item.status === 'error'
+                                    ? 'error'
+                                    : 'neutral'
+                              }
+                            />
+                            {item.status === 'match'
+                              ? t('emrStatusMatch')
+                              : item.status === 'error'
+                                ? t('emrStatusError')
+                                : t('emrStatusNoMatch')}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+            )}
           </div>
 
-          {/* 3. Inner Content Card (White Box - Sidebar + Preview) */}
-          <div className="flex-1 min-h-0 overflow-hidden rounded-[24px] border border-white bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/50 flex flex-col lg:flex-row">
-                
-                {/* Left Side: All Configs (Sidebar) */}
-                <div className="w-full lg:w-[400px] xl:w-[440px] flex flex-col border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/30">
-                    <ScrollArea className="flex-1">
-                        <div className="p-8 space-y-10">
-                            {/* Section 1: Source */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                                        <Folder className="h-5 w-5" />
-                                    </div>
-                                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('emrStepSource')}</h3>
-                                </div>
-                                <div className="space-y-4 pl-1">
-                                   <div className="space-y-2">
-                                        <Label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('emrSelectFolder')}</Label>
-                                        <Button variant="outline" className="w-full justify-start h-12 rounded-xl border-slate-200 bg-white shadow-sm hover:border-blue-300 hover:ring-2 hover:ring-blue-100 hover:text-blue-700 text-left font-normal transition-all dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-700 dark:hover:ring-blue-900/30" onClick={handleSelectFolder}>
-                                             <Folder className="mr-3 h-4 w-4 text-blue-500/80 shrink-0" />
-                                             {folderPath ? <span className="truncate text-sm font-medium">{folderPath}</span> : <span className="text-slate-400 text-sm">{t('select')}</span>}
-                                        </Button>
-                                   </div>
-                                   <div className="space-y-2">
-                                        <Label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('emrSelectExcel')}</Label>
-                                        <Button variant="outline" className="w-full justify-start h-12 rounded-xl border-slate-200 bg-white shadow-sm hover:border-emerald-300 hover:ring-2 hover:ring-emerald-100 hover:text-emerald-700 text-left font-normal transition-all dark:border-slate-700 dark:bg-slate-800 dark:hover:border-emerald-700 dark:hover:ring-emerald-900/30" onClick={handleSelectExcel}>
-                                             <FileSpreadsheet className="mr-3 h-4 w-4 text-emerald-500/80 shrink-0" />
-                                             {excelPath ? <span className="truncate text-sm font-medium">{excelPath.split('/').pop()}</span> : <span className="text-slate-400 text-sm">{t('select')}</span>}
-                                        </Button>
-                                   </div>
-                                </div>
-                            </div>
-
-                            {/* Section 2: Rules */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
-                                        <Settings className="h-5 w-5" />
-                                    </div>
-                                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('emrMatchRule')}</h3>
-                                </div>
-                                
-                                <div className="space-y-6 pl-1">
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('emrMatchMode')}</Label>
-                                            <Select value={matchMode} onValueChange={(v: any) => setMatchMode(v)}>
-                                                <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 focus:ring-2 focus:ring-indigo-100">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="whole">{t('emrModeWhole')}</SelectItem>
-                                                    <SelectItem value="split">{t('emrModeSplit')}</SelectItem>
-                                                    <SelectItem value="regex">{t('emrModeRegex')}</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        {matchMode === 'split' && (
-                                        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-50 dark:border-slate-800">
-                                            <div className="space-y-2">
-                                                <Label className="text-[10px] uppercase font-bold text-slate-400">{t('emrSeparator')}</Label>
-                                                <Input className="h-9 rounded-lg" value={separator} onChange={(e) => setSeparator(e.target.value)} />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-[10px] uppercase font-bold text-slate-400">{t('emrIndex')}</Label>
-                                                <Input className="h-9 rounded-lg" type="number" value={splitIndex} onChange={(e) => setSplitIndex(Number(e.target.value))} />
-                                            </div>
-                                        </div>
-                                        )}
-                                        {matchMode === 'regex' && (
-                                            <div className="grid grid-cols-1 gap-4 pt-2 border-t border-slate-50 dark:border-slate-800">
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] uppercase font-bold text-slate-400">{t('emrRegexPattern')}</Label>
-                                                    <Input className="h-9 rounded-lg font-mono text-xs" value={regexPattern} onChange={(e) => setRegexPattern(e.target.value)} placeholder="^([a-z]+)_" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-[10px] uppercase font-bold text-slate-400">{t('emrRegexGroup')}</Label>
-                                                    <Input className="h-9 rounded-lg" type="number" value={regexGroup} onChange={(e) => setRegexGroup(Number(e.target.value))} />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('emrMatchColumn')}</Label>
-                                        <Select value={matchColumn} onValueChange={setMatchColumn}>
-                                            <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700">
-                                               <SelectValue placeholder={t('select')} />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                               {excelHeaders.map(h => (
-                                                   <SelectItem key={h} value={h}>{h}</SelectItem>
-                                               ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    
-                                    <div className="p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 space-y-4">
-                                       <div className="flex items-center justify-between">
-                                           <Label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('emrRenameColumn')}</Label>
-                                           <div className="flex items-center space-x-2">
-                                                <Checkbox id="usePattern" className="h-4 w-4 border-slate-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600" checked={useRenamePattern} onCheckedChange={(c) => setUseRenamePattern(!!c)} />
-                                                <label htmlFor="usePattern" className="text-[11px] font-medium cursor-pointer text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors">{t('emrUseCustomPattern')}</label>
-                                           </div>
-                                       </div>
-                                       
-                                       {!useRenamePattern ? (
-                                            <Select value={renameColumn} onValueChange={setRenameColumn}>
-                                                <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700">
-                                                    <SelectValue placeholder={t('select')} />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {excelHeaders.map(h => (
-                                                        <SelectItem key={h} value={h}>{h}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                       ) : (
-                                            <div className="space-y-3">
-                                                <Input className="h-10 rounded-xl border-slate-200 bg-white text-xs dark:bg-slate-900 dark:border-slate-700" value={renamePattern} onChange={(e) => setRenamePattern(e.target.value)} placeholder={t('emrPatternPlaceholder')} />
-                                                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto custom-scrollbar">
-                                                    {excelHeaders.map(h => (
-                                                        <Badge key={h} variant="secondary" className="cursor-pointer text-[10px] px-2 py-1 bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-indigo-900/30" onClick={() => setRenamePattern((p) => p + `{${h}}`)}>{h}</Badge>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                       )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Section 3: Output */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400">
-                                        <Download className="h-5 w-5" />
-                                    </div>
-                                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('outputFolder')}</h3>
-                                </div>
-                                <div className="space-y-4 pl-1">
-                                     <div className="flex gap-2">
-                                        <Input value={targetDir} placeholder={t('emrTargetDir')} readOnly className="h-10 rounded-xl bg-slate-50 border-slate-200 text-sm dark:bg-slate-900 dark:border-slate-700" />
-                                        <Button variant="outline" className="h-10 rounded-xl px-4 border-slate-200 dark:border-slate-700" onClick={handleSelectTargetDir}>{t('select')}</Button>
-                                     </div>
-                                     <div className="flex items-center space-x-2">
-                                        <Checkbox id="overwrite" className="h-4 w-4 border-slate-300 data-[state=checked]:bg-slate-900" checked={overwrite} onCheckedChange={(c) => setOverwrite(!!c)} />
-                                        <label htmlFor="overwrite" className="text-sm text-slate-600 cursor-pointer select-none dark:text-slate-400">{t('emrOverwrite')}</label>
-                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </ScrollArea>
-                </div>
-
-                {/* Right Side: Preview Panel */}
-                <div className="flex-1 flex flex-col h-full bg-slate-50/20 dark:bg-slate-950/50 min-w-0">
-                     {/* Preview Header */}
-                     <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 dark:border-slate-800 bg-white/40 backdrop-blur-md dark:bg-slate-900/30">
-                         <div className="flex items-center gap-3">
-                             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm border border-slate-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/20">
-                                <Eye className="h-4 w-4" />
-                             </span>
-                             <div>
-                                <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('emrStepPreview')}</h3>
-                                {files.length > 0 && <p className="text-xs font-medium text-slate-400">{files.length} items found</p>}
-                             </div>
-                         </div>
-                         
-                         {/* Match Rate Badge */}
-                         {matchCount > 0 && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/30">
-                                <CheckCircle className="h-4 w-4" />
-                                <span className="text-xs font-bold">{Math.round((matchCount / (files.length || 1)) * 100)}% Match Rate</span>
-                            </div>
-                         )}
-                     </div>
-                     
-                     {/* List Header */}
-                     {files.length > 0 && (
-                        <div className="grid grid-cols-12 gap-6 px-8 py-3 border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold text-slate-400 uppercase tracking-widest dark:border-slate-800 dark:bg-slate-900/40">
-                           <div className="col-span-4 pl-2">{t('emrOriginalFile')}</div>
-                           <div className="col-span-3">{t('emrExtractedKey')}</div>
-                           <div className="col-span-4">{t('emrNewFilename')}</div>
-                           <div className="col-span-1 text-right pr-2">{t('emrStatus')}</div>
-                        </div>
-                     )}
-                     
-                     {/* List Content */}
-                     <div className="flex-1 overflow-hidden relative">
-                         {files.length === 0 ? (
-                             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-                                 <div className="relative group p-8">
-                                     <div className="absolute inset-0 bg-blue-100 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition-opacity" />
-                                     <div className="relative h-20 w-20 mb-6 flex items-center justify-center">
-                                        <Folder className="h-12 w-12 text-slate-200 dark:text-slate-700" />
-                                     </div>
-                                 </div>
-                                 <h3 className="font-semibold text-slate-600 dark:text-slate-400 mb-2">{t('emrSelectFolder')}</h3>
-                                 <p className="text-xs text-slate-400 max-w-[240px] text-center leading-relaxed">Select a folder and Excel file from the left to generate the rename preview.</p>
-                             </div>
-                         ) : (
-                            <ScrollArea className="h-full">
-                                <div className="p-4 space-y-2">
-                                    {previewList.map((item, idx) => (
-                                        <motion.div 
-                                          variants={itemVariants}
-                                          initial="hidden"
-                                          animate="visible"
-                                          transition={{ delay: Math.min(idx * 0.005, 0.5) }} 
-                                          key={idx} 
-                                          className={`grid grid-cols-12 gap-6 px-5 py-3 rounded-xl border text-sm items-center transition-all ${
-                                            item.status === 'match' 
-                                                ? 'bg-white border-emerald-100/60 shadow-sm dark:bg-emerald-900/10 dark:border-emerald-800/30' 
-                                                : item.status === 'error'
-                                                    ? 'bg-white border-red-100/60 shadow-sm dark:bg-red-900/10 dark:border-red-800/30'
-                                                    : 'bg-transparent border-transparent hover:bg-white/40 hover:border-slate-200/60 dark:hover:bg-slate-800/30'
-                                          }`}
-                                       >
-                                           <div className="col-span-4 truncate font-medium text-slate-700 dark:text-slate-300" title={item.originalFile}>
-                                               {item.originalFile}
-                                           </div>
-                                           <div className="col-span-3 truncate text-xs text-slate-500" title={item.extractedKey}>
-                                               {item.extractedKey ? (
-                                                   <code className="bg-slate-100 px-1.5 py-0.5 rounded-md text-[11px] text-slate-600 font-mono dark:bg-slate-800 dark:text-slate-400">{item.extractedKey}</code>
-                                               ) : <span className="text-slate-300">-</span>}
-                                           </div>
-                                           <div className={`col-span-4 truncate font-medium transition-colors ${item.newFilename ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-300 dark:text-slate-600'}`} title={item.newFilename || ''}>
-                                               {item.newFilename || '-'}
-                                           </div>
-                                           <div className="col-span-1 flex justify-end">
-                                               {item.status === 'match' ? (
-                                                   <div className="text-emerald-500">
-                                                        <CheckCircle className="h-4 w-4" />
-                                                   </div>
-                                               ) : item.status === 'error' ? (
-                                                   <div className="text-red-500" title={item.error}>
-                                                        <AlertCircle className="h-4 w-4" />
-                                                   </div>
-                                               ) : (
-                                                   <div className="h-1.5 w-1.5 rounded-full bg-slate-200 dark:bg-slate-700 mx-1" />
-                                               )}
-                                           </div>
-                                       </motion.div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                         )}
-                     </div>
-                     
-                     {/* Footer Action */}
-                     <div className="p-6 border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900">
-                         <div className="flex items-center justify-between gap-4">
-                            <div className="text-xs text-slate-400 font-medium hidden md:block">
-                                {previewList.length > 0 && (
-                                    <span>Ready to process {previewList.filter(i => i.status === 'match').length} matched files</span>
-                                )}
-                            </div>
-                            <Button 
-                                size="lg" 
-                                className="bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20 active:scale-95 transition-all rounded-xl w-full md:w-auto min-w-[160px] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-                                disabled={!folderPath || !excelPath || previewList.length === 0 || isProcessing}
-                                onClick={handleExecute}
-                            >
-                                {isProcessing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                                {isProcessing ? t('emrProcessing') : t('emrExecute')}
-                            </Button>
-                         </div>
-                     </div>
-                </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/20 px-4 py-3">
+            <span className="text-xs text-muted-foreground">
+              {t('emrSuccessCount')}: {matchCount}
+            </span>
+            <Button
+              disabled={!folderPath || !excelPath || previewList.length === 0 || isProcessing}
+              onClick={handleExecute}
+            >
+              {isProcessing ? (
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Play className="mr-2 h-4 w-4" />
+              )}
+              {isProcessing ? t('emrProcessing') : t('emrExecute')}
+            </Button>
           </div>
+        </Panel>
       </div>
     </div>
   )

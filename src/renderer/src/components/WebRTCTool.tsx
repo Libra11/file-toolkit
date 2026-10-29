@@ -5,24 +5,15 @@
  * Description: WebRTC 音视频工具组件
  */
 import { useState, useEffect } from 'react'
-import { VideoIcon, Users, Settings } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { useTranslation } from 'react-i18next'
+import { Camera, Loader2, LogOut, Mic, RefreshCw, Settings2, Users, VideoIcon } from 'lucide-react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { Label } from './ui/label'
-import {
-  LiveKitRoom,
-  VideoConference,
-  RoomAudioRenderer,
-  ConnectionQualityIndicator
-} from '@livekit/components-react'
-import {
-  generateRoomName,
-  generateUserId,
-  getRoomConfig,
-  requestToken,
-  type ParticipantOptions
-} from '../utils/livekit'
+import { Field, Panel, PanelBody, PanelHeader } from './ui/panel'
+import { Notice, StatusDot } from './ui/states'
+import { cn } from '../lib/utils'
+import { LiveKitRoom, VideoConference, RoomAudioRenderer } from '@livekit/components-react'
+import { generateRoomName, generateUserId, getRoomConfig, requestToken } from '../utils/livekit'
 import '@livekit/components-styles'
 
 interface WebRTCToolProps {
@@ -37,11 +28,15 @@ interface RoomConfig {
 }
 
 export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
+  const { t } = useTranslation()
   const [roomConfig, setRoomConfig] = useState<RoomConfig | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
-  const [userName, setUserName] = useState('')
-  const [roomName, setRoomName] = useState('')
+  const [userName, setUserName] = useState(() => {
+    const userId = generateUserId()
+    return t('webrtcDefaultUser', { id: userId.slice(-4) })
+  })
+  const [roomName, setRoomName] = useState('default-room')
   const [mediaStatus, setMediaStatus] = useState<{
     camera: 'unknown' | 'allowed' | 'denied'
     microphone: 'unknown' | 'allowed' | 'denied'
@@ -53,11 +48,6 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
   const [isTestingCamera, setIsTestingCamera] = useState(false)
 
   useEffect(() => {
-    // 初始化默认配置
-    const userId = generateUserId()
-    setUserName(`用户_${userId.slice(-4)}`)
-    setRoomName('default-room')
-
     // 检查媒体设备权限
     checkMediaPermissions()
   }, [])
@@ -96,7 +86,7 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
 
   const handleJoinRoom = async (): Promise<void> => {
     if (!userName.trim() || !roomName.trim()) {
-      alert('请输入用户名和房间名')
+      alert(t('webrtcNameAndRoomRequired'))
       return
     }
 
@@ -116,7 +106,7 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
       })
 
       if (!token) {
-        throw new Error('Token 生成失败')
+        throw new Error(t('webrtcTokenFailed'))
       }
 
       const config: RoomConfig = {
@@ -128,7 +118,7 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
       setIsConnected(true)
     } catch (error) {
       console.error('加入房间失败:', error)
-      alert('加入房间失败，请检查配置')
+      alert(t('webrtcJoinFailed'))
     } finally {
       setIsConnecting(false)
     }
@@ -146,7 +136,7 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
 
   const testCameraAccess = async (): Promise<void> => {
     setIsTestingCamera(true)
-    setTestResult('开始测试摄像头访问...\n')
+    setTestResult(`${t('webrtcCameraTestStart')}\n`)
 
     try {
       // 清理之前的视频元素
@@ -156,11 +146,11 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
       }
 
       console.log('🔍 开始最小摄像头验证...')
-      setTestResult((prev) => prev + '正在请求摄像头权限...\n')
+      setTestResult((prev) => prev + `${t('webrtcRequestingCameraPermission')}\n`)
 
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
       console.log('✅ 摄像头流获取成功!')
-      setTestResult((prev) => prev + '✅ 摄像头流获取成功!\n')
+      setTestResult((prev) => prev + `${t('webrtcCameraStreamAcquired')}\n`)
 
       const v = document.createElement('video')
       v.id = 'camera-test-video'
@@ -168,7 +158,7 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
       v.muted = true // 一些平台不允许未静音的自动播放
       v.playsInline = true // iOS/部分WebView策略
       v.style.cssText =
-        'width: 300px; height: 225px; border: 2px solid #10b981; border-radius: 8px; margin: 10px 0; background-color: #000;'
+        'display: block; width: 100%; max-width: 480px; aspect-ratio: 4 / 3; height: auto; border: 1px solid hsl(var(--border)); border-radius: 6px; margin: 0 0 12px; background-color: #151a17;'
 
       // 将视频元素插入到测试结果区域
       const testContainer = document.getElementById('camera-test-container')
@@ -180,16 +170,16 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
 
       // 设置视频流
       v.srcObject = stream
-      setTestResult((prev) => prev + '📺 视频流已设置，等待元数据加载...\n')
+      setTestResult((prev) => prev + `${t('webrtcVideoStreamAttached')}\n`)
 
       // 先尝试播放，然后等待元数据
       try {
         await v.play()
         console.log('✅ 视频播放成功!')
-        setTestResult((prev) => prev + '✅ 视频播放成功!\n')
+        setTestResult((prev) => prev + `${t('webrtcVideoPlaybackSucceeded')}\n`)
       } catch (playError) {
         console.log('⚠️ 自动播放失败，但继续检查元数据:', playError)
-        setTestResult((prev) => prev + '⚠️ 自动播放失败，但继续检查元数据\n')
+        setTestResult((prev) => prev + `${t('webrtcAutoplayFailed')}\n`)
       }
 
       // 等待视频元数据加载，使用更短的超时时间
@@ -199,33 +189,41 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
           if (v.videoWidth > 0 && v.videoHeight > 0) {
             console.log('✅ 超时但发现有效尺寸:', v.videoWidth, 'x', v.videoHeight)
             setTestResult(
-              (prev) => prev + `📐 发现有效视频尺寸: ${v.videoWidth}x${v.videoHeight}\n`
+              (prev) =>
+                prev +
+                `${t('webrtcValidVideoDimensions', { width: v.videoWidth, height: v.videoHeight })}\n`
             )
             resolve()
           } else {
-            reject(new Error('视频元数据加载超时'))
+            reject(new Error(t('webrtcVideoMetadataTimeout')))
           }
         }, 3000) // 缩短到3秒超时
 
-        const onLoadedMetadata = () => {
+        const onLoadedMetadata = (): void => {
           clearTimeout(timeout)
           console.log('✅ 视频元数据已加载:', v.videoWidth, 'x', v.videoHeight)
           setTestResult(
-            (prev) => prev + `📐 视频元数据加载完成: ${v.videoWidth}x${v.videoHeight}\n`
+            (prev) =>
+              prev +
+              `${t('webrtcVideoMetadataLoaded', { width: v.videoWidth, height: v.videoHeight })}\n`
           )
           resolve()
         }
 
-        const onError = (e: any) => {
+        const onError = (e: any): void => {
           clearTimeout(timeout)
           console.error('❌ 视频加载错误:', e)
-          reject(new Error(`视频加载错误: ${e.type}`))
+          reject(new Error(t('webrtcVideoLoadError', { type: e.type })))
         }
 
-        const onCanPlay = () => {
+        const onCanPlay = (): void => {
           clearTimeout(timeout)
           console.log('✅ 视频可以播放，尺寸:', v.videoWidth, 'x', v.videoHeight)
-          setTestResult((prev) => prev + `📐 视频可播放，尺寸: ${v.videoWidth}x${v.videoHeight}\n`)
+          setTestResult(
+            (prev) =>
+              prev +
+              `${t('webrtcVideoPlayableDimensions', { width: v.videoWidth, height: v.videoHeight })}\n`
+          )
           resolve()
         }
 
@@ -242,8 +240,10 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
 
       const tracks = stream.getTracks().map((t) => ({ kind: t.kind, readyState: t.readyState }))
       console.log('📹 媒体轨道信息:', tracks)
-      setTestResult((prev) => prev + `📹 媒体轨道信息: ${JSON.stringify(tracks, null, 2)}\n`)
-      setTestResult((prev) => prev + '✅ 测试完成！摄像头工作正常。\n')
+      setTestResult(
+        (prev) => prev + `${t('webrtcMediaTrackInfo')}: ${JSON.stringify(tracks, null, 2)}\n`
+      )
+      setTestResult((prev) => prev + `${t('webrtcCameraTestSucceeded')}\n`)
 
       // 5秒后停止流
       setTimeout(() => {
@@ -255,185 +255,210 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
       }, 5000)
     } catch (e: any) {
       console.error('❌ getUserMedia failed:', e?.name, e?.message, e)
-      setTestResult((prev) => prev + `❌ 测试失败:\n`)
-      setTestResult((prev) => prev + `错误类型: ${e?.name || 'Unknown'}\n`)
-      setTestResult((prev) => prev + `错误信息: ${e?.message || 'Unknown error'}\n`)
-      setTestResult((prev) => prev + `完整错误: ${JSON.stringify(e, null, 2)}\n`)
+      setTestResult((prev) => prev + `${t('webrtcCameraTestFailed')}\n`)
+      setTestResult((prev) => prev + `${t('webrtcErrorType')}: ${e?.name || t('unknownError')}\n`)
+      setTestResult(
+        (prev) => prev + `${t('webrtcErrorMessage')}: ${e?.message || t('unknownError')}\n`
+      )
+      setTestResult((prev) => prev + `${t('webrtcFullError')}: ${JSON.stringify(e, null, 2)}\n`)
     } finally {
       setIsTestingCamera(false)
     }
   }
 
   return (
-    <div className={className}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <VideoIcon className="h-5 w-5" />
-            WebRTC 音视频工具
-          </CardTitle>
-          <CardDescription>
-            基于 LiveKit 的实时音视频通信工具，支持多人会议、屏幕共享等功能
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+    <div className={cn('min-w-0', className)}>
+      <Panel>
+        <PanelHeader
+          eyebrow="LIVEKIT / WEBRTC"
+          title={t('webrtcTool')}
+          description={t('webrtcToolDescription')}
+          action={
+            <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <StatusDot tone={isConnected ? 'success' : 'neutral'} />
+              {isConnected ? t('webrtcRoomConnected') : t('webrtcNotConnected')}
+            </span>
+          }
+        />
+        <PanelBody className="p-0">
           {!isConnected ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">用户名</Label>
-                  <Input
-                    id="username"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    placeholder="请输入您的用户名"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="roomname">房间名</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="roomname"
-                      value={roomName}
-                      onChange={(e) => setRoomName(e.target.value)}
-                      placeholder="请输入房间名"
-                    />
+            <>
+              <div className="grid xl:grid-cols-[minmax(0,1fr)_300px]">
+                <section className="p-5">
+                  <div className="mb-5">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {t('webrtcJoinMeeting')}
+                    </h3>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {t('webrtcJoinDescription')}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label={t('username')}>
+                      <Input
+                        id="username"
+                        aria-label={t('username')}
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        placeholder={t('enterUsername')}
+                      />
+                    </Field>
+                    <Field label={t('roomName')}>
+                      <div className="flex gap-2">
+                        <Input
+                          id="roomname"
+                          aria-label={t('roomName')}
+                          value={roomName}
+                          onChange={(e) => setRoomName(e.target.value)}
+                          placeholder={t('enterRoomName')}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCreateRandomRoom}
+                          className="h-9 shrink-0"
+                        >
+                          <RefreshCw className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.7} />
+                          {t('randomRoom')}
+                        </Button>
+                      </div>
+                    </Field>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCreateRandomRoom}
-                      className="whitespace-nowrap"
+                      type="button"
+                      onClick={handleJoinRoom}
+                      disabled={isConnecting || !userName.trim() || !roomName.trim()}
                     >
-                      随机房间
+                      {isConnecting ? (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Users className="mr-2 h-3.5 w-3.5" strokeWidth={1.7} />
+                      )}
+                      {isConnecting ? t('connecting') : t('joinRoom')}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={testCameraAccess}
+                      disabled={isTestingCamera}
+                      variant="outline"
+                    >
+                      {isTestingCamera ? (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Camera className="mr-2 h-3.5 w-3.5" strokeWidth={1.7} />
+                      )}
+                      {isTestingCamera ? t('webrtcTesting') : t('webrtcTestCamera')}
                     </Button>
                   </div>
-                </div>
-              </div>
+                </section>
 
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleJoinRoom}
-                  disabled={isConnecting || !userName.trim() || !roomName.trim()}
-                  className="flex items-center gap-2"
-                >
-                  <Users className="h-4 w-4" />
-                  {isConnecting ? '连接中...' : '加入房间'}
-                </Button>
-                <Button
-                  onClick={testCameraAccess}
-                  disabled={isTestingCamera}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <VideoIcon className="h-4 w-4" />
-                  {isTestingCamera ? '测试中...' : '测试摄像头'}
-                </Button>
-              </div>
+                <aside className="border-t border-border bg-muted/20 p-5 xl:border-l xl:border-t-0">
+                  <div className="flex items-center gap-2">
+                    <Settings2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.7} />
+                    <h3 className="text-xs font-semibold text-foreground">
+                      {t('webrtcDevicesAndConnection')}
+                    </h3>
+                  </div>
 
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div className="flex items-start gap-3">
-                  <Settings className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                  <div>
-                    <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2">使用说明</h3>
-                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                      <li>• 输入用户名和房间名即可加入视频会议</li>
-                      <li>• 支持多人同时加入同一房间进行音视频通话</li>
-                      <li>• 具备屏幕共享、静音、关闭摄像头等功能</li>
-                      <li>• 服务器地址：livekit.penlibra.xin</li>
-                    </ul>
-
-                    <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
-                      <div className="text-xs text-blue-700 dark:text-blue-300 mb-2">
-                        设备权限状态:
-                      </div>
-                      <div className="flex gap-4 text-xs">
-                        <div className="flex items-center gap-1">
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              mediaStatus.camera === 'allowed'
-                                ? 'bg-green-500'
-                                : mediaStatus.camera === 'denied'
-                                  ? 'bg-red-500'
-                                  : 'bg-gray-400'
-                            }`}
-                          ></div>
-                          <span>
-                            摄像头:{' '}
-                            {mediaStatus.camera === 'allowed'
-                              ? '已授权'
+                  <div className="mt-3 divide-y divide-border border-y border-border">
+                    <div className="flex items-center justify-between gap-3 py-2.5 text-xs">
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <Camera className="h-3.5 w-3.5" strokeWidth={1.7} />
+                        {t('camera')}
+                      </span>
+                      <span className="flex items-center gap-2 font-medium text-foreground">
+                        <StatusDot
+                          tone={
+                            mediaStatus.camera === 'allowed'
+                              ? 'success'
                               : mediaStatus.camera === 'denied'
-                                ? '被拒绝'
-                                : '检查中'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              mediaStatus.microphone === 'allowed'
-                                ? 'bg-green-500'
-                                : mediaStatus.microphone === 'denied'
-                                  ? 'bg-red-500'
-                                  : 'bg-gray-400'
-                            }`}
-                          ></div>
-                          <span>
-                            麦克风:{' '}
-                            {mediaStatus.microphone === 'allowed'
-                              ? '已授权'
+                                ? 'error'
+                                : 'neutral'
+                          }
+                        />
+                        {t(`webrtcPermission.${mediaStatus.camera}`)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 py-2.5 text-xs">
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <Mic className="h-3.5 w-3.5" strokeWidth={1.7} />
+                        {t('microphone')}
+                      </span>
+                      <span className="flex items-center gap-2 font-medium text-foreground">
+                        <StatusDot
+                          tone={
+                            mediaStatus.microphone === 'allowed'
+                              ? 'success'
                               : mediaStatus.microphone === 'denied'
-                                ? '被拒绝'
-                                : '检查中'}
-                          </span>
-                        </div>
-                      </div>
-                      {(mediaStatus.camera === 'denied' || mediaStatus.microphone === 'denied') && (
-                        <div className="mt-2 text-xs text-orange-700 dark:text-orange-300">
-                          💡 如果权限被拒绝，请检查系统设置或重启应用
-                        </div>
-                      )}
+                                ? 'error'
+                                : 'neutral'
+                          }
+                        />
+                        {t(`webrtcPermission.${mediaStatus.microphone}`)}
+                      </span>
                     </div>
                   </div>
-                </div>
+
+                  <div className="mt-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      {t('server')}
+                    </p>
+                    <p className="mt-1 break-all font-mono text-[11px] text-foreground">
+                      livekit.penlibra.xin
+                    </p>
+                  </div>
+
+                  <ul className="mt-4 space-y-2 text-[11px] leading-relaxed text-muted-foreground">
+                    <li>{t('webrtcSameRoomHint')}</li>
+                    <li>{t('webrtcConferenceControlsHint')}</li>
+                    <li>{t('webrtcMediaPrivacyHint')}</li>
+                  </ul>
+
+                  {(mediaStatus.camera === 'denied' || mediaStatus.microphone === 'denied') && (
+                    <Notice
+                      tone="error"
+                      title={t('webrtcPermissionRestricted')}
+                      description={t('webrtcPermissionRestrictedDescription')}
+                      className="mt-4 px-3 py-2.5"
+                    />
+                  )}
+                </aside>
               </div>
 
-              {/* 摄像头测试区域 */}
               {(testResult || isTestingCamera) && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-2 mb-3">
-                    <VideoIcon className="h-5 w-5 text-orange-500" />
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100">摄像头测试结果</h3>
+                <section className="border-t border-border p-5">
+                  <div className="mb-3 flex items-center gap-2">
+                    <VideoIcon className="h-4 w-4 text-muted-foreground" strokeWidth={1.7} />
+                    <h3 className="text-xs font-semibold text-foreground">
+                      {t('webrtcCameraDiagnostics')}
+                    </h3>
                   </div>
-
-                  {/* 视频预览容器 */}
-                  <div id="camera-test-container" className="mb-3"></div>
-
-                  {/* 测试日志 */}
-                  <div className="bg-black text-green-400 p-3 rounded font-mono text-sm whitespace-pre-wrap max-h-64 overflow-y-auto">
-                    {testResult || '等待测试结果...'}
-                  </div>
-                </div>
+                  <div id="camera-test-container" className="empty:hidden" />
+                  <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/45 p-3 font-mono text-[11px] leading-5 text-foreground">
+                    {testResult || t('webrtcTestResultEmpty')}
+                  </pre>
+                </section>
               )}
-            </div>
+            </>
           ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                    已连接到房间: {roomConfig?.roomName}
-                  </span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleLeaveRoom}
-                  className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                >
-                  离开房间
-                </Button>
-              </div>
+            <div className="space-y-4 p-4 sm:p-5">
+              <Notice
+                tone="success"
+                title={t('webrtcJoinedRoom', { room: roomConfig?.roomName ?? '' })}
+                description={t('webrtcJoinedRoomDescription', { user: userName })}
+                action={
+                  <Button type="button" variant="outline" size="sm" onClick={handleLeaveRoom}>
+                    <LogOut className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.7} />
+                    {t('leaveRoom')}
+                  </Button>
+                }
+              />
 
-              <div className="relative min-h-[500px] bg-black rounded-lg overflow-hidden">
+              <div className="h-[560px] min-h-[500px] overflow-hidden rounded-md border border-border bg-[#151a17]">
                 {roomConfig && (
                   <LiveKitRoom
                     token={roomConfig.token}
@@ -448,8 +473,8 @@ export function WebRTCTool({ className }: WebRTCToolProps): JSX.Element {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   )
 }

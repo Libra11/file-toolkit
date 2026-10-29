@@ -10,16 +10,22 @@ files:
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  # 运行时二进制只通过 extraResources 提供，避免同时打进 asar 造成体积翻倍
+  - '!resources/**'
+
+asarUnpack:
+  - 'node_modules/sharp/**'
+  - 'node_modules/@img/**'
 
 extraResources:
   - from: 'resources'
     to: 'resources'
     filter:
       [
-        '!resources/ffmpeg/ffmpeg.exe',
-        '!resources/ffprobe/ffprobe.exe',
-        '!resources/ffmpeg/ffmpeg',
-        '!resources/ffprobe/ffprobe',
+        '!ffmpeg/ffmpeg.exe',
+        '!ffprobe/ffprobe.exe',
+        '!ffmpeg/ffmpeg',
+        '!ffprobe/ffprobe',
         '!**/.DS_Store'
       ]
 

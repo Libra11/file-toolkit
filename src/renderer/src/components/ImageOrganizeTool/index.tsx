@@ -2,25 +2,11 @@
  * Author: Libra
  * Date: 2025-04-24 10:15:11
  * LastEditors: Libra
- * Description:
- */
-/*
- * @Author: Libra
- * @Date: 2024-11-10 15:30:00
- * @LastEditors: Libra
- * @Description: 图片整理工具组件
+ * Description: 图片整理工具组件
  */
 import { useState, useEffect, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@renderer/components/ui/card'
 import { Label } from '@renderer/components/ui/label'
 import {
   Select,
@@ -31,22 +17,15 @@ import {
 } from '@renderer/components/ui/select'
 import { toast } from '@renderer/components/ui/toast'
 import { Progress } from '@renderer/components/ui/progress'
-import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 import {
-  Folder,
+  Check,
   FileSpreadsheet,
-  Settings,
+  Folder,
+  Image as ImageIcon,
   Loader2,
-  Sparkles,
-  Workflow,
-  LayoutList,
-  BadgeCheck,
-  RefreshCcw,
-  PlayCircle,
-  Gauge,
-  Image as ImageIcon
+  Play,
+  Settings2
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 import { ImageProcessLogger, ProcessLogMessage } from './ImageProcessLogger'
 import { useTranslation } from 'react-i18next'
 import type { NameRule } from '@shared/imageOrganizeRules'
@@ -55,59 +34,14 @@ import {
   getRequiredExcelColumnLabels,
   nameRuleConfigs
 } from '@shared/imageOrganizeRules'
+import { DataRow, Panel, PanelBody, PanelHeader } from '@renderer/components/ui/panel'
+import { StatusDot } from '@renderer/components/ui/states'
 
 // 进度状态接口
 interface ProgressStatus {
   status: string
   percentage: number
 }
-
-// 渐入动画配置
-const fadeInAnimation = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.3 }
-}
-
-interface PipelineStep {
-  key: string
-  icon: LucideIcon
-  titleKey: string
-  descriptionKey: string
-}
-
-const PIPELINE_STEPS: PipelineStep[] = [
-  {
-    key: 'flatten',
-    icon: LayoutList,
-    titleKey: 'imageOrganizeStepFlatten',
-    descriptionKey: 'imageOrganizeStepFlattenDesc'
-  },
-  {
-    key: 'match',
-    icon: FileSpreadsheet,
-    titleKey: 'imageOrganizeStepMatch',
-    descriptionKey: 'imageOrganizeStepMatchDesc'
-  },
-  {
-    key: 'rename',
-    icon: BadgeCheck,
-    titleKey: 'imageOrganizeStepRename',
-    descriptionKey: 'imageOrganizeStepRenameDesc'
-  },
-  {
-    key: 'compress',
-    icon: ImageIcon,
-    titleKey: 'imageOrganizeStepCompress',
-    descriptionKey: 'imageOrganizeStepCompressDesc'
-  },
-  {
-    key: 'cleanup',
-    icon: RefreshCcw,
-    titleKey: 'imageOrganizeStepCleanup',
-    descriptionKey: 'imageOrganizeStepCleanupDesc'
-  }
-]
 
 interface ImageOrganizeToolProps {
   onBack?: () => void
@@ -116,6 +50,8 @@ interface ImageOrganizeToolProps {
 // 组件主体
 const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
   const { t } = useTranslation()
+  // 导航由外层工作台承载，保留该属性以兼容现有调用方。
+  void onBack
 
   // 状态定义
   const [rootDir, setRootDir] = useState<string>('')
@@ -127,7 +63,6 @@ const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
   const [logs, setLogs] = useState<ProcessLogMessage[]>([])
   const [currentStep, setCurrentStep] = useState<string>('')
   const [currentProgress, setCurrentProgress] = useState<number>(0)
-  const [hoveredButton, setHoveredButton] = useState<string | null>(null)
 
   const processedFiles = useMemo(() => {
     for (let i = logs.length - 1; i >= 0; i--) {
@@ -158,28 +93,23 @@ const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
   const statusConfigs = {
     idle: {
       label: t('imageOrganizeStatusIdle'),
-      className:
-        'bg-slate-100/80 text-slate-600 dark:bg-slate-800/60 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/60'
+      tone: 'neutral'
     },
     running: {
       label: t('imageOrganizeStatusRunning'),
-      className:
-        'bg-cyan-100/80 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200 border border-cyan-200/80 dark:border-cyan-800/50'
+      tone: 'active'
     },
     pending: {
       label: t('imageOrganizeStatusPending'),
-      className:
-        'bg-amber-100/80 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200 border border-amber-200/80 dark:border-amber-800/40'
+      tone: 'active'
     },
     done: {
       label: t('imageOrganizeStatusFinished'),
-      className:
-        'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200 border border-emerald-200/60 dark:border-emerald-800/40'
+      tone: 'success'
     },
     error: {
       label: t('imageOrganizeStatusError'),
-      className:
-        'bg-red-100/80 text-red-700 dark:bg-red-900/30 dark:text-red-200 border border-red-200/80 dark:border-red-800/40'
+      tone: 'error'
     }
   } as const
 
@@ -188,9 +118,10 @@ const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
   const requiredExcelColumns = useMemo(() => getRequiredExcelColumnLabels(nameRule), [nameRule])
   const optionalExcelColumns = useMemo(() => getOptionalExcelColumnLabels(nameRule), [nameRule])
   const excelRequirementDescription = t('imageOrganizeRuleRequirement', {
-    required: requiredExcelColumns.join('、'),
-    optional: optionalExcelColumns.join('、')
+    required: requiredExcelColumns.join(', '),
+    optional: optionalExcelColumns.join(', ')
   })
+  const configuredSourceCount = [rootDir, sourceDir, excelPath].filter(Boolean).length
 
   // 根据状态信息获取当前步骤
   const getStepFromStatus = (status: string): string => {
@@ -258,7 +189,7 @@ const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
       const timestamp = new Date().toISOString()
       const logMessage: ProcessLogMessage = {
         type: 'success',
-        message: '图片整理处理已成功完成！',
+        message: t('imageOrganizeSuccess'),
         timestamp,
         percentage: 100,
         step: '完成'
@@ -396,444 +327,264 @@ const ImageOrganizeTool = ({ onBack }: ImageOrganizeToolProps): JSX.Element => {
     }
   }
 
-  // 获取选择按钮样式
-  const getSelectButtonStyles = (type: string): string => {
-    const isHovered = hoveredButton === type
-    return `w-full sm:w-auto h-11 px-4 gap-2 rounded-xl border border-cyan-100/80 bg-white/80 text-sm font-medium text-cyan-700 transition-all duration-300 dark:border-cyan-500/40 dark:bg-slate-900/60 dark:text-cyan-200 ${
-      isHovered ? 'shadow-lg scale-[1.02] bg-cyan-50/80 dark:bg-cyan-900/30' : 'shadow-sm'
-    }`
-  }
+  const checklistMark = (configured: boolean, order: number): JSX.Element => (
+    <span
+      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+        configured
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-border bg-muted text-muted-foreground'
+      }`}
+    >
+      {configured ? (
+        <Check className="h-3 w-3" />
+      ) : (
+        <span className="font-mono text-[9px]">{order}</span>
+      )}
+    </span>
+  )
 
   return (
-    <motion.div
-      className="pb-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-    >
-      <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-cyan-900/10 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/60 md:p-8">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-cyan-100/60 via-white to-transparent dark:from-cyan-900/30 dark:via-slate-900" />
-        <div className="space-y-8">
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-3 flex-row items-center justify-between">
-              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-cyan-100/70 px-3 py-1 text-sm font-medium text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200">
-                <Sparkles className="h-4 w-4" />
-                {t('imageOrganize')}
-              </div>
-              {onBack && (
-                <BackToHomeButton
-                  onClick={onBack}
-                  className="bg-cyan-100/70 text-cyan-700 hover:bg-cyan-100 hover:text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-200 dark:hover:bg-cyan-900/50"
-                />
-              )}
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">
-                {t('imageOrganizeHeroTitle')}
-              </h2>
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                {t('imageOrganizeDescription')}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <motion.div {...fadeInAnimation}>
-              <div className="h-full rounded-2xl border border-cyan-100/80 bg-white/90 p-5 shadow-lg shadow-cyan-900/10 dark:border-cyan-500/30 dark:bg-slate-950/50">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-cyan-600 dark:from-cyan-500/10 dark:to-blue-500/10 dark:text-cyan-200">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-base font-semibold text-slate-900 dark:text-white">
-                      {t('imageOrganizeTipTitle')}
-                    </p>
-                    <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                      {excelRequirementDescription}
-                    </p>
-                    <div className="flex flex-wrap gap-2 pt-1 text-xs">
-                      <span className="rounded-full bg-cyan-50 px-3 py-1 font-medium text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-200">
-                        {t('excelFile')}
-                      </span>
-                      <span className="rounded-full bg-blue-50 px-3 py-1 font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-200">
-                        {t('nameRule')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-            <motion.div {...fadeInAnimation} transition={{ duration: 0.3, delay: 0.05 }}>
-              <div className="h-full rounded-2xl border border-cyan-100/80 bg-white/90 p-5 shadow-lg shadow-cyan-900/10 dark:border-cyan-500/30 dark:bg-slate-950/50">
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 text-blue-600 dark:from-blue-500/10 dark:to-cyan-500/10 dark:text-blue-200">
-                      <Workflow className="h-5 w-5" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-base font-semibold text-slate-900 dark:text-white">
-                        {t('imageOrganizeStepsTitle')}
-                      </p>
-                      <p className="text-sm text-slate-600 dark:text-slate-300">
-                        {t('imageOrganizeStepsDescription')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {PIPELINE_STEPS.map((step) => {
-                      const Icon = step.icon
-                      return (
-                        <div
-                          key={step.key}
-                          className="flex items-start gap-2 rounded-xl border border-slate-100/70 bg-white/90 p-3 text-sm shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60"
-                        >
-                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-200">
-                            <Icon className="h-4 w-4" />
-                          </span>
-                          <div className="space-y-0.5">
-                            <p className="font-semibold text-slate-800 dark:text-slate-200">
-                              {t(step.titleKey)}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                              {t(step.descriptionKey)}
-                            </p>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)]">
-            <motion.div {...fadeInAnimation} transition={{ duration: 0.3, delay: 0.1 }}>
-              <Card className="border border-cyan-100/80 bg-white/95 shadow-xl shadow-cyan-900/10 dark:border-cyan-500/30 dark:bg-slate-950/60">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
-                        <Settings className="h-5 w-5 text-cyan-500" />
-                        {t('fileConfiguration')}
-                      </CardTitle>
-                      <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                        {t('imageOrganizeConfigDescription')}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-2">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="rootDir"
-                        className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300"
-                      >
-                        <Folder className="h-4 w-4 text-cyan-500" />
-                        {t('rootDir')}
-                      </Label>
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <Input
-                          id="rootDir"
-                          value={rootDir}
-                          onChange={(e) => setRootDir(e.target.value)}
-                          placeholder={t('selectRootDir')}
-                          readOnly
-                          className="h-11 flex-1 rounded-xl border border-slate-200/70 bg-white/80 text-sm shadow-sm focus-visible:ring-cyan-500 dark:border-slate-700 dark:bg-slate-900/60"
-                        />
-                        <motion.div
-                          className="sm:w-auto"
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <Button
-                            variant="outline"
-                            onClick={handleSelectRootDir}
-                            disabled={isProcessing}
-                            className={getSelectButtonStyles('root')}
-                            onMouseEnter={() => setHoveredButton('root')}
-                            onMouseLeave={() => setHoveredButton(null)}
-                          >
-                            <Folder size={18} />
-                            {t('select')}
-                          </Button>
-                        </motion.div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="sourceDir"
-                        className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300"
-                      >
-                        <Folder className="h-4 w-4 text-cyan-500" />
-                        {t('sourceDir')}
-                      </Label>
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <Input
-                          id="sourceDir"
-                          value={sourceDir}
-                          onChange={(e) => setSourceDir(e.target.value)}
-                          placeholder={t('selectSourceDir')}
-                          readOnly
-                          className="h-11 flex-1 rounded-xl border border-slate-200/70 bg-white/80 text-sm shadow-sm focus-visible:ring-cyan-500 dark:border-slate-700 dark:bg-slate-900/60"
-                        />
-                        <motion.div
-                          className="sm:w-auto"
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <Button
-                            variant="outline"
-                            onClick={handleSelectSourceDir}
-                            disabled={isProcessing}
-                            className={getSelectButtonStyles('source')}
-                            onMouseEnter={() => setHoveredButton('source')}
-                            onMouseLeave={() => setHoveredButton(null)}
-                          >
-                            <Folder size={18} />
-                            {t('select')}
-                          </Button>
-                        </motion.div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="excelPath"
-                        className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300"
-                      >
-                        <FileSpreadsheet className="h-4 w-4 text-cyan-500" />
-                        {t('excelFile')}
-                      </Label>
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <Input
-                          id="excelPath"
-                          value={excelPath}
-                          onChange={(e) => setExcelPath(e.target.value)}
-                          placeholder={excelRequirementDescription}
-                          readOnly
-                          className="h-11 flex-1 rounded-xl border border-slate-200/70 bg-white/80 text-sm shadow-sm focus-visible:ring-cyan-500 dark:border-slate-700 dark:bg-slate-900/60"
-                        />
-                        <motion.div
-                          className="sm:w-auto"
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <Button
-                            variant="outline"
-                            onClick={handleSelectExcel}
-                            disabled={isProcessing}
-                            className={getSelectButtonStyles('excel')}
-                            onMouseEnter={() => setHoveredButton('excel')}
-                            onMouseLeave={() => setHoveredButton(null)}
-                          >
-                            <FileSpreadsheet size={18} />
-                            {t('select')}
-                          </Button>
-                        </motion.div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="nameRule"
-                        className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300"
-                      >
-                        <Settings className="h-4 w-4 text-cyan-500" />
-                        {t('nameRule')}
-                      </Label>
-                      <Select
-                        value={nameRule}
-                        onValueChange={(value: string) => setNameRule(value as NameRule)}
-                        disabled={isProcessing}
-                      >
-                        <SelectTrigger className="h-11 w-full rounded-xl border border-slate-200/70 bg-white/80 text-sm shadow-sm focus:ring-cyan-500 dark:border-slate-700 dark:bg-slate-900/60">
-                          <SelectValue placeholder={t('selectNameRule')} />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border border-slate-200/60 bg-white/95 shadow-xl dark:border-slate-700 dark:bg-slate-900/95">
-                          {Object.entries(nameRuleConfigs).map(([value, config]) => (
-                            <SelectItem key={value} value={value}>
-                              {config.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                        {excelRequirementDescription}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-cyan-100/80 bg-gradient-to-br from-cyan-50/80 via-white to-blue-50/80 p-4 shadow-inner dark:border-cyan-500/40 dark:from-cyan-950/60 dark:via-slate-950/50 dark:to-blue-950/40">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                          {t('imageOrganizeStatusTitle')}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {t('imageOrganizeStatusDescription')}
-                        </p>
-                      </div>
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${statusBadge.className}`}
-                      >
-                        <Gauge className="h-3.5 w-3.5" />
-                        {statusBadge.label}
-                      </span>
-                    </div>
-                    <div className="grid gap-4 pt-4 text-sm sm:grid-cols-3">
-                      <div className="rounded-xl border border-white/70 bg-white/80 p-3 text-slate-700 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
-                        <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          {t('imageOrganizeCurrentStep')}
-                        </p>
-                        <p className="mt-1 text-base font-semibold text-slate-800 dark:text-white">
-                          {currentStep || t('imageOrganizeStatusIdle')}
-                        </p>
-                      </div>
-                      <div className="rounded-xl border border-white/70 bg-white/80 p-3 shadow-sm dark:border-white/10 dark:bg-white/5">
-                        <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          {t('processingProgress')}
-                        </p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <Progress
-                            value={progressPercent}
-                            className="h-2 flex-1 overflow-hidden rounded-full bg-white/60 dark:bg-white/10"
-                          />
-                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                            {progressPercent}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="rounded-xl border border-white/70 bg-white/80 p-3 text-slate-700 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
-                        <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          {t('imageOrganizeFilesProcessed')}
-                        </p>
-                        <p className="mt-1 text-base font-semibold text-slate-800 dark:text-white">
-                          {processedFiles}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        {t('imageOrganizeActionHint')}
-                      </p>
-                      <motion.div
-                        className="w-full sm:w-auto"
-                        whileHover={!isActionDisabled ? { scale: 1.01 } : undefined}
-                        whileTap={!isActionDisabled ? { scale: 0.97 } : undefined}
-                      >
-                        <Button
-                          className={`h-12 w-full rounded-2xl text-base font-semibold shadow-lg transition-all ${
-                            isActionDisabled
-                              ? 'cursor-not-allowed bg-slate-200/70 text-slate-500 dark:bg-slate-800/40 dark:text-slate-500'
-                              : 'bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 text-white shadow-cyan-500/30 hover:shadow-cyan-500/40'
-                          }`}
-                          disabled={isActionDisabled}
-                          onClick={handleStartProcess}
-                        >
-                          {isProcessing ? (
-                            <span className="flex items-center justify-center gap-2">
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                              {t('processing')}
-                            </span>
-                          ) : (
-                            <span className="flex items-center justify-center gap-2">
-                              <PlayCircle className="h-5 w-5" />
-                              {t('startProcess')}
-                            </span>
-                          )}
-                        </Button>
-                      </motion.div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div {...fadeInAnimation} transition={{ duration: 0.3, delay: 0.2 }}>
-              <Card className="border border-cyan-100/80 bg-white/95 shadow-xl shadow-cyan-900/10 dark:border-cyan-500/30 dark:bg-slate-950/60">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/15 to-blue-500/15 text-cyan-600 dark:from-cyan-500/10 dark:to-blue-500/10 dark:text-cyan-200">
-                      <Gauge className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                        {t('processingLogs')}
-                      </CardTitle>
-                      <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                        {t('imageOrganizeLogsDescription')}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-2">
-                  <AnimatePresence mode="wait">
-                    {isProcessing || progress.percentage > 0 ? (
-                      <motion.div
-                        key="logger"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.4 }}
-                        className="rounded-2xl border border-cyan-50 bg-white/80 p-4 dark:border-cyan-900/30 dark:bg-slate-900/60"
-                      >
-                        <ImageProcessLogger
-                          isProcessing={isProcessing}
-                          logs={logs}
-                          currentProgress={currentProgress}
-                          currentStep={currentStep}
-                        />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="empty-state"
-                        className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/70 p-8 text-muted-foreground dark:border-slate-800 dark:bg-slate-900/40"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.4 }}
-                      >
-                        <motion.div
-                          className="text-center space-y-4"
-                          initial={{ scale: 0.9, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          <motion.div
-                            className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-cyan-200/70 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-500 shadow-inner dark:border-cyan-800/40"
-                            animate={{
-                              boxShadow: [
-                                '0 0 0 0 rgba(6, 182, 212, 0.15)',
-                                '0 0 0 18px rgba(6, 182, 212, 0)'
-                              ]
-                            }}
-                            transition={{
-                              duration: 2.5,
-                              repeat: Infinity
-                            }}
-                          >
-                            <Folder size={40} />
-                          </motion.div>
-                          <h3 className="text-lg font-medium text-slate-700 dark:text-slate-200">
-                            {t('readyToStart')}
-                          </h3>
-                          <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {t('selectFilesAndStartProcess')}
-                          </p>
-                        </motion.div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
-            </motion.div>
+    <div className="space-y-4 text-foreground">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <ImageIcon className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold tracking-tight text-foreground">
+              {t('imageOrganize')}
+            </h1>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('imageOrganizeDescription')}</p>
           </div>
         </div>
+        <div className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <StatusDot tone={statusBadge.tone} />
+          <span>{statusBadge.label}</span>
+        </div>
+      </header>
+
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(340px,0.85fr)_minmax(0,1.35fr)]">
+        <Panel>
+          <PanelHeader
+            eyebrow="01"
+            title={t('fileConfiguration')}
+            description={t('imageOrganizeConfigDescription')}
+            action={
+              <span className="font-mono text-xs text-muted-foreground">
+                {configuredSourceCount} / 3
+              </span>
+            }
+          />
+          <PanelBody className="p-0">
+            <ol className="divide-y divide-border">
+              <li className="space-y-3 p-4">
+                <div className="flex items-start gap-2.5">
+                  {checklistMark(Boolean(rootDir), 1)}
+                  <Label
+                    htmlFor="rootDir"
+                    className="text-xs font-medium leading-5 text-foreground"
+                  >
+                    {t('rootDir')}
+                  </Label>
+                </div>
+                <div className="flex gap-2 pl-[30px]">
+                  <Input
+                    id="rootDir"
+                    value={rootDir}
+                    onChange={(event) => setRootDir(event.target.value)}
+                    placeholder={t('selectRootDir')}
+                    readOnly
+                    className="min-w-0 flex-1 bg-muted/30 font-mono text-[11px]"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectRootDir}
+                    disabled={isProcessing}
+                    className="h-10 shrink-0"
+                  >
+                    <Folder className="mr-2 h-3.5 w-3.5" />
+                    {t('select')}
+                  </Button>
+                </div>
+              </li>
+
+              <li className="space-y-3 p-4">
+                <div className="flex items-start gap-2.5">
+                  {checklistMark(Boolean(sourceDir), 2)}
+                  <Label
+                    htmlFor="sourceDir"
+                    className="text-xs font-medium leading-5 text-foreground"
+                  >
+                    {t('sourceDir')}
+                  </Label>
+                </div>
+                <div className="flex gap-2 pl-[30px]">
+                  <Input
+                    id="sourceDir"
+                    value={sourceDir}
+                    onChange={(event) => setSourceDir(event.target.value)}
+                    placeholder={t('selectSourceDir')}
+                    readOnly
+                    className="min-w-0 flex-1 bg-muted/30 font-mono text-[11px]"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectSourceDir}
+                    disabled={isProcessing}
+                    className="h-10 shrink-0"
+                  >
+                    <Folder className="mr-2 h-3.5 w-3.5" />
+                    {t('select')}
+                  </Button>
+                </div>
+              </li>
+
+              <li className="space-y-3 p-4">
+                <div className="flex items-start gap-2.5">
+                  {checklistMark(Boolean(excelPath), 3)}
+                  <Label
+                    htmlFor="excelPath"
+                    className="text-xs font-medium leading-5 text-foreground"
+                  >
+                    {t('excelFile')}
+                  </Label>
+                </div>
+                <div className="flex gap-2 pl-[30px]">
+                  <Input
+                    id="excelPath"
+                    value={excelPath}
+                    onChange={(event) => setExcelPath(event.target.value)}
+                    placeholder={t('selectExcelFile')}
+                    readOnly
+                    className="min-w-0 flex-1 bg-muted/30 font-mono text-[11px]"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectExcel}
+                    disabled={isProcessing}
+                    className="h-10 shrink-0"
+                  >
+                    <FileSpreadsheet className="mr-2 h-3.5 w-3.5" />
+                    {t('select')}
+                  </Button>
+                </div>
+              </li>
+
+              <li className="space-y-3 p-4">
+                <div className="flex items-start gap-2.5">
+                  {checklistMark(true, 4)}
+                  <Label
+                    htmlFor="nameRule"
+                    className="text-xs font-medium leading-5 text-foreground"
+                  >
+                    {t('nameRule')}
+                  </Label>
+                </div>
+                <div className="pl-[30px]">
+                  <Select
+                    value={nameRule}
+                    onValueChange={(value: string) => setNameRule(value as NameRule)}
+                    disabled={isProcessing}
+                  >
+                    <SelectTrigger id="nameRule" aria-label={t('selectNameRule')}>
+                      <SelectValue placeholder={t('selectNameRule')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(nameRuleConfigs).map(([value, config]) => (
+                        <SelectItem key={value} value={value}>
+                          {config.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </li>
+            </ol>
+
+            <div className="border-t border-border bg-muted/20 px-4 py-3 text-[11px] leading-relaxed text-muted-foreground">
+              {excelRequirementDescription}
+            </div>
+
+            <div className="space-y-3 p-4">
+              <p className="text-xs text-muted-foreground">{t('imageOrganizeActionHint')}</p>
+              <Button className="w-full" disabled={isActionDisabled} onClick={handleStartProcess}>
+                {isProcessing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Play className="mr-2 h-4 w-4" />
+                )}
+                {isProcessing ? t('processing') : t('startProcess')}
+              </Button>
+            </div>
+          </PanelBody>
+        </Panel>
+
+        <div className="min-w-0 space-y-4">
+          <Panel>
+            <PanelHeader
+              eyebrow="02"
+              title={t('imageOrganizeStatusTitle')}
+              description={t('imageOrganizeStatusDescription')}
+              action={
+                <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                  <StatusDot tone={statusBadge.tone} />
+                  {statusBadge.label}
+                </span>
+              }
+            />
+            <PanelBody className="space-y-4">
+              <div className="flex items-end justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground">
+                    {t('imageOrganizeCurrentStep')}
+                  </p>
+                  <p className="mt-1 truncate text-sm font-semibold text-foreground">
+                    {currentStep || t('imageOrganizeStatusIdle')}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[11px] text-muted-foreground">{t('processingProgress')}</p>
+                  <p className="mt-0.5 font-mono text-2xl font-semibold tracking-tight text-primary">
+                    {progressPercent}%
+                  </p>
+                </div>
+              </div>
+              <Progress value={progressPercent} className="h-1.5 bg-muted [&>div]:bg-primary" />
+              <dl className="border-t border-border pt-1">
+                <DataRow label={t('imageOrganizeFilesProcessed')} value={processedFiles} />
+              </dl>
+            </PanelBody>
+          </Panel>
+
+          <Panel>
+            <PanelHeader
+              eyebrow={
+                <span className="inline-flex items-center gap-1.5">
+                  <Settings2 className="h-3 w-3" />
+                  03
+                </span>
+              }
+              title={t('processingLogs')}
+              description={t('imageOrganizeLogsDescription')}
+              action={
+                <span className="font-mono text-xs text-muted-foreground">{logs.length}</span>
+              }
+            />
+            <PanelBody className="p-4">
+              <ImageProcessLogger
+                isProcessing={isProcessing}
+                logs={logs}
+                currentProgress={currentProgress}
+                currentStep={currentStep}
+              />
+            </PanelBody>
+          </Panel>
+        </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 

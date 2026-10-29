@@ -6,13 +6,15 @@
  */
 import { useRef, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'framer-motion'
 import { Button } from '@renderer/components/ui/button'
+import { EmptyState } from '@renderer/components/ui/states'
 import { toast } from '@renderer/components/ui/toast'
-import { Copy, CheckCircle2 } from 'lucide-react'
+import { cn } from '@renderer/lib/utils'
+import { CheckCircle2, Copy, FileSpreadsheet, Info } from 'lucide-react'
 
 interface ExcelPreviewProps {
   data: string[][]
+  fixedMultipleChoiceLayout?: boolean
 }
 
 interface TableInfo {
@@ -22,7 +24,10 @@ interface TableInfo {
   normalizedData: string[][]
 }
 
-const ExcelPreview = ({ data }: ExcelPreviewProps): JSX.Element => {
+const ExcelPreview = ({
+  data,
+  fixedMultipleChoiceLayout = false
+}: ExcelPreviewProps): JSX.Element => {
   const { t } = useTranslation()
   const tableRef = useRef<HTMLTableElement>(null)
   const [isCopied, setIsCopied] = useState<boolean>(false)
@@ -45,8 +50,13 @@ const ExcelPreview = ({ data }: ExcelPreviewProps): JSX.Element => {
     let type = 'multipleChoice'
     let hasAnswer = false
 
+    // 固定列选择题始终包含参考答案列
+    if (fixedMultipleChoiceLayout) {
+      type = 'multipleChoice'
+      hasAnswer = true
+    }
     // 判断题特征检测
-    if (
+    else if (
       data.some((row) => row.some((cell) => cell === '正确') && row.some((cell) => cell === '错误'))
     ) {
       type = 'trueFalse'
@@ -82,7 +92,7 @@ const ExcelPreview = ({ data }: ExcelPreviewProps): JSX.Element => {
       hasAnswer,
       normalizedData
     }
-  }, [data])
+  }, [data, fixedMultipleChoiceLayout])
 
   // 复制表格内容
   const copyTable = (): void => {
@@ -126,40 +136,48 @@ const ExcelPreview = ({ data }: ExcelPreviewProps): JSX.Element => {
     index: number,
     maxCols: number,
     type: string,
-    hasAnswer: boolean
+    hasAnswer: boolean,
+    fixedMultipleChoiceLayout: boolean
   ): string => {
-    if (index === 0) return t('questionContent', '题目内容')
+    if (index === 0) return t('questionContent')
+
+    if (fixedMultipleChoiceLayout) {
+      if (index >= 1 && index <= 8) {
+        return `${t('option')} ${String.fromCharCode(64 + index)}`
+      }
+      if (index === 9) return t('optionCount')
+      if (index === 10) return t('referenceAnswer')
+    }
 
     // 如果是最后一列，且有答案标记
     if (hasAnswer && index === maxCols - 1) {
-      return t('answer', '答案')
+      return t('answer')
     }
 
     switch (type) {
       case 'trueFalse':
-        if (index === 1) return t('trueOption', '正确')
-        if (index === 2) return t('falseOption', '错误')
-        return `${t('column', '列')} ${index}`
+        if (index === 1) return t('trueOption')
+        if (index === 2) return t('falseOption')
+        return `${t('column')} ${index}`
 
       case 'fillBlank':
-        return index > 0 ? `${t('answer', '答案')} ${index}` : t('answer', '答案')
+        return index > 0 ? `${t('answer')} ${index}` : t('answer')
 
       case 'multipleChoice':
       default:
         // 如果选项数超过26个（超过Z），则使用AA, AB...
         if (index <= 26) {
-          return `${t('option', '选项')} ${String.fromCharCode(64 + index)}`
+          return `${t('option')} ${String.fromCharCode(64 + index)}`
         } else {
           const first = String.fromCharCode(64 + Math.floor((index - 1) / 26))
           const second = String.fromCharCode(64 + (((index - 1) % 26) + 1))
-          return `${t('option', '选项')} ${first}${second}`
+          return `${t('option')} ${first}${second}`
         }
     }
   }
 
   // 判断单元格是否为答案单元格
   const isAnswerCell = (
-    rowIndex: number,
     colIndex: number,
     maxCols: number,
     type: string,
@@ -178,95 +196,152 @@ const ExcelPreview = ({ data }: ExcelPreviewProps): JSX.Element => {
     return false
   }
 
+  const getColumnClassName = (index: number): string => {
+    if (fixedMultipleChoiceLayout) {
+      if (index === 0) return 'w-[360px]'
+      if (index >= 1 && index <= 8) return 'w-[120px]'
+      return 'w-[100px]'
+    }
+
+    if (index === 0) return 'w-5/12'
+    if (tableInfo.hasAnswer && index === tableInfo.maxCols - 1) return 'w-1/12'
+    return ''
+  }
+
+  const tableTypeLabel = tableInfo.type === 'unknown' ? '--' : t(tableInfo.type)
+
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="text-slate-700 dark:text-slate-300 flex items-center gap-2 bg-slate-100/70 dark:bg-slate-700/30 px-3 py-1.5 rounded-lg shadow-sm">
-          <span className="text-sm font-medium">{t('totalQuestions')}</span>{' '}
-          <span className="text-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-            {data.length}
-          </span>{' '}
-          <span className="text-sm font-medium">{t('questionCount')}</span>
-        </div>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+    <div className="min-w-0 max-w-full">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/30 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-2 font-medium text-foreground">
+              <FileSpreadsheet className="h-3.5 w-3.5 text-primary" strokeWidth={1.7} />
+              {t('totalQuestions')}
+              <strong className="font-semibold tabular-nums text-foreground">{data.length}</strong>
+              {t('questionCount')}
+            </span>
+            <span aria-hidden="true" className="text-border">
+              /
+            </span>
+            <span className="tabular-nums">
+              {tableInfo.maxCols} {t('column')}
+            </span>
+            <span aria-hidden="true" className="text-border">
+              /
+            </span>
+            <span>{tableTypeLabel}</span>
+          </div>
           <Button
+            type="button"
             onClick={copyTable}
-            className={`flex items-center gap-2 transition-all duration-300 ${
-              isCopied
-                ? 'bg-green-500 hover:bg-green-600'
-                : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'
-            } text-white shadow-md`}
+            disabled={tableInfo.maxCols === 0}
+            variant="outline"
+            size="sm"
+            className={cn(
+              'h-8 gap-1.5 px-2.5 text-xs',
+              isCopied && 'border-primary/30 text-primary'
+            )}
           >
-            {isCopied ? <CheckCircle2 size={16} className="animate-pulse" /> : <Copy size={16} />}
+            {isCopied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             {isCopied ? t('tableCopied') : t('copyTable')}
           </Button>
-        </motion.div>
-      </div>
+        </div>
 
-      <div className="overflow-auto max-h-[500px] rounded-lg border border-slate-200 dark:border-slate-700 shadow-md bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
-        <table ref={tableRef} className="w-full border-collapse table-fixed">
-          <colgroup>
-            {Array.from({ length: tableInfo.maxCols }).map((_, index) => (
-              <col
-                key={`col-${index}`}
-                className={
-                  index === 0
-                    ? 'w-5/12' // 第一列占42%宽度
-                    : tableInfo.hasAnswer && index === tableInfo.maxCols - 1
-                      ? 'w-1/12' // 答案列较窄
-                      : '' // 其他列自适应
-                }
-              />
-            ))}
-          </colgroup>
-          <thead className="sticky top-0 bg-gradient-to-r from-blue-50/90 to-indigo-50/90 dark:from-blue-900/30 dark:to-indigo-900/30 backdrop-blur-sm">
-            <tr>
-              {Array.from({ length: tableInfo.maxCols }).map((_, index) => (
-                <th
-                  key={`header-${index}`}
-                  className="py-3 px-4 text-left text-sm font-medium text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700"
-                >
-                  {getHeaderTitle(index, tableInfo.maxCols, tableInfo.type, tableInfo.hasAnswer)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {tableInfo.normalizedData.map((row, rowIndex) => (
-              <tr
-                key={rowIndex}
-                className={`
-                  transition-colors duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-900/20
-                  ${rowIndex % 2 === 0 ? 'bg-slate-50/70 dark:bg-slate-700/30' : 'bg-white/70 dark:bg-slate-800/20'}
-                `}
-              >
-                {row.map((cell, cellIndex) => (
-                  <td
-                    key={cellIndex}
-                    className={`
-                      border-b border-slate-200 dark:border-slate-700 p-3 text-slate-700 dark:text-slate-300 break-all
-                      ${cellIndex === 0 ? 'font-medium' : ''} 
-                      ${cellIndex === 0 ? 'whitespace-normal break-words' : 'whitespace-normal'}
-                      ${isAnswerCell(rowIndex, cellIndex, tableInfo.maxCols, tableInfo.type, tableInfo.hasAnswer) ? 'text-blue-600 dark:text-blue-400 font-medium' : ''}
-                    `}
-                  >
-                    {cell}
-                  </td>
+        {tableInfo.maxCols > 0 ? (
+          <div className="max-h-[500px] w-full max-w-full overflow-auto overscroll-contain">
+            <table
+              ref={tableRef}
+              aria-label={t('previewResult')}
+              className={cn(
+                'w-full border-collapse table-fixed',
+                fixedMultipleChoiceLayout && 'min-w-[1520px]',
+                !fixedMultipleChoiceLayout && tableInfo.maxCols > 4 && 'min-w-[720px]'
+              )}
+            >
+              <colgroup>
+                {Array.from({ length: tableInfo.maxCols }).map((_, index) => (
+                  <col key={`col-${index}`} className={getColumnClassName(index)} />
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </colgroup>
+              <thead className="sticky top-0 z-10 bg-muted">
+                <tr>
+                  {Array.from({ length: tableInfo.maxCols }).map((_, index) => {
+                    const answerColumn = isAnswerCell(
+                      index,
+                      tableInfo.maxCols,
+                      tableInfo.type,
+                      tableInfo.hasAnswer
+                    )
+                    return (
+                      <th
+                        key={`header-${index}`}
+                        scope="col"
+                        className={cn(
+                          'border-b border-r border-border px-3 py-2 text-left text-[11px] font-semibold leading-4 text-muted-foreground last:border-r-0',
+                          answerColumn && 'bg-primary/[0.06] text-primary'
+                        )}
+                      >
+                        {getHeaderTitle(
+                          index,
+                          tableInfo.maxCols,
+                          tableInfo.type,
+                          tableInfo.hasAnswer,
+                          fixedMultipleChoiceLayout
+                        )}
+                      </th>
+                    )
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {tableInfo.normalizedData.map((row, rowIndex) => (
+                  <tr
+                    key={rowIndex}
+                    className={cn(
+                      'transition-colors hover:bg-accent/40',
+                      rowIndex % 2 === 0 ? 'bg-card' : 'bg-muted/20'
+                    )}
+                  >
+                    {row.map((cell, cellIndex) => {
+                      const answerCell = isAnswerCell(
+                        cellIndex,
+                        tableInfo.maxCols,
+                        tableInfo.type,
+                        tableInfo.hasAnswer
+                      )
+                      return (
+                        <td
+                          key={cellIndex}
+                          className={cn(
+                            'whitespace-pre-wrap break-words border-b border-r border-border/70 px-3 py-2 align-top text-xs leading-5 text-foreground last:border-r-0',
+                            cellIndex === 0 && 'font-medium',
+                            answerCell && 'bg-primary/[0.035] font-medium text-primary'
+                          )}
+                        >
+                          {cell}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState
+            icon={FileSpreadsheet}
+            title={t('tableNotReady')}
+            description={t('tipMessage')}
+            className="min-h-52 rounded-none border-0 bg-card"
+          />
+        )}
       </div>
 
-      <motion.div
-        className="text-xs text-slate-500 dark:text-slate-400 text-center mt-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
-      >
-        {t('tipMessage', '提示：可以直接复制表格并粘贴到Excel中')}
-      </motion.div>
+      <div className="flex items-start gap-1.5 px-1 pt-2 text-[11px] leading-relaxed text-muted-foreground">
+        <Info className="mt-0.5 h-3 w-3 shrink-0" />
+        <span>{t('tipMessage')}</span>
+      </div>
     </div>
   )
 }

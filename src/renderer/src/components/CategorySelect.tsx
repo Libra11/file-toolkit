@@ -1,9 +1,3 @@
-/**
- * Author: Libra
- * Date: 2024-10-07 01:16:14
- * LastEditors: Libra
- * Description:
- */
 import { useTranslation } from 'react-i18next'
 import { Label } from '@renderer/components/ui/label'
 import {
@@ -14,7 +8,7 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { ConversionCategory } from '@renderer/lib/conversionTypes'
-import { ImageIcon, FileText, Video, Music } from 'lucide-react'
+import { ImageIcon } from 'lucide-react'
 
 interface CategorySelectProps {
   categories: ConversionCategory[]
@@ -29,56 +23,34 @@ export default function CategorySelect({
 }: CategorySelectProps): JSX.Element {
   const { t } = useTranslation()
 
-  // 获取当前选中类别的图标
-  const getSelectedIcon = (): JSX.Element | null => {
-    if (!selectedCategory) return null
-
-    const category = categories.find((c) => c.name === selectedCategory)
-    if (!category) return null
-
-    const Icon = category.icon
-    return <Icon className="h-4 w-4 text-primary" />
-  }
-
   const getCategoryIcon = (categoryName: string): JSX.Element => {
-    switch (categoryName) {
-      case 'image':
-        return <ImageIcon className="h-4 w-4 mr-2 text-blue-500" />
-      case 'document':
-        return <FileText className="h-4 w-4 mr-2 text-amber-500" />
-      case 'video':
-        return <Video className="h-4 w-4 mr-2 text-red-500" />
-      case 'audio':
-        return <Music className="h-4 w-4 mr-2 text-purple-500" />
-      default:
-        return <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-    }
+    const category = categories.find((item) => item.name === categoryName)
+    const Icon = category?.icon ?? ImageIcon
+    return <Icon className="mr-2 h-4 w-4 shrink-0 text-primary" />
   }
 
   return (
-    <div className="space-y-2.5">
-      <Label htmlFor="category" className="font-medium flex items-center text-sm">
-        {getSelectedIcon()}
-        {selectedCategory && <span className="ml-1.5">{t('category')}</span>}
-        {!selectedCategory && t('category')}
+    <div className="space-y-2">
+      <Label htmlFor="category" className="text-xs font-medium text-foreground">
+        {t('category')}
       </Label>
       <Select value={selectedCategory} onValueChange={onCategoryChange}>
         <SelectTrigger
           id="category"
-          className="w-full transition-all duration-200 border-border/50 hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/20 ring-offset-0"
+          className="h-10 rounded-md border-border bg-card transition-colors hover:border-primary/40 focus:border-primary focus:ring-2 focus:ring-primary/15"
         >
           <SelectValue placeholder={t('selectCategory')} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="rounded-md">
           {categories.map((category) => (
             <SelectItem
               key={category.name}
               value={category.name}
-              className="flex items-center cursor-pointer focus:bg-primary/5 focus:text-primary"
+              className="cursor-pointer rounded-md focus:bg-accent focus:text-accent-foreground"
             >
-              <div className="flex items-center">
+              <div className="flex min-w-0 items-center">
                 {getCategoryIcon(category.name)}
-                {t(category.name)}
+                <span className="truncate">{t(category.name)}</span>
               </div>
             </SelectItem>
           ))}

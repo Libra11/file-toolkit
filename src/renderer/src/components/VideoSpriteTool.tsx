@@ -1,21 +1,19 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'framer-motion'
 import {
-  Film,
-  Image,
-  Grid3x3,
-  Play,
   Download,
-  Settings,
-  RefreshCw,
   FileImage,
   FileVideo,
-  ArrowRight
+  Film,
+  FolderOpen,
+  Grid3x3,
+  Image as ImageIcon,
+  Loader2,
+  Play,
+  Settings2
 } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
-import { Label } from '@renderer/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -23,59 +21,76 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
+import { Panel, PanelBody, PanelHeader, Field, DataRow } from '@renderer/components/ui/panel'
+import { SegmentedControl } from '@renderer/components/ui/segmented-control'
+import { EmptyState, Notice, StatusDot } from '@renderer/components/ui/states'
 import { toast } from '@renderer/components/ui/toast'
-import { BackToHomeButton } from './ui/BackToHomeButton'
+import { cn } from '@renderer/lib/utils'
 
 interface VideoSpriteToolProps {
   onBack?: () => void
 }
 
+type WorkspaceMode = 'video-to-sprite' | 'sprite-to-gif'
+type OperationStatus = 'idle' | 'processing' | 'success' | 'error'
+
+interface OperationViewState {
+  status: OperationStatus
+  outputPath?: string
+  message?: string
+}
+
+const idleOperation: OperationViewState = { status: 'idle' }
+
+function fileNameFromPath(filePath: string): string {
+  return filePath.split(/[\\/]/).pop() || filePath
+}
+
 export function VideoSpriteTool({ onBack }: VideoSpriteToolProps): JSX.Element {
   const { t } = useTranslation()
+  const [mode, setMode] = useState<WorkspaceMode>('video-to-sprite')
 
-  // 视频转拼图状态
-  const [videoPath, setVideoPath] = useState<string>('')
-  const [videoOutputDir, setVideoOutputDir] = useState<string>('')
-  const [videoTotalFrames, setVideoTotalFrames] = useState<number>(6)
-  const [videoScale, setVideoScale] = useState<number>(0.5)
-  const [videoColumns, setVideoColumns] = useState<number>(3)
+  const [videoPath, setVideoPath] = useState('')
+  const [videoOutputDir, setVideoOutputDir] = useState('')
+  const [videoTotalFrames, setVideoTotalFrames] = useState(6)
+  const [videoScale, setVideoScale] = useState(0.5)
+  const [videoColumns, setVideoColumns] = useState(3)
   const [videoFormat, setVideoFormat] = useState<'png' | 'jpg'>('png')
   const [isVideoProcessing, setIsVideoProcessing] = useState(false)
+  const [videoOperation, setVideoOperation] = useState<OperationViewState>(idleOperation)
 
-  // 拼图转GIF状态
-  const [imagePath, setImagePath] = useState<string>('')
-  const [imageOutputDir, setImageOutputDir] = useState<string>('')
-  const [imageFps, setImageFps] = useState<number>(10)
-  const [frameWidth, setFrameWidth] = useState<number>(100)
-  const [frameHeight, setFrameHeight] = useState<number>(100)
-  const [gridRows, setGridRows] = useState<number>(2)
-  const [gridColumns, setGridColumns] = useState<number>(3)
-  const [totalFrames, setTotalFrames] = useState<number>(6)
+  const [imagePath, setImagePath] = useState('')
+  const [imageOutputDir, setImageOutputDir] = useState('')
+  const [imageFps, setImageFps] = useState(10)
+  const [frameWidth, setFrameWidth] = useState(100)
+  const [frameHeight, setFrameHeight] = useState(100)
+  const [gridRows, setGridRows] = useState(2)
+  const [gridColumns, setGridColumns] = useState(3)
+  const [totalFrames, setTotalFrames] = useState(6)
   const [isImageProcessing, setIsImageProcessing] = useState(false)
+  const [imageOperation, setImageOperation] = useState<OperationViewState>(idleOperation)
 
-  // 选择视频
+  // Kept in the public props for host compatibility; workspace navigation is not rendered here.
+  void onBack
+
   const handleSelectVideo = async (): Promise<void> => {
     const path = await window.videoSprite.selectVideo()
     if (path) {
       setVideoPath(path)
-      // 设置默认输出目录为视频所在目录
-      const dir = path.substring(0, path.lastIndexOf('/'))
-      setVideoOutputDir(dir)
+      setVideoOutputDir(path.substring(0, path.lastIndexOf('/')))
+      setVideoOperation(idleOperation)
     }
   }
 
-  // 选择图片
   const handleSelectImage = async (): Promise<void> => {
     const path = await window.videoSprite.selectImage()
     if (path) {
       setImagePath(path)
-      const dir = path.substring(0, path.lastIndexOf('/'))
-      setImageOutputDir(dir)
+      setImageOutputDir(path.substring(0, path.lastIndexOf('/')))
+      setImageOperation(idleOperation)
     }
   }
 
-  // 选择输出目录
   const handleSelectOutputDir = async (type: 'video' | 'image'): Promise<void> => {
     const result = await window.system.selectDirectory()
     if (result) {
@@ -87,7 +102,6 @@ export function VideoSpriteTool({ onBack }: VideoSpriteToolProps): JSX.Element {
     }
   }
 
-  // 视频转拼图
   const handleVideoToSprite = async (): Promise<void> => {
     if (!videoPath) {
       toast.warning({ title: t('vsSelectVideoFirst') })
@@ -95,6 +109,7 @@ export function VideoSpriteTool({ onBack }: VideoSpriteToolProps): JSX.Element {
     }
 
     setIsVideoProcessing(true)
+    setVideoOperation({ status: 'processing' })
     const startTime = Date.now()
 
     try {
@@ -109,31 +124,28 @@ export function VideoSpriteTool({ onBack }: VideoSpriteToolProps): JSX.Element {
         }
       })
 
-      // 最小加载时间
       const elapsed = Date.now() - startTime
       if (elapsed < 800) {
         await new Promise((resolve) => setTimeout(resolve, 800 - elapsed))
       }
 
       if (result.success) {
-        toast.success({
-          title: t('vsExportSuccess'),
-          description: result.outputPath
-        })
+        setVideoOperation({ status: 'success', outputPath: result.outputPath })
+        toast.success({ title: t('vsExportSuccess'), description: result.outputPath })
       } else {
-        toast.error({
-          title: t('vsExportFailed'),
-          description: result.error
-        })
+        const message = result.error || t('vsExportFailed')
+        setVideoOperation({ status: 'error', message })
+        toast.error({ title: t('vsExportFailed'), description: result.error })
       }
-    } catch (e) {
-      toast.error({ title: t('error'), description: String(e) })
+    } catch (error) {
+      const message = String(error)
+      setVideoOperation({ status: 'error', message })
+      toast.error({ title: t('error'), description: message })
     } finally {
       setIsVideoProcessing(false)
     }
   }
 
-  // 拼图转GIF
   const handleSpriteToGif = async (): Promise<void> => {
     if (!imagePath) {
       toast.warning({ title: t('vsSelectImageFirst') })
@@ -141,6 +153,7 @@ export function VideoSpriteTool({ onBack }: VideoSpriteToolProps): JSX.Element {
     }
 
     setIsImageProcessing(true)
+    setImageOperation({ status: 'processing' })
     const startTime = Date.now()
 
     try {
@@ -157,145 +170,162 @@ export function VideoSpriteTool({ onBack }: VideoSpriteToolProps): JSX.Element {
         }
       })
 
-      // 最小加载时间
       const elapsed = Date.now() - startTime
       if (elapsed < 800) {
         await new Promise((resolve) => setTimeout(resolve, 800 - elapsed))
       }
 
       if (result.success) {
-        toast.success({
-          title: t('vsExportSuccess'),
-          description: result.outputPath
-        })
+        setImageOperation({ status: 'success', outputPath: result.outputPath })
+        toast.success({ title: t('vsExportSuccess'), description: result.outputPath })
       } else {
-        toast.error({
-          title: t('vsExportFailed'),
-          description: result.error
-        })
+        const message = result.error || t('vsExportFailed')
+        setImageOperation({ status: 'error', message })
+        toast.error({ title: t('vsExportFailed'), description: result.error })
       }
-    } catch (e) {
-      toast.error({ title: t('error'), description: String(e) })
+    } catch (error) {
+      const message = String(error)
+      setImageOperation({ status: 'error', message })
+      toast.error({ title: t('error'), description: message })
     } finally {
       setIsImageProcessing(false)
     }
   }
 
+  const isVideoMode = mode === 'video-to-sprite'
+  const isProcessing = isVideoMode ? isVideoProcessing : isImageProcessing
+  const operation = isVideoMode ? videoOperation : imageOperation
+  const sourcePath = isVideoMode ? videoPath : imagePath
+  const outputDir = isVideoMode ? videoOutputDir : imageOutputDir
+  const status = isProcessing ? 'processing' : operation.status
+
   return (
-    <div className="h-full w-full overflow-hidden">
-      {/* 外层渐变卡片 */}
-      <div className="flex flex-col h-full rounded-[32px] border border-white/60 bg-gradient-to-br from-violet-50/50 via-white/80 to-cyan-50/50 backdrop-blur-sm dark:border-slate-800 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-900 p-6 md:p-8 overflow-hidden">
-        {/* Header */}
-        <div className="shrink-0 mb-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-2 rounded-full border border-violet-100 bg-violet-50/50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-violet-600 backdrop-blur-sm dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300">
-              <Grid3x3 className="h-3.5 w-3.5" />
-              {t('videoSpriteTool')}
-            </span>
-
-            {onBack && (
-              <BackToHomeButton
-                onClick={onBack}
-                className="rounded-full shadow-sm hover:shadow-md transition-all bg-white text-slate-600 hover:text-violet-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-violet-400"
-              />
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white md:text-4xl">
-              {t('videoSpriteTool')}
-            </h1>
-            <p className="text-base text-slate-500 dark:text-slate-400 max-w-2xl">
-              {t('videoSpriteDescription')}
-            </p>
-          </div>
-        </div>
-
-        {/* 内层白色卡片 */}
-        <div className="flex-1 min-h-0 overflow-hidden rounded-[24px] border border-white bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/50">
-          <Tabs defaultValue="video-to-sprite" className="h-full flex flex-col">
-            <div className="border-b border-slate-100 dark:border-slate-800 px-6 pt-4">
-              <TabsList className="bg-slate-100/50 dark:bg-slate-800/50">
-                <TabsTrigger
-                  value="video-to-sprite"
-                  className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700"
-                >
-                  <Film className="h-4 w-4" />
-                  {t('vsVideoToSprite')}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="sprite-to-gif"
-                  className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700"
-                >
-                  <Image className="h-4 w-4" />
-                  {t('vsSpriteToGif')}
-                </TabsTrigger>
-              </TabsList>
+    <div className="min-h-full bg-background text-foreground">
+      <header className="border-b border-border bg-card">
+        <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-4 px-4 py-4 md:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-primary">
+              <Grid3x3 className="h-5 w-5" />
             </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                {t('videoSpriteWorkbench')}
+              </p>
+              <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
+                {t('videoSpriteTool')}
+              </h1>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t('videoSpriteDescription')}</p>
+            </div>
+          </div>
+          <SegmentedControl
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: 'video-to-sprite', label: t('vsVideoToSprite'), icon: Film },
+              { value: 'sprite-to-gif', label: t('vsSpriteToGif'), icon: ImageIcon }
+            ]}
+            ariaLabel={t('videoSpriteTool')}
+          />
+        </div>
+      </header>
 
-            {/* 视频转拼图 */}
-            <TabsContent value="video-to-sprite" className="flex-1 overflow-auto p-6 m-0">
-              <div className="max-w-2xl mx-auto space-y-8">
-                {/* 选择视频 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400">
-                      <FileVideo className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      {t('vsSelectVideo')}
-                    </h3>
+      <div className="mx-auto max-w-[1500px] p-4 md:p-6">
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(380px,1.1fr)]">
+          <Panel>
+            <PanelHeader
+              eyebrow="01"
+              title={isVideoMode ? t('vsSelectVideo') : t('vsSelectImage')}
+              description={isVideoMode ? t('vsVideoToSprite') : t('vsSpriteToGif')}
+              action={
+                sourcePath ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <StatusDot tone="success" />
+                    {isVideoMode ? t('video') : t('image')}
                   </div>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start h-12 rounded-xl border-slate-200 bg-white shadow-sm hover:border-violet-300 hover:ring-2 hover:ring-violet-100 text-left font-normal transition-all dark:border-slate-700 dark:bg-slate-800"
-                    onClick={handleSelectVideo}
-                  >
-                    <Film className="mr-3 h-4 w-4 text-violet-500/80 shrink-0" />
-                    {videoPath ? (
-                      <span className="truncate text-sm font-medium">
-                        {videoPath.split('/').pop()}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 text-sm">{t('select')}</span>
-                    )}
-                  </Button>
+                ) : undefined
+              }
+            />
+            <PanelBody className="space-y-5">
+              <button
+                type="button"
+                onClick={isVideoMode ? handleSelectVideo : handleSelectImage}
+                disabled={isProcessing}
+                className={cn(
+                  'flex min-h-52 w-full flex-col items-center justify-center rounded-lg border border-dashed border-input bg-muted/25 px-6 py-8 text-center transition-colors',
+                  'hover:border-primary/40 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+                  'disabled:cursor-not-allowed disabled:opacity-60'
+                )}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-card text-primary">
+                  {isVideoMode ? (
+                    <FileVideo className="h-6 w-6" />
+                  ) : (
+                    <FileImage className="h-6 w-6" />
+                  )}
                 </div>
+                <span className="mt-4 text-sm font-medium text-foreground">
+                  {sourcePath
+                    ? fileNameFromPath(sourcePath)
+                    : isVideoMode
+                      ? t('vsSelectVideo')
+                      : t('vsSelectImage')}
+                </span>
+                <span className="mt-1.5 text-xs text-muted-foreground">
+                  {sourcePath
+                    ? t('select')
+                    : isVideoMode
+                      ? t('vsSelectVideoFirst')
+                      : t('vsSelectImageFirst')}
+                </span>
+              </button>
 
-                {/* 配置 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400">
-                      <Settings className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      {t('vsConfig')}
-                    </h3>
-                  </div>
+              <dl className="divide-y divide-border border-y border-border">
+                <DataRow
+                  label={isVideoMode ? t('vsSelectVideo') : t('vsSelectImage')}
+                  value={sourcePath || '--'}
+                />
+                <DataRow label={t('outputFolder')} value={outputDir || '--'} />
+                {isVideoMode ? (
+                  <>
+                    <DataRow label={t('vsTotalFrames')} value={videoTotalFrames} />
+                    <DataRow label={t('vsFormat')} value={videoFormat.toUpperCase()} />
+                  </>
+                ) : (
+                  <>
+                    <DataRow label={t('vsFrameConfig')} value={`${frameWidth} × ${frameHeight}`} />
+                    <DataRow label={t('vsFps')} value={`${imageFps} FPS`} />
+                  </>
+                )}
+              </dl>
+            </PanelBody>
+          </Panel>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-slate-500 uppercase">
-                        {t('vsTotalFrames')}
-                      </Label>
+          <div className="space-y-5">
+            <Panel>
+              <PanelHeader
+                eyebrow="02"
+                title={t('vsConfig')}
+                description={t('videoSpriteDescription')}
+                action={<Settings2 className="h-4 w-4 text-muted-foreground" />}
+              />
+              <PanelBody className="space-y-5">
+                {isVideoMode ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label={t('vsTotalFrames')}>
                       <Input
                         type="number"
                         min={1}
                         max={100}
                         value={videoTotalFrames}
-                        onChange={(e) => setVideoTotalFrames(Number(e.target.value))}
-                        className="h-10 rounded-xl"
+                        onChange={(event) => setVideoTotalFrames(Number(event.target.value))}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-slate-500 uppercase">
-                        {t('vsScale')}
-                      </Label>
+                    </Field>
+                    <Field label={t('vsScale')}>
                       <Select
                         value={String(videoScale)}
-                        onValueChange={(v) => setVideoScale(Number(v))}
+                        onValueChange={(value) => setVideoScale(Number(value))}
                       >
-                        <SelectTrigger className="h-10 rounded-xl">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -305,29 +335,22 @@ export function VideoSpriteTool({ onBack }: VideoSpriteToolProps): JSX.Element {
                           <SelectItem value="0.25">25%</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-slate-500 uppercase">
-                        {t('vsColumns')}
-                      </Label>
+                    </Field>
+                    <Field label={t('vsColumns')}>
                       <Input
                         type="number"
                         min={1}
                         max={50}
                         value={videoColumns}
-                        onChange={(e) => setVideoColumns(Number(e.target.value))}
-                        className="h-10 rounded-xl"
+                        onChange={(event) => setVideoColumns(Number(event.target.value))}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-slate-500 uppercase">
-                        {t('vsFormat')}
-                      </Label>
+                    </Field>
+                    <Field label={t('vsFormat')}>
                       <Select
                         value={videoFormat}
-                        onValueChange={(v: 'png' | 'jpg') => setVideoFormat(v)}
+                        onValueChange={(value: 'png' | 'jpg') => setVideoFormat(value)}
                       >
-                        <SelectTrigger className="h-10 rounded-xl">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -335,227 +358,170 @@ export function VideoSpriteTool({ onBack }: VideoSpriteToolProps): JSX.Element {
                           <SelectItem value="jpg">JPG</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
+                    </Field>
                   </div>
-                </div>
-
-                {/* 输出目录 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400">
-                      <Download className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      {t('outputFolder')}
-                    </h3>
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={videoOutputDir}
-                      readOnly
-                      placeholder={t('vsOutputDir')}
-                      className="h-10 rounded-xl bg-slate-50 dark:bg-slate-800/70 dark:border-slate-700 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                    />
-                    <Button
-                      variant="outline"
-                      className="h-10 rounded-xl px-4 border-slate-200 bg-white hover:border-violet-300 hover:ring-2 hover:ring-violet-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-violet-400 dark:hover:ring-violet-500/30"
-                      onClick={() => handleSelectOutputDir('video')}
-                    >
-                      {t('select')}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* 执行按钮 */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="pt-4"
-                >
-                  <Button
-                    size="lg"
-                    className="w-full bg-gradient-to-r from-violet-600 to-cyan-500 text-white hover:from-violet-700 hover:to-cyan-600 shadow-lg shadow-violet-500/20 active:scale-[0.98] transition-all rounded-xl h-12"
-                    disabled={!videoPath || isVideoProcessing}
-                    onClick={handleVideoToSprite}
-                  >
-                    {isVideoProcessing ? (
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <ArrowRight className="mr-2 h-4 w-4" />
-                    )}
-                    {isVideoProcessing ? t('processing') : t('vsGenerateSprite')}
-                  </Button>
-                </motion.div>
-              </div>
-            </TabsContent>
-
-            {/* 拼图转GIF */}
-            <TabsContent value="sprite-to-gif" className="flex-1 overflow-auto p-6 m-0">
-              <div className="max-w-2xl mx-auto space-y-8">
-                {/* 选择图片 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
-                      <FileImage className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      {t('vsSelectImage')}
-                    </h3>
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start h-12 rounded-xl border-slate-200 bg-white shadow-sm hover:border-emerald-300 hover:ring-2 hover:ring-emerald-100 text-left font-normal transition-all dark:border-slate-700 dark:bg-slate-800"
-                    onClick={handleSelectImage}
-                  >
-                    <Image className="mr-3 h-4 w-4 text-emerald-500/80 shrink-0" />
-                    {imagePath ? (
-                      <span className="truncate text-sm font-medium">
-                        {imagePath.split('/').pop()}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 text-sm">{t('select')}</span>
-                    )}
-                  </Button>
-                </div>
-
-                {/* 帧配置 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                      <Grid3x3 className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      {t('vsFrameConfig')}
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-slate-500 uppercase">
-                        {t('vsFrameWidth')}
-                      </Label>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <Field label={t('vsFrameWidth')}>
                       <Input
                         type="number"
                         min={1}
                         value={frameWidth}
-                        onChange={(e) => setFrameWidth(Number(e.target.value))}
-                        className="h-10 rounded-xl"
+                        onChange={(event) => setFrameWidth(Number(event.target.value))}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-slate-500 uppercase">
-                        {t('vsFrameHeight')}
-                      </Label>
+                    </Field>
+                    <Field label={t('vsFrameHeight')}>
                       <Input
                         type="number"
                         min={1}
                         value={frameHeight}
-                        onChange={(e) => setFrameHeight(Number(e.target.value))}
-                        className="h-10 rounded-xl"
+                        onChange={(event) => setFrameHeight(Number(event.target.value))}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-slate-500 uppercase">
-                        {t('vsRows')}
-                      </Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={gridRows}
-                        onChange={(e) => setGridRows(Number(e.target.value))}
-                        className="h-10 rounded-xl"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-slate-500 uppercase">
-                        {t('vsColumns')}
-                      </Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={gridColumns}
-                        onChange={(e) => setGridColumns(Number(e.target.value))}
-                        className="h-10 rounded-xl"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-slate-500 uppercase">
-                        {t('vsTotalFrames')}
-                      </Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={totalFrames}
-                        onChange={(e) => setTotalFrames(Number(e.target.value))}
-                        className="h-10 rounded-xl"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-slate-500 uppercase">
-                        {t('vsFps')}
-                      </Label>
+                    </Field>
+                    <Field label={t('vsFps')}>
                       <Input
                         type="number"
                         min={1}
                         max={60}
                         value={imageFps}
-                        onChange={(e) => setImageFps(Number(e.target.value))}
-                        className="h-10 rounded-xl"
+                        onChange={(event) => setImageFps(Number(event.target.value))}
                       />
-                    </div>
+                    </Field>
+                    <Field label={t('vsRows')}>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={gridRows}
+                        onChange={(event) => setGridRows(Number(event.target.value))}
+                      />
+                    </Field>
+                    <Field label={t('vsColumns')}>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={gridColumns}
+                        onChange={(event) => setGridColumns(Number(event.target.value))}
+                      />
+                    </Field>
+                    <Field label={t('vsTotalFrames')}>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={totalFrames}
+                        onChange={(event) => setTotalFrames(Number(event.target.value))}
+                      />
+                    </Field>
                   </div>
-                </div>
+                )}
 
-                {/* 输出目录 */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400">
-                      <Download className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      {t('outputFolder')}
-                    </h3>
-                  </div>
+                <Field label={t('outputFolder')}>
                   <div className="flex gap-2">
                     <Input
-                      value={imageOutputDir}
+                      value={outputDir}
                       readOnly
                       placeholder={t('vsOutputDir')}
-                      className="h-10 rounded-xl bg-slate-50 dark:bg-slate-800/70 dark:border-slate-700 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                      className="min-w-0 bg-background/50 font-mono text-xs"
                     />
                     <Button
                       variant="outline"
-                      className="h-10 rounded-xl px-4 border-slate-200 bg-white hover:border-violet-300 hover:ring-2 hover:ring-violet-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-violet-400 dark:hover:ring-violet-500/30"
-                      onClick={() => handleSelectOutputDir('image')}
+                      size="icon"
+                      onClick={() => handleSelectOutputDir(isVideoMode ? 'video' : 'image')}
+                      title={t('select')}
+                      aria-label={t('select')}
                     >
-                      {t('select')}
+                      <FolderOpen className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
+                </Field>
 
-                {/* 执行按钮 */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="pt-4"
+                <Button
+                  size="lg"
+                  className="w-full"
+                  disabled={!sourcePath || isProcessing}
+                  onClick={isVideoMode ? handleVideoToSprite : handleSpriteToGif}
                 >
-                  <Button
-                    size="lg"
-                    className="w-full bg-gradient-to-r from-emerald-600 to-cyan-500 text-white hover:from-emerald-700 hover:to-cyan-600 shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all rounded-xl h-12"
-                    disabled={!imagePath || isImageProcessing}
-                    onClick={handleSpriteToGif}
-                  >
-                    {isImageProcessing ? (
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Play className="mr-2 h-4 w-4" />
-                    )}
-                    {isImageProcessing ? t('processing') : t('vsGenerateGif')}
-                  </Button>
-                </motion.div>
-              </div>
-            </TabsContent>
-          </Tabs>
+                  {isProcessing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : isVideoMode ? (
+                    <Download className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Play className="mr-2 h-4 w-4" />
+                  )}
+                  {isProcessing
+                    ? t('processing')
+                    : isVideoMode
+                      ? t('vsGenerateSprite')
+                      : t('vsGenerateGif')}
+                </Button>
+              </PanelBody>
+            </Panel>
+
+            <Panel>
+              <PanelHeader
+                eyebrow="03"
+                title={status === 'processing' ? t('processing') : t('preview')}
+                action={
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <StatusDot
+                      tone={
+                        status === 'error'
+                          ? 'error'
+                          : status === 'success'
+                            ? 'success'
+                            : status === 'processing'
+                              ? 'active'
+                              : 'neutral'
+                      }
+                    />
+                    {isVideoMode ? videoFormat.toUpperCase() : 'GIF'}
+                  </div>
+                }
+              />
+              <PanelBody aria-live="polite">
+                {status === 'idle' && (
+                  <EmptyState
+                    icon={isVideoMode ? Grid3x3 : Film}
+                    title={isVideoMode ? t('vsGenerateSprite') : t('vsGenerateGif')}
+                    description={t('videoSpriteDescription')}
+                  />
+                )}
+                {status === 'processing' && (
+                  <div className="space-y-4">
+                    <Notice tone="loading" title={t('processing')} description={sourcePath} />
+                    <div className="h-1 overflow-hidden rounded-sm bg-muted">
+                      <div className="h-full w-full animate-pulse bg-primary/50" />
+                    </div>
+                  </div>
+                )}
+                {status === 'success' && (
+                  <div className="space-y-4">
+                    <Notice
+                      tone="success"
+                      title={t('vsExportSuccess')}
+                      description={operation.outputPath}
+                    />
+                    <dl className="divide-y divide-border border-y border-border">
+                      <DataRow
+                        label={t('outputFolder')}
+                        value={operation.outputPath || outputDir || '--'}
+                      />
+                      <DataRow
+                        label={t('vsFormat')}
+                        value={isVideoMode ? videoFormat.toUpperCase() : 'GIF'}
+                      />
+                    </dl>
+                  </div>
+                )}
+                {status === 'error' && (
+                  <Notice
+                    tone="error"
+                    title={t('vsExportFailed')}
+                    description={operation.message || t('error')}
+                  />
+                )}
+              </PanelBody>
+            </Panel>
+          </div>
         </div>
       </div>
     </div>

@@ -17,8 +17,10 @@ let mainWindow: BrowserWindow | null = null
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 450,
-    height: 660,
+    width: 1120,
+    height: 760,
+    minWidth: 760,
+    minHeight: 560,
     show: false,
     resizable: true,
     autoHideMenuBar: true,
@@ -67,7 +69,9 @@ function createWindow(): void {
       permission === 'media' ||
       permission === 'camera' ||
       permission === 'microphone' ||
-      permission === 'display-capture'
+      permission === 'display-capture' ||
+      permission === 'clipboard-read' ||
+      permission === 'clipboard-sanitized-write'
     ) {
       console.log('✅ 允许权限:', permission)
       callback(true)
@@ -84,7 +88,9 @@ function createWindow(): void {
       if (
         permission === 'media' ||
         permission === 'videoCapture' ||
-        permission === 'audioCapture'
+        permission === 'audioCapture' ||
+        permission === 'clipboard-read' ||
+        permission === 'clipboard-sanitized-write'
       ) {
         console.log('✅ 权限检查通过:', permission)
         return true

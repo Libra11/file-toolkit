@@ -1,29 +1,13 @@
-/**
- * Author: Libra
- * Date: 2025-09-15
- * LastEditors: Libra
- * Description: 文件校验与哈希快速生成工具
- */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { motion } from 'framer-motion'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@renderer/components/ui/card'
 import { Button } from '@renderer/components/ui/button'
-import { Badge } from '@renderer/components/ui/badge'
-import { Separator } from '@renderer/components/ui/separator'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Label } from '@renderer/components/ui/label'
-import { ScrollArea } from '@renderer/components/ui/scroll-area'
+import { Panel, PanelBody, PanelHeader } from '@renderer/components/ui/panel'
+import { EmptyState, Notice, StatusDot } from '@renderer/components/ui/states'
 import { toast } from '@renderer/components/ui/toast'
 import { bytesToSize, cn } from '@renderer/lib/utils'
-import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 import {
   ClipboardCopy,
   FileSearch,
@@ -54,6 +38,8 @@ interface FileHashToolProps {
 }
 
 export default function FileHashTool({ onBack }: FileHashToolProps): JSX.Element {
+  // Navigation belongs to the outer workspace; keep the callback in the public API.
+  void onBack
   const { t } = useTranslation()
   const [availableAlgorithms, setAvailableAlgorithms] =
     useState<AlgorithmOption[]>(DEFAULT_ALGORITHM_OPTIONS)
@@ -90,13 +76,13 @@ export default function FileHashTool({ onBack }: FileHashToolProps): JSX.Element
           description: t('hashFetchAlgorithmsFailedDescription')
         })
       })
-      .finally(() => {
+      .finally((): void => {
         if (isMounted) {
           setIsFetchingAlgorithms(false)
         }
       })
 
-    return () => {
+    return (): void => {
       isMounted = false
     }
   }, [t])
@@ -230,406 +216,284 @@ export default function FileHashTool({ onBack }: FileHashToolProps): JSX.Element
   )
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-indigo-900/10 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/60 md:p-8">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-indigo-100/60 via-white to-transparent dark:from-indigo-900/25 dark:via-slate-900" />
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex gap-3 flex-row items-center justify-between">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-indigo-100/70 px-3 py-1 text-sm font-medium text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-200">
-              <Fingerprint className="h-4 w-4" />
-              {t('fileHashTool')}
-            </div>
-            {onBack && (
-              <BackToHomeButton
-                onClick={onBack}
-                className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-800/40 dark:hover:text-indigo-300"
-              />
-            )}
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
-              {t('fileHashTool')}
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">{t('fileHashDescription')}</p>
-          </div>
-          <div className="flex flex-col gap-3 rounded-2xl border border-indigo-100/70 bg-indigo-50/60 p-4 text-sm text-indigo-700 shadow-inner dark:border-indigo-500/30 dark:bg-indigo-900/20 dark:text-indigo-100 md:flex-row md:items-start md:gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-indigo-500 shadow-sm dark:bg-white/10 dark:text-indigo-200">
-              <Fingerprint className="h-5 w-5" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-base font-semibold">{t('fileHashTipTitle')}</p>
-              <p className="text-xs leading-relaxed text-indigo-600/80 dark:text-indigo-100/80">
-                {t('fileHashTipDescription')}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)]">
-          <Card className="border border-indigo-100/70 bg-white/90 shadow-xl shadow-indigo-900/10 dark:border-indigo-500/20 dark:bg-slate-900/70">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                {t('selectFiles')}
-              </CardTitle>
-              <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                {t('selectFilesToCalculateHash')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  variant="outline"
-                  className="h-11 px-4 flex items-center gap-2"
-                  onClick={handleSelectFiles}
-                >
-                  <FolderOpen className="h-4 w-4" />
+    <div className="min-w-0 space-y-4">
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
+        <Panel className="min-w-0">
+          <PanelHeader
+            eyebrow="01"
+            title={t('selectedFiles')}
+            description={t('selectFilesToCalculateHash')}
+            action={
+              <div className="flex items-center gap-1">
+                <Button type="button" variant="outline" size="sm" onClick={handleSelectFiles}>
+                  <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
                   {t('selectFiles')}
                 </Button>
                 <Button
+                  type="button"
                   variant="ghost"
-                  className="h-11 px-3 text-red-500 hover:text-red-600"
+                  size="icon"
                   onClick={handleClearAll}
                   disabled={selectedFiles.length === 0 && results.length === 0}
+                  aria-label={t('remove')}
+                  title={t('remove')}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
-
-              <ScrollArea className="max-h-64">
-                <div className="space-y-3">
-                  {selectedFiles.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-slate-200/70 bg-slate-50/80 p-4 text-center dark:border-slate-700 dark:bg-slate-800/40">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {t('hashNoFilesSelected')}
-                      </p>
-                    </div>
-                  ) : (
-                    selectedFiles.map((file) => (
-                      <div
-                        key={file}
-                        className="flex items-start justify-between gap-3 rounded-xl border border-indigo-100/70 bg-white/90 px-3 py-2 shadow-sm dark:border-indigo-500/30 dark:bg-slate-900/70"
-                      >
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100/70 text-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-200">
-                            <FileSearch className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <p
-                              className="truncate font-medium text-slate-700 dark:text-slate-200"
-                              title={file.split(/[/\\]/).pop()}
-                            >
-                              {file.split(/[/\\]/).pop()}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                              {file}
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveFile(file)}
-                          className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
-                        >
-                          {t('remove')}
-                        </Button>
+            }
+          />
+          <PanelBody>
+            {selectedFiles.length === 0 ? (
+              <EmptyState
+                icon={FileSearch}
+                title={t('hashNoFilesSelected')}
+                description={t('selectFilesToCalculateHash')}
+                className="min-h-56"
+              />
+            ) : (
+              <div className="overflow-hidden rounded-md border border-border">
+                <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/40 px-3 py-2">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    {t('fileList')}
+                  </span>
+                  <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <StatusDot tone="success" />
+                    {selectedFiles.length}
+                  </span>
+                </div>
+                <div className="max-h-72 divide-y divide-border overflow-y-auto">
+                  {selectedFiles.map((file) => (
+                    <div key={file} className="flex items-center gap-3 px-3 py-2.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-primary">
+                        <FileSearch className="h-4 w-4" />
                       </div>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-slate-200/70 bg-white/95 shadow-xl shadow-indigo-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                {t('selectHashAlgorithms')}
-              </CardTitle>
-              <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                {t('selectHashAlgorithmsDescription')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isFetchingAlgorithms ? (
-                <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {t('hashAlgorithmsLoading')}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {availableAlgorithms.map((option) => {
-                    const checked = selectedAlgorithms.includes(option.value)
-                    return (
-                      <div key={option.value} className="flex items-center gap-2">
-                        <Checkbox
-                          id={`algorithm-${option.value}`}
-                          checked={checked}
-                          onCheckedChange={(value) =>
-                            handleToggleAlgorithm(option.value, value === true)
-                          }
-                        />
-                        <Label
-                          htmlFor={`algorithm-${option.value}`}
-                          className={cn(
-                            'text-sm font-medium transition-colors',
-                            checked
-                              ? 'text-indigo-600 dark:text-indigo-400'
-                              : 'text-slate-600 dark:text-slate-300'
-                          )}
-                        >
-                          {option.label}
-                        </Label>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
-              <Button
-                onClick={handleCalculateHashes}
-                disabled={isCalculating || selectedFiles.length === 0}
-                className="mt-4 h-11 w-full rounded-xl bg-indigo-600 text-sm font-semibold shadow-lg shadow-indigo-900/20 transition hover:bg-indigo-700 disabled:bg-slate-300 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-              >
-                {isCalculating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('calculating')}
-                  </>
-                ) : (
-                  <>
-                    <Fingerprint className="mr-2 h-4 w-4" />
-                    {t('calculateHashes')}
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              variant="outline"
-              className="h-11 px-4 flex items-center gap-2"
-              onClick={handleSelectFiles}
-            >
-              <FolderOpen className="h-4 w-4" />
-              {t('selectFiles')}
-            </Button>
-            <Button
-              variant="secondary"
-              className="h-11 px-4 flex items-center gap-2"
-              onClick={handleCalculateHashes}
-              disabled={isCalculating || selectedFiles.length === 0}
-            >
-              {isCalculating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Fingerprint className="h-4 w-4" />
-              )}
-              {t('calculateHashes')}
-            </Button>
-            <Button
-              variant="ghost"
-              className="h-11 px-3 text-red-500 hover:text-red-600"
-              onClick={handleClearAll}
-              disabled={selectedFiles.length === 0 && results.length === 0}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-900/40">
-            <div className="px-4 py-3 border-b border-slate-200/50 dark:border-slate-700/50">
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                <FileSearch className="h-4 w-4 text-indigo-500" />
-                {t('selectedFiles')}
-              </p>
-            </div>
-            <ScrollArea className="max-h-48">
-              <div className="p-4 space-y-3">
-                {selectedFiles.length === 0 ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {t('hashNoFilesSelected')}
-                  </p>
-                ) : (
-                  selectedFiles.map((file) => (
-                    <div
-                      key={file}
-                      className="flex items-start justify-between gap-3 rounded-md border border-transparent bg-white/60 dark:bg-slate-800/60 px-3 py-2 transition hover:border-indigo-200 hover:shadow-sm"
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-foreground">
                           {file.split(/[/\\]/).pop()}
                         </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                        <p
+                          className="mt-0.5 truncate text-[11px] text-muted-foreground"
+                          title={file}
+                        >
                           {file}
                         </p>
                       </div>
                       <Button
+                        type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-slate-400 hover:text-red-500"
+                        className="shrink-0 hover:text-destructive"
                         onClick={() => handleRemoveFile(file)}
+                        aria-label={t('remove')}
+                        title={t('remove')}
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
-                  ))
-                )}
+                  ))}
+                </div>
               </div>
-            </ScrollArea>
-          </div>
-        </div>
+            )}
+          </PanelBody>
+        </Panel>
 
-        <div className="rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-white/60 dark:bg-slate-900/40">
-          <div className="px-4 py-3 border-b border-slate-200/50 dark:border-slate-700/50">
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              {t('selectHashAlgorithms')}
-            </p>
-          </div>
-          <div className="p-4 flex flex-wrap gap-4">
+        <Panel>
+          <PanelHeader
+            eyebrow="02"
+            title={t('selectHashAlgorithms')}
+            description={t('selectHashAlgorithmsDescription')}
+          />
+          <PanelBody className="space-y-5">
             {isFetchingAlgorithms ? (
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {t('hashAlgorithmsLoading')}
-              </div>
+              <Notice tone="loading" title={t('hashAlgorithmsLoading')} />
             ) : (
-              availableAlgorithms.map((option) => {
-                const checked = selectedAlgorithms.includes(option.value)
-                return (
-                  <div key={option.value} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`algorithm-${option.value}`}
-                      checked={checked}
-                      onCheckedChange={(value) =>
-                        handleToggleAlgorithm(option.value, value === true)
-                      }
-                    />
-                    <Label
-                      htmlFor={`algorithm-${option.value}`}
+              <div className="grid grid-cols-2 gap-2">
+                {availableAlgorithms.map((option) => {
+                  const checked = selectedAlgorithms.includes(option.value)
+                  return (
+                    <div
+                      key={option.value}
                       className={cn(
-                        'text-sm font-medium transition-colors',
+                        'flex items-center gap-2.5 rounded-md border px-3 py-2.5 transition-colors',
                         checked
-                          ? 'text-indigo-600 dark:text-indigo-400'
-                          : 'text-slate-600 dark:text-slate-300'
+                          ? 'border-primary/35 bg-primary/5'
+                          : 'border-border bg-muted/20 hover:bg-muted/40'
                       )}
                     >
-                      {option.label}
-                    </Label>
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </div>
-
-        <Card className="border border-emerald-200/70 bg-white/95 shadow-xl shadow-emerald-900/10 dark:border-emerald-500/30 dark:bg-emerald-900/30">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white flex items-center">
-                  <Fingerprint className="mr-2 h-5 w-5 text-emerald-500" />
-                  {t('hashResults')}
-                </CardTitle>
-                <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                  {t('hashResultsDescription')}
-                </CardDescription>
-              </div>
-              <Badge variant="secondary" className="text-xs">
-                {t('hashResultCount', { count: results.length })}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {results.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200/70 bg-slate-50/80 p-8 text-center dark:border-slate-700 dark:bg-slate-800/40">
-                <Fingerprint className="h-8 w-8 text-emerald-400 mb-3" />
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                  {t('hashNoResultsTitle')}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
-                  {t('hashNoResultsDescription')}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {sortedResults.map((result) => (
-                  <div
-                    key={result.filePath}
-                    className="rounded-xl border border-emerald-100/70 bg-white/90 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-900/40"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100/60 dark:border-emerald-500/30 px-4 py-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                          {result.fileName}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          <span className="truncate max-w-xs">{result.filePath}</span>
-                          <span>•</span>
-                          <span>{bytesToSize(result.size)}</span>
-                          <span>•</span>
-                          <span>
-                            {t('hashLastModified')}:{' '}
-                            {format(new Date(result.modifiedAt), 'yyyy-MM-dd HH:mm:ss')}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-200"
-                          onClick={() => handleRecalculateSingle(result.filePath)}
-                          title={t('hashRecalculateSingle')}
-                        >
-                          <RefreshCcw className="h-4 w-4 mr-1" />
-                          {t('recalculate')}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-slate-400 hover:text-red-500"
-                          onClick={() => handleRemoveFile(result.filePath)}
-                          title={t('remove')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Checkbox
+                        id={`algorithm-${option.value}`}
+                        checked={checked}
+                        onCheckedChange={(value) =>
+                          handleToggleAlgorithm(option.value, value === true)
+                        }
+                      />
+                      <Label
+                        htmlFor={`algorithm-${option.value}`}
+                        className={cn(
+                          'cursor-pointer text-xs font-medium',
+                          checked ? 'text-primary' : 'text-foreground'
+                        )}
+                      >
+                        {option.label}
+                      </Label>
                     </div>
-                    <div className="divide-y divide-emerald-100 dark:divide-emerald-800">
-                      {Object.entries(result.hashes).map(([algorithm, hash]) => (
-                        <div
-                          key={`${result.filePath}-${algorithm}`}
-                          className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-                              {algorithm}
+                  )
+                })}
+              </div>
+            )}
+
+            <div className="border-t border-border pt-4">
+              <Button
+                type="button"
+                size="lg"
+                onClick={handleCalculateHashes}
+                disabled={isCalculating || selectedFiles.length === 0}
+                className="w-full"
+              >
+                {isCalculating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Fingerprint className="mr-2 h-4 w-4" />
+                )}
+                {isCalculating ? t('calculating') : t('calculateHashes')}
+              </Button>
+            </div>
+          </PanelBody>
+        </Panel>
+      </div>
+
+      <Panel className="min-w-0">
+        <PanelHeader
+          eyebrow="03"
+          title={t('hashResults')}
+          description={t('hashResultsDescription')}
+          action={
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <StatusDot
+                tone={isCalculating ? 'active' : results.length > 0 ? 'success' : 'neutral'}
+              />
+              {t('hashResultCount', { count: results.length })}
+            </span>
+          }
+        />
+        <PanelBody className="p-0" aria-live="polite">
+          {isCalculating && (
+            <div className="border-b border-border p-4">
+              <Notice tone="loading" title={t('calculating')} />
+            </div>
+          )}
+
+          {results.length === 0 ? (
+            !isCalculating && (
+              <div className="p-5">
+                <EmptyState
+                  icon={Fingerprint}
+                  title={t('hashNoResultsTitle')}
+                  description={t('hashNoResultsDescription')}
+                  className="min-h-56"
+                />
+              </div>
+            )
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] border-collapse text-left text-xs">
+                <caption className="sr-only">{t('hashResults')}</caption>
+                <thead className="bg-muted/40 text-[11px] text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="w-36 px-4 py-2.5 font-medium">
+                      {t('selectHashAlgorithms')}
+                    </th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">
+                      {t('hashResults')}
+                    </th>
+                    <th scope="col" className="w-24 px-4 py-2.5 text-right font-medium">
+                      {t('copy')}
+                    </th>
+                  </tr>
+                </thead>
+                {sortedResults.map((result) => (
+                  <tbody key={result.filePath}>
+                    <tr className="border-t border-border bg-muted/20">
+                      <td colSpan={3} className="px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-foreground">
+                              {result.fileName}
                             </p>
-                            <p className="text-sm font-mono text-slate-700 dark:text-slate-200 break-all">
-                              {hash}
+                            <p
+                              className="mt-1 max-w-2xl truncate text-[11px] text-muted-foreground"
+                              title={result.filePath}
+                            >
+                              {result.filePath}
                             </p>
+                            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                              <span>{bytesToSize(result.size)}</span>
+                              <span>
+                                {t('hashLastModified')}:{' '}
+                                {format(new Date(result.modifiedAt), 'yyyy-MM-dd HH:mm:ss')}
+                              </span>
+                            </div>
                           </div>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRecalculateSingle(result.filePath)}
+                              title={t('hashRecalculateSingle')}
+                            >
+                              <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
+                              {t('recalculate')}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="hover:text-destructive"
+                              onClick={() => handleRemoveFile(result.filePath)}
+                              aria-label={t('remove')}
+                              title={t('remove')}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    {Object.entries(result.hashes).map(([algorithm, hash]) => (
+                      <tr
+                        key={`${result.filePath}-${algorithm}`}
+                        className="border-t border-border/70"
+                      >
+                        <td className="whitespace-nowrap px-4 py-3 align-top font-medium uppercase text-primary">
+                          {algorithm}
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <code className="break-all font-mono text-[11px] leading-relaxed text-foreground">
+                            {hash}
+                          </code>
+                        </td>
+                        <td className="px-4 py-3 text-right align-top">
                           <Button
+                            type="button"
                             variant="ghost"
                             size="sm"
-                            className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-200"
                             onClick={() => handleCopyHash(hash)}
                           >
-                            <ClipboardCopy className="h-4 w-4 mr-1" />
+                            <ClipboardCopy className="mr-1.5 h-3.5 w-3.5" />
                             {t('copy')}
                           </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
                 ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              </table>
+            </div>
+          )}
+        </PanelBody>
+      </Panel>
     </div>
   )
 }

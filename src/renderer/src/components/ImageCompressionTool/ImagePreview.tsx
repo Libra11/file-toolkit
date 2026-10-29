@@ -1,7 +1,9 @@
-import { File } from 'lucide-react'
+import { Image as ImageIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { DataRow } from '@renderer/components/ui/panel'
+import { EmptyState } from '@renderer/components/ui/states'
 import { ImageInfo } from './types'
 import { formatBytes } from './utils'
-import { useTranslation } from 'react-i18next'
 
 interface ImagePreviewProps {
   imageUrl: string | null
@@ -17,40 +19,42 @@ export function ImagePreview({
   imageInfo
 }: ImagePreviewProps): JSX.Element {
   const { t } = useTranslation()
+  const format = fileName.split('.').pop()?.toUpperCase() || '—'
 
   return (
-    <div className="space-y-3 rounded-2xl border border-sky-100/70 bg-white/95 p-4 shadow-sm shadow-sky-900/5 dark:border-sky-500/30 dark:bg-slate-900/70">
-      <h3 className="flex items-center text-sm font-semibold text-slate-800 dark:text-white">
-        <File className="mr-2 h-4 w-4 text-sky-500 dark:text-sky-300" />
-        <span className="truncate" title={fileName}>
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <ImageIcon className="h-4 w-4 shrink-0 text-primary" />
+        <h3 className="truncate text-xs font-medium text-foreground" title={fileName}>
           {fileName}
-        </span>
-      </h3>
-      <div className="relative flex h-48 w-full items-center justify-center overflow-hidden rounded-xl border border-sky-100/60 bg-sky-50/60 dark:border-sky-500/30 dark:bg-slate-900/60">
-        {imageUrl ? (
-          <img src={imageUrl} alt="original" className="h-full w-full object-contain" />
-        ) : (
-          <File className="h-10 w-10 text-sky-400" />
-        )}
+        </h3>
       </div>
-      <div className="grid gap-1 text-xs text-slate-600 dark:text-slate-300">
-        <p className="flex items-center justify-between">
-          <span className="font-medium text-slate-700 dark:text-slate-200">
-            {t('originalSize')}:
-          </span>
-          <span>{formatBytes(fileSize)}</span>
-        </p>
-        {imageInfo.width && imageInfo.height && (
-          <p className="flex items-center justify-between">
-            <span className="font-medium text-slate-700 dark:text-slate-200">
-              {t('dimensions')}:
-            </span>
-            <span>
-              {imageInfo.width} x {imageInfo.height} px
-            </span>
-          </p>
-        )}
-      </div>
+
+      {imageUrl ? (
+        <div className="flex aspect-[4/3] min-h-52 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted/35 p-3">
+          <img src={imageUrl} alt={fileName} className="max-h-full max-w-full object-contain" />
+        </div>
+      ) : (
+        <EmptyState
+          icon={ImageIcon}
+          title={t('loadImage')}
+          description={fileName}
+          className="aspect-[4/3] min-h-52"
+        />
+      )}
+
+      <dl className="divide-y divide-border border-y border-border">
+        <DataRow label={t('fileSize')} value={formatBytes(fileSize)} />
+        <DataRow label={t('format')} value={format} />
+        <DataRow
+          label={t('dimensions')}
+          value={
+            imageInfo.width && imageInfo.height
+              ? `${imageInfo.width} × ${imageInfo.height} px`
+              : '—'
+          }
+        />
+      </dl>
     </div>
   )
 }

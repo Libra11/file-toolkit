@@ -1,12 +1,8 @@
-/**
- * Author: Libra
- * Date: 2025-03-31 17:45:55
- * LastEditors: Libra
- * Description:
- */
 import { useTranslation } from 'react-i18next'
-import { CheckCircle2, Folder, ImagePlus } from 'lucide-react'
+import { FolderOpen, ImagePlus } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import { DataRow } from '@renderer/components/ui/panel'
+import { EmptyState, Notice } from '@renderer/components/ui/states'
 import { CompressionResult } from './types'
 import { formatBytes } from './utils'
 
@@ -21,84 +17,104 @@ export function BatchCompressionResult({
 }: BatchCompressionResultProps): JSX.Element {
   const { t } = useTranslation()
 
-  // 计算总压缩率
+  if (results.length === 0) {
+    return (
+      <EmptyState
+        title={t('compressionResult')}
+        description={t('selectFilesToCompress')}
+        className="min-h-56"
+      />
+    )
+  }
+
   const totalOriginalSize = results.reduce((sum, result) => sum + result.originalSize, 0)
   const totalCompressedSize = results.reduce((sum, result) => sum + result.compressedSize, 0)
   const totalSaved = totalOriginalSize - totalCompressedSize
-  const compressionPercentage = Math.round((totalSaved / totalOriginalSize) * 100)
-
-  // 获取输出目录路径
-  const outputDir =
-    results.length > 0
-      ? results[0].outputPath.substring(0, results[0].outputPath.lastIndexOf('/'))
-      : ''
+  const compressionPercentage = totalOriginalSize
+    ? Math.round((totalSaved / totalOriginalSize) * 100)
+    : 0
+  const firstPath = results[0].outputPath
+  const pathSeparator = Math.max(firstPath.lastIndexOf('/'), firstPath.lastIndexOf('\\'))
+  const outputDir = pathSeparator >= 0 ? firstPath.substring(0, pathSeparator) : ''
 
   return (
-    <div className="bg-slate-100 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-      <h3 className="text-sm font-medium text-green-600 dark:text-green-400 mb-3 flex items-center">
-        <CheckCircle2 className="h-4 w-4 mr-1" />
-        {t('batchCompressionSuccess')}
-      </h3>
+    <div className="space-y-4">
+      <Notice
+        tone="success"
+        title={t('batchCompressionSuccess')}
+        description={t('successCount', { count: results.length, total: results.length })}
+      />
 
-      <div className="grid grid-cols-2 gap-4 mb-4 text-center">
-        <div className="bg-white dark:bg-slate-900/30 p-3 rounded-lg">
-          <div className="text-sm text-slate-600 dark:text-slate-400">
-            {t('successCount', { count: results.length, total: results.length })}
-          </div>
-          <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{results.length}</div>
+      <dl className="grid grid-cols-3 divide-x divide-border rounded-lg border border-border bg-muted/25 py-3">
+        <div className="px-3">
+          <dt className="text-[11px] text-muted-foreground">{t('fileCount')}</dt>
+          <dd className="mt-1 text-lg font-semibold text-foreground">{results.length}</dd>
         </div>
-        <div className="bg-white dark:bg-slate-900/30 p-3 rounded-lg">
-          <div className="text-sm text-slate-600 dark:text-slate-400">{t('compressionRatio')}</div>
-          <div className="text-xl font-bold text-green-600 dark:text-green-400">
-            {compressionPercentage}%
-          </div>
+        <div className="px-3">
+          <dt className="text-[11px] text-muted-foreground">{t('saved')}</dt>
+          <dd className="mt-1 text-lg font-semibold text-primary">{compressionPercentage}%</dd>
         </div>
+        <div className="px-3">
+          <dt className="text-[11px] text-muted-foreground">{t('compressedSize')}</dt>
+          <dd
+            className="mt-1 truncate text-sm font-semibold text-foreground"
+            title={formatBytes(totalCompressedSize)}
+          >
+            {formatBytes(totalCompressedSize)}
+          </dd>
+        </div>
+      </dl>
+
+      <dl className="divide-y divide-border border-y border-border">
+        <DataRow label={t('originalSize')} value={formatBytes(totalOriginalSize)} />
+        <DataRow label={t('compressedSize')} value={formatBytes(totalCompressedSize)} />
+        <DataRow
+          label={t('saved')}
+          value={<span className="text-primary">{formatBytes(totalSaved)}</span>}
+        />
+        {outputDir && <DataRow label={t('outputFolder')} value={outputDir} />}
+      </dl>
+
+      <div className="max-h-56 divide-y divide-border overflow-y-auto border-y border-border">
+        {results.map((result, index) => (
+          <div
+            key={`${result.outputPath}-${index}`}
+            className="flex items-center gap-3 py-2.5 text-xs"
+          >
+            <span
+              className="min-w-0 flex-1 truncate font-medium text-foreground"
+              title={result.outputPath}
+            >
+              {result.outputPath.split(/[\\/]/).pop() || `${t('image')} ${index + 1}`}
+            </span>
+            <span className="shrink-0 text-muted-foreground">
+              {formatBytes(result.originalSize)} → {formatBytes(result.compressedSize)}
+            </span>
+          </div>
+        ))}
       </div>
 
-      <div className="mb-4 text-xs space-y-1">
-        <div className="flex justify-between">
-          <span className="text-slate-600 dark:text-slate-400">{t('originalSize')}:</span>
-          <span className="font-medium">{formatBytes(totalOriginalSize)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-slate-600 dark:text-slate-400">{t('compressedSize')}:</span>
-          <span className="font-medium">{formatBytes(totalCompressedSize)}</span>
-        </div>
-        <div className="flex justify-between text-green-600 dark:text-green-400">
-          <span>{t('saved')}:</span>
-          <span className="font-medium">{formatBytes(totalSaved)}</span>
-        </div>
-      </div>
-
-      {outputDir && (
-        <div
-          className="mb-3 bg-slate-200 dark:bg-slate-700/50 p-2 rounded text-xs truncate"
-          title={outputDir}
-        >
-          <span className="font-medium mr-1">{t('outputFolder')}:</span>
-          {outputDir}
-        </div>
-      )}
-
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Button
+          type="button"
           size="sm"
+          className="flex-1"
+          disabled={!outputDir}
           onClick={() => {
             if (
+              outputDir &&
               window.system &&
-              typeof window.system.openFileLocation === 'function' &&
-              outputDir
+              typeof window.system.openFileLocation === 'function'
             ) {
               window.system.openFileLocation(outputDir)
             }
           }}
-          className="w-full"
         >
-          <Folder className="h-4 w-4 mr-1" />
+          <FolderOpen className="mr-2 h-4 w-4" />
           {t('openOutputFolder')}
         </Button>
-        <Button size="sm" variant="outline" onClick={onReset}>
-          <ImagePlus className="h-4 w-4 mr-1" />
+        <Button type="button" size="sm" variant="outline" className="flex-1" onClick={onReset}>
+          <ImagePlus className="mr-2 h-4 w-4" />
           {t('compressOthers')}
         </Button>
       </div>

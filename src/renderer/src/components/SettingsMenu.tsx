@@ -1,16 +1,11 @@
-/**
- * Author: Libra
- * Date: 2025-05-22 14:08:33
- * LastEditors: Libra
- * Description:
- */
+import { useEffect, useState, type ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react' // Import useEffect and useState
+import { Languages, Moon, Settings as SettingsIcon, Sun } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
-import { Settings as SettingsIcon } from 'lucide-react' // Renamed to avoid conflict
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger
@@ -29,19 +24,29 @@ import { useSettings } from '@renderer/hooks/useSettings'
 const languages = [
   { code: 'en', name: 'English' },
   { code: 'zh', name: '中文' }
-  // Add more languages as needed
 ]
 
-export function SettingsMenu(): JSX.Element {
+interface SettingsMenuProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  trigger?: ReactElement | null
+}
+
+export function SettingsMenu({
+  open: controlledOpen,
+  onOpenChange,
+  trigger
+}: SettingsMenuProps = {}): JSX.Element {
   const { t } = useTranslation()
   const { settings, updateSettings } = useSettings()
   const [appVersion, setAppVersion] = useState('')
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+  const isOpen = controlledOpen ?? uncontrolledOpen
 
   useEffect(() => {
     async function fetchVersion(): Promise<void> {
       try {
         const version = await window.system.getAppVersion()
-        console.log(version)
         setAppVersion(version)
       } catch (error) {
         console.error('Failed to get app version:', error)
@@ -51,66 +56,119 @@ export function SettingsMenu(): JSX.Element {
     fetchVersion()
   }, [])
 
+  const handleOpenChange = (open: boolean): void => {
+    if (controlledOpen === undefined) {
+      setUncontrolledOpen(open)
+    }
+    onOpenChange?.(open)
+  }
+
   const toggleDarkMode = (): void => {
     updateSettings({ isDarkMode: !settings.isDarkMode })
   }
 
   return (
-    <div className="fixed bottom-4 right-4">
-      <Dialog>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      {trigger === null ? null : (
         <DialogTrigger asChild>
-          <Button variant="outline" size="icon">
-            <SettingsIcon className="h-[1.2rem] w-[1.2rem]" />
-            <span className="sr-only">{t('openSettings')}</span>
-          </Button>
+          {trigger ?? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2 rounded-md bg-card px-3 shadow-none"
+            >
+              <SettingsIcon className="h-4 w-4" strokeWidth={1.8} />
+              <span>{t('settings')}</span>
+              <span className="sr-only">{t('openSettings')}</span>
+            </Button>
+          )}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{t('settings')}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="language" className="text-right">
-                {t('language')}
-              </Label>
+      )}
+
+      <DialogContent className="max-w-[540px] gap-0 overflow-y-auto rounded-lg border-border bg-card p-0 shadow-xl">
+        <DialogHeader className="border-b border-border px-6 py-5 pr-12 text-left">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/[0.06] text-primary">
+              <SettingsIcon className="h-4 w-4" strokeWidth={1.8} />
+            </div>
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                {t('appName')}
+              </p>
+              <DialogTitle className="text-base font-semibold text-foreground">
+                {t('settings')}
+              </DialogTitle>
+            </div>
+          </div>
+          <DialogDescription className="sr-only">
+            {t('appName')} · {t('settings')}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="bg-muted/20 p-5 sm:p-6">
+          <div className="overflow-hidden rounded-md border border-border bg-card">
+            <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground">
+                  <Languages className="h-4 w-4" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <Label htmlFor="language" className="text-sm font-medium text-foreground">
+                    {t('language')}
+                  </Label>
+                  <p className="mt-1 text-xs text-muted-foreground">{t('selectLanguage')}</p>
+                </div>
+              </div>
               <Select
+                value={settings.language}
                 onValueChange={(value) => updateSettings({ language: value })}
-                defaultValue={settings.language}
               >
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger
+                  id="language"
+                  className="h-9 rounded-md shadow-none sm:w-40 sm:shrink-0"
+                >
                   <SelectValue placeholder={t('selectLanguage')} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-md shadow-lg">
                   {languages.map((lang) => (
-                    <SelectItem key={lang.code} value={lang.code}>
+                    <SelectItem key={lang.code} value={lang.code} className="rounded-sm">
                       {lang.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="darkMode" className="text-right">
-                {t('darkMode')}
-              </Label>
+
+            <div className="flex items-center justify-between gap-4 border-t border-border p-4 sm:p-5">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-muted-foreground">
+                  {settings.isDarkMode ? (
+                    <Sun className="h-4 w-4" strokeWidth={1.8} />
+                  ) : (
+                    <Moon className="h-4 w-4" strokeWidth={1.8} />
+                  )}
+                </div>
+                <Label htmlFor="darkMode" className="text-sm font-medium text-foreground">
+                  {t('darkMode')}
+                </Label>
+              </div>
               <Switch
                 id="darkMode"
                 checked={settings.isDarkMode}
                 onCheckedChange={toggleDarkMode}
-                className="col-span-3"
               />
             </div>
-            {/* Display App Version */}
-            {appVersion && (
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                <p className="text-xs text-center text-slate-500 dark:text-slate-400">
-                  {t('versionLabel', { version: appVersion })}
-                </p>
-              </div>
-            )}
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+        </div>
+
+        {appVersion ? (
+          <div className="flex items-center justify-between gap-4 border-t border-border px-6 py-3 text-xs">
+            <span className="text-muted-foreground">{t('appName')}</span>
+            <span className="font-mono tabular-nums text-foreground">v{appVersion}</span>
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   )
 }

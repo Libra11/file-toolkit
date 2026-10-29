@@ -1,33 +1,15 @@
-/**
- * Author: Libra
- * Date: 2024-04-01
- * LastEditors: Libra
- * Description: 视频压缩工具主组件
- */
-
-import { motion } from 'framer-motion'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription
-} from '@renderer/components/ui/card'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useState, useRef, useEffect } from 'react'
-import { Loader2, FileVideo, Sparkles } from 'lucide-react'
+import { File, Files, FileVideo, FolderOpen, Loader2, X } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import { DataRow, Panel, PanelBody, PanelHeader } from '@renderer/components/ui/panel'
 import { Progress } from '@renderer/components/ui/progress'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@renderer/components/ui/tabs'
-import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
-
-// 导入组件
+import { SegmentedControl } from '@renderer/components/ui/segmented-control'
+import { EmptyState, Notice, StatusDot } from '@renderer/components/ui/states'
 import { FileUploader } from './FileUploader'
 import { VideoPreview } from './VideoPreview'
 import { CompressionSettings } from './CompressionSettings'
 import { CompressedVideoPreview } from './CompressedVideoPreview'
-
-// 导入类型和工具函数
 import {
   VideoFormat,
   VideoQualityPreset,
@@ -43,21 +25,23 @@ interface VideoCompressionToolProps {
   onBack?: () => void
 }
 
+type CompressionMode = 'single' | 'batch'
+
 export default function VideoCompressionTool({ onBack }: VideoCompressionToolProps): JSX.Element {
+  // Navigation belongs to the outer workspace; keep the callback in the public API.
+  void onBack
   const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // 状态管理
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isCompressing, setIsCompressing] = useState(false)
   const [compressionComplete, setCompressionComplete] = useState(false)
-  const [activeTab, setActiveTab] = useState<string>('single')
+  const [activeTab, setActiveTab] = useState<CompressionMode>('single')
   const [videoInfo, setVideoInfo] = useState<VideoInfo>({})
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [compressionResult, setCompressionResult] = useState<CompressionResult | null>(null)
 
-  // 视频压缩选项
   const [qualityPreset, setQualityPreset] = useState<VideoQualityPreset>(
     VIDEO_QUALITY_PRESETS.MEDIUM
   )
@@ -71,18 +55,12 @@ export default function VideoCompressionTool({ onBack }: VideoCompressionToolPro
   const [maintainAspectRatio, setMaintainAspectRatio] = useState<boolean>(true)
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false)
 
-  // 添加进度状态
   const [batchProgress, setBatchProgress] = useState<{
     current: number
     total: number
     currentFileName: string
-  }>({
-    current: 0,
-    total: 0,
-    currentFileName: ''
-  })
+  }>({ current: 0, total: 0, currentFileName: '' })
 
-  // 重置状态
   const resetState = (): void => {
     setSelectedFiles([])
     setVideoUrl(null)
@@ -100,54 +78,42 @@ export default function VideoCompressionTool({ onBack }: VideoCompressionToolPro
     setVideoInfo({})
     setMaintainAspectRatio(true)
     setShowAdvanced(false)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  // 处理模式切换
-  const handleModeToggle = (value: string): void => {
+  const handleModeToggle = (value: CompressionMode): void => {
+    if (value === activeTab) return
     resetState()
     setActiveTab(value)
   }
 
-  // 文件上传处理函数
   const handleFileSelect = async (files: File[]): Promise<void> => {
     if (!files.length) return
-
     setSelectedFiles(files)
 
-    // 单文件模式下，加载视频预览和信息
     if (activeTab === 'single' && files.length === 1) {
       const file = files[0]
-
-      // 创建文件预览URL
       const url = URL.createObjectURL(file)
       setVideoUrl(url)
 
       try {
-        // 获取真实视频信息
-        const videoInfo = await window.compression.getVideoInfo(file.path)
+        const info = await window.compression.getVideoInfo(file.path)
         setVideoInfo({
-          duration: videoInfo.duration,
-          width: videoInfo.width,
-          height: videoInfo.height,
-          bitrate: videoInfo.bitrate,
-          fps: videoInfo.fps,
-          codec: videoInfo.codec,
-          format: videoInfo.format || file.name.split('.').pop()
+          duration: info.duration,
+          width: info.width,
+          height: info.height,
+          bitrate: info.bitrate,
+          fps: info.fps,
+          codec: info.codec,
+          format: info.format || file.name.split('.').pop()
         })
       } catch (error) {
         console.error('获取视频信息失败:', error)
-        // 如果获取失败，使用基本信息
-        setVideoInfo({
-          format: file.name.split('.').pop()
-        })
+        setVideoInfo({ format: file.name.split('.').pop() })
       }
     }
   }
 
-  // 清理URL对象
   useEffect(() => {
     return (): void => {
       if (videoUrl) URL.revokeObjectURL(videoUrl)
@@ -155,29 +121,19 @@ export default function VideoCompressionTool({ onBack }: VideoCompressionToolPro
     }
   }, [videoUrl, previewUrl])
 
-  // 压缩视频处理函数
   const compressVideo = async (): Promise<void> => {
     if (!selectedFiles.length) return
-
     setIsCompressing(true)
 
     try {
-      // 获取输入文件路径
       const inputFile = selectedFiles[0]
-
-      // 确定输出格式和文件名
       const inputFileName = inputFile.name
       const extension = outputFormat === 'original' ? inputFileName.split('.').pop() : outputFormat
-
-      // 让用户选择保存位置
       const outputPath = await window.system.saveFile(
         `compressed_${inputFileName.split('.')[0]}.${extension}`
       )
-      if (!outputPath) {
-        throw new Error('未选择输出路径')
-      }
+      if (!outputPath) throw new Error(t('noOutputFileSelected'))
 
-      // 准备压缩选项
       const options = {
         format: outputFormat === 'original' ? undefined : outputFormat,
         encoder,
@@ -189,10 +145,7 @@ export default function VideoCompressionTool({ onBack }: VideoCompressionToolPro
         maintainAspectRatio
       }
 
-      // 调用主进程的压缩方法
       const result = await window.compression.compressVideo(inputFile.path, outputPath, options)
-
-      // 设置压缩结果
       setCompressionResult({
         originalSize: result.originalSize,
         compressedSize: result.compressedSize,
@@ -203,11 +156,7 @@ export default function VideoCompressionTool({ onBack }: VideoCompressionToolPro
         width: result.width || width || videoInfo.width,
         height: result.height || height || videoInfo.height
       })
-
-      // 创建预览URL
-      const previewUrl = `myapp:///${result.outputPath}`
-      setPreviewUrl(previewUrl)
-
+      setPreviewUrl(`myapp:///${result.outputPath}`)
       setIsCompressing(false)
       setCompressionComplete(true)
     } catch (error) {
@@ -216,23 +165,15 @@ export default function VideoCompressionTool({ onBack }: VideoCompressionToolPro
     }
   }
 
-  // 批量压缩视频处理函数
   const batchCompressVideos = async (): Promise<void> => {
     if (!selectedFiles.length) return
-
     setIsCompressing(true)
     setCompressionComplete(false)
-    setBatchProgress({
-      current: 0,
-      total: selectedFiles.length,
-      currentFileName: ''
-    })
+    setBatchProgress({ current: 0, total: selectedFiles.length, currentFileName: '' })
 
     try {
       const outputDir = await window.system.selectDirectory()
-      if (!outputDir) {
-        throw new Error('未选择输出目录')
-      }
+      if (!outputDir) throw new Error(t('noOutputDirectorySelected'))
 
       const options = {
         format: outputFormat === 'original' ? undefined : outputFormat,
@@ -244,7 +185,6 @@ export default function VideoCompressionTool({ onBack }: VideoCompressionToolPro
         fps: fps || undefined,
         maintainAspectRatio
       }
-
       const results: CompressionResult[] = []
 
       for (let i = 0; i < selectedFiles.length; i++) {
@@ -261,7 +201,6 @@ export default function VideoCompressionTool({ onBack }: VideoCompressionToolPro
             outputFormat === 'original' ? inputFileName.split('.').pop() : outputFormat
           const outputFileName = `${inputFileName.split('.')[0]}_compressed.${extension}`
           const outputPath = `${outputDir}/${outputFileName}`
-
           const result = await window.compression.compressVideo(file.path, outputPath, options)
 
           results.push({
@@ -277,19 +216,17 @@ export default function VideoCompressionTool({ onBack }: VideoCompressionToolPro
         }
       }
 
-      // 完成所有处理
       if (results.length > 0) {
+        const totalOriginalSize = results.reduce((sum, result) => sum + result.originalSize, 0)
+        const totalCompressedSize = results.reduce((sum, result) => sum + result.compressedSize, 0)
         setCompressionResult({
           batchResults: results,
-          totalOriginalSize: results.reduce((sum, r) => sum + r.originalSize, 0),
-          totalCompressedSize: results.reduce((sum, r) => sum + r.compressedSize, 0),
+          totalOriginalSize,
+          totalCompressedSize,
           fileCount: results.length,
-          // 要满足CompressionResult类型要求的其他必填字段
-          originalSize: results.reduce((sum, r) => sum + r.originalSize, 0),
-          compressedSize: results.reduce((sum, r) => sum + r.compressedSize, 0),
-          compressionRatio:
-            results.reduce((sum, r) => sum + r.originalSize, 0) /
-            results.reduce((sum, r) => sum + r.compressedSize, 0),
+          originalSize: totalOriginalSize,
+          compressedSize: totalCompressedSize,
+          compressionRatio: totalOriginalSize / totalCompressedSize,
           outputPath: outputDir,
           format: ''
         })
@@ -299,398 +236,405 @@ export default function VideoCompressionTool({ onBack }: VideoCompressionToolPro
       console.error('批量压缩过程中出错:', error)
     } finally {
       setIsCompressing(false)
-      setBatchProgress({
-        current: 0,
-        total: 0,
-        currentFileName: ''
-      })
+      setBatchProgress({ current: 0, total: 0, currentFileName: '' })
     }
   }
 
-  // 重置为压缩新的视频
   const handleReset = (): void => {
     resetState()
   }
 
+  const isBatch = activeTab === 'batch'
+  const batchResults = compressionResult?.batchResults || []
+  const hasInput = selectedFiles.length > 0
+  const hasResult = isBatch
+    ? batchResults.length > 0
+    : compressionComplete && Boolean(compressionResult)
+  const selectedBatchSize = selectedFiles.reduce((sum, file) => sum + file.size, 0)
+  const totalOriginalSize = compressionResult?.totalOriginalSize || 0
+  const totalCompressedSize = compressionResult?.totalCompressedSize || 0
+  const totalSavedPercent = totalOriginalSize
+    ? Math.round(((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100)
+    : 0
+  const currentFile = selectedFiles[0]
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-purple-900/10 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/60 md:p-8">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-purple-100/60 via-white to-transparent dark:from-purple-900/25 dark:via-slate-900" />
-        <div className="space-y-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-3 flex-row items-center justify-between">
-              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-purple-100/70 px-3 py-1 text-sm font-medium text-purple-600 dark:bg-purple-900/40 dark:text-purple-200">
-                <FileVideo className="h-4 w-4" />
-                {t('videoCompressionTool')}
-              </div>
-              {onBack && (
-                <BackToHomeButton
-                  onClick={onBack}
-                  className="bg-purple-100/70 text-purple-600 hover:bg-purple-100 hover:text-purple-700 dark:bg-purple-900/30 dark:text-purple-200 dark:hover:bg-purple-900/50"
-                />
-              )}
+    <div className="min-h-full bg-background text-foreground">
+      <div className="mx-auto max-w-[1680px] space-y-5 p-4 md:p-6">
+        <header className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-primary">
+              <FileVideo className="h-5 w-5" />
             </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
                 {t('videoCompression')}
-              </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              </h1>
+              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
                 {t('videoCompressionDescription')}
               </p>
             </div>
-            <div className="flex flex-col gap-3 rounded-2xl border border-purple-100/70 bg-purple-50/60 p-4 text-sm text-purple-700 shadow-inner dark:border-purple-500/30 dark:bg-purple-900/20 dark:text-purple-100 md:flex-row md:items-start md:gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-purple-500 shadow-sm dark:bg-white/10 dark:text-purple-200">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-base font-semibold">{t('videoCompressionTipTitle')}</p>
-                <p className="text-xs leading-relaxed text-purple-600/80 dark:text-purple-100/80">
-                  {t('videoCompressionTipDescription')}
-                </p>
-              </div>
-            </div>
           </div>
-
-          <Tabs
-            defaultValue="single"
+          <SegmentedControl<CompressionMode>
             value={activeTab}
-            onValueChange={handleModeToggle}
-            className="w-full"
-          >
-            <div className="flex justify-center">
-              <TabsList className="mb-6 h-[3.2rem] grid w-full max-w-lg grid-cols-2 items-center overflow-hidden rounded-full bg-purple-100/60 p-1 text-sm font-medium dark:bg-purple-900/40">
-                <TabsTrigger
-                  value="single"
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-purple-300"
-                >
-                  {t('singleFileMode')}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="batch"
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-600 transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm dark:text-slate-300 dark:data-[state=active]:bg-slate-900/80 dark:data-[state=active]:text-purple-300"
-                >
-                  {t('batchMode')}
-                </TabsTrigger>
-              </TabsList>
-            </div>
+            onChange={handleModeToggle}
+            ariaLabel={t('videoCompressionTool')}
+            className="w-full sm:w-auto"
+            options={[
+              { value: 'single', label: t('singleFileMode'), icon: File },
+              { value: 'batch', label: t('batchMode'), icon: Files }
+            ]}
+          />
+        </header>
 
-            <TabsContent value="single" className="mt-6">
-              <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)]">
-                <Card className="border border-purple-100/70 bg-white/90 shadow-xl shadow-purple-900/10 dark:border-purple-500/20 dark:bg-slate-900/70">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                      {t('selectFiles')}
-                    </CardTitle>
-                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                      {t('selectVideoFile')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {!selectedFiles.length ? (
-                      <FileUploader
-                        onFileSelect={handleFileSelect}
-                        fileInputRef={fileInputRef}
-                        batchMode={false}
-                      />
-                    ) : compressionComplete && compressionResult ? (
-                      <CompressedVideoPreview
-                        compressionResult={compressionResult}
-                        previewUrl={previewUrl}
-                        onReset={handleReset}
-                      />
-                    ) : (
-                      <VideoPreview
-                        videoUrl={videoUrl}
-                        fileName={selectedFiles[0].name}
-                        fileSize={selectedFiles[0].size}
-                        videoInfo={videoInfo}
-                      />
-                    )}
-                  </CardContent>
-                </Card>
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(240px,0.78fr)_minmax(300px,0.95fr)_minmax(360px,1.27fr)]">
+          <Panel>
+            <PanelHeader
+              eyebrow="01"
+              title={isBatch ? t('fileList') : t('inputFile')}
+              description={isBatch ? t('selectVideosToCompress') : t('selectVideoFile')}
+              action={
+                hasInput ? (
+                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <StatusDot tone="success" />
+                    {selectedFiles.length}
+                  </span>
+                ) : undefined
+              }
+            />
+            <PanelBody className="space-y-4">
+              <FileUploader
+                onFileSelect={handleFileSelect}
+                fileInputRef={fileInputRef}
+                batchMode={isBatch}
+              />
 
-                <Card className="border border-slate-200/70 bg-white/95 shadow-xl shadow-purple-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                      {t('compressionSettings')}
-                    </CardTitle>
-                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                      {t('videoCompressionSettingsHint')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {selectedFiles.length > 0 && !compressionComplete ? (
-                      <>
-                        <CompressionSettings
-                          qualityPreset={qualityPreset}
-                          outputFormat={outputFormat}
-                          encoder={encoder}
-                          crf={crf}
-                          preset={preset}
-                          width={width}
-                          height={height}
-                          fps={fps}
-                          maintainAspectRatio={maintainAspectRatio}
-                          showAdvanced={showAdvanced}
-                          videoInfo={videoInfo}
-                          onQualityPresetChange={setQualityPreset}
-                          onFormatChange={setOutputFormat}
-                          onEncoderChange={setEncoder}
-                          onCrfChange={setCrf}
-                          onPresetChange={setPreset}
-                          onWidthChange={setWidth}
-                          onHeightChange={setHeight}
-                          onFpsChange={setFps}
-                          onMaintainAspectRatioChange={setMaintainAspectRatio}
-                          onShowAdvancedChange={setShowAdvanced}
-                        />
+              {!isBatch && currentFile && (
+                <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/25 px-3 py-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-card text-primary">
+                    <FileVideo className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="truncate text-xs font-medium text-foreground"
+                      title={currentFile.name}
+                    >
+                      {currentFile.name}
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {formatFileSize(currentFile.size)}
+                    </p>
+                  </div>
+                </div>
+              )}
 
+              {isBatch && selectedFiles.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="font-medium text-foreground">
+                      {t('selectedFiles')} · {selectedFiles.length}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {formatFileSize(selectedBatchSize)}
+                    </span>
+                  </div>
+                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                    {selectedFiles.map((file, index) => (
+                      <div
+                        key={`${file.name}-${file.lastModified}-${index}`}
+                        className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5"
+                      >
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-primary">
+                          <FileVideo className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className="truncate text-xs font-medium text-foreground"
+                            title={file.name}
+                          >
+                            {file.name}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            {formatFileSize(file.size)}
+                          </p>
+                        </div>
                         <Button
-                          onClick={compressVideo}
-                          disabled={isCompressing}
-                          className="mt-4 h-11 w-full rounded-xl bg-purple-600 text-sm font-semibold shadow-lg shadow-purple-900/20 transition hover:bg-purple-700 disabled:bg-slate-300 dark:bg-purple-500 dark:hover:bg-purple-400"
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 shrink-0 px-0"
+                          onClick={() => {
+                            const newFiles = [...selectedFiles]
+                            newFiles.splice(index, 1)
+                            setSelectedFiles(newFiles)
+                          }}
+                          aria-label={`${t('remove')} ${file.name}`}
+                          title={t('remove')}
                         >
-                          {isCompressing ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              {t('compressing')}
-                            </>
-                          ) : (
-                            <>
-                              <FileVideo className="mr-2 h-4 w-4" />
-                              {t('compressVideo')}
-                            </>
-                          )}
+                          <X className="h-4 w-4" />
                         </Button>
-                      </>
-                    ) : (
-                      <p className="rounded-xl border border-dashed border-slate-200/70 bg-slate-50/80 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400">
-                        {t('selectVideoFile')}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </PanelBody>
+          </Panel>
 
-            <TabsContent value="batch" className="mt-6">
-              {selectedFiles.length === 0 && !compressionResult?.batchResults ? (
-                <Card className="border border-purple-100/70 bg-white/95 shadow-xl shadow-purple-900/10 dark:border-purple-500/20 dark:bg-slate-900/70">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                      {t('selectFiles')}
-                    </CardTitle>
-                    <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                      {t('selectVideosToCompress')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <FileUploader
-                      onFileSelect={handleFileSelect}
-                      fileInputRef={fileInputRef}
-                      batchMode={true}
+          <Panel>
+            <PanelHeader
+              eyebrow="02"
+              title={t('compressionSettings')}
+              description={
+                isBatch ? t('videoBatchSettingsHint') : t('videoCompressionSettingsHint')
+              }
+            />
+            <PanelBody className="space-y-5">
+              <CompressionSettings
+                qualityPreset={qualityPreset}
+                outputFormat={outputFormat}
+                encoder={encoder}
+                crf={crf}
+                preset={preset}
+                width={width}
+                height={height}
+                fps={fps}
+                maintainAspectRatio={maintainAspectRatio}
+                showAdvanced={showAdvanced}
+                videoInfo={videoInfo}
+                isBatchMode={isBatch}
+                onQualityPresetChange={setQualityPreset}
+                onFormatChange={setOutputFormat}
+                onEncoderChange={setEncoder}
+                onCrfChange={setCrf}
+                onPresetChange={setPreset}
+                onWidthChange={setWidth}
+                onHeightChange={setHeight}
+                onFpsChange={setFps}
+                onMaintainAspectRatioChange={setMaintainAspectRatio}
+                onShowAdvancedChange={setShowAdvanced}
+              />
+
+              {!hasInput && (
+                <Notice
+                  title={t('noFileChosen')}
+                  description={isBatch ? t('selectVideosToCompress') : t('selectVideoFile')}
+                />
+              )}
+
+              <div className="space-y-3 border-t border-border pt-4">
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={isBatch ? batchCompressVideos : compressVideo}
+                  disabled={!hasInput || isCompressing}
+                >
+                  {isCompressing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileVideo className="mr-2 h-4 w-4" />
+                  )}
+                  {isCompressing
+                    ? isBatch
+                      ? t('batchCompressing')
+                      : t('compressing')
+                    : isBatch
+                      ? t('batchCompression')
+                      : t('compressVideo')}
+                </Button>
+
+                {isBatch && isCompressing && batchProgress.total > 0 && (
+                  <div className="space-y-2">
+                    <Notice
+                      tone="loading"
+                      title={batchProgress.currentFileName || t('processing')}
+                      description={t('processingFile', {
+                        current: batchProgress.current,
+                        total: batchProgress.total,
+                        filename: batchProgress.currentFileName
+                      })}
                     />
-                  </CardContent>
-                </Card>
-              ) : compressionResult?.batchResults ? (
-                <Card className="border border-violet-200/70 bg-white/95 shadow-xl shadow-violet-900/10 dark:border-violet-500/30 dark:bg-violet-900/30">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg font-semibold text-violet-700 dark:text-violet-200">
-                      {t('batchCompressionSuccess')}
-                    </CardTitle>
-                    <CardDescription className="text-sm text-violet-600/80 dark:text-violet-200/80">
-                      {t('videoBatchSettingsHint')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid gap-3 text-sm sm:grid-cols-3">
-                      <div className="rounded-xl bg-violet-50/80 p-3 dark:bg-violet-900/40">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-300">
-                          {t('successCount', {
-                            count: compressionResult.batchResults.length,
-                            total: compressionResult.batchResults.length
-                          })}
-                        </span>
-                      </div>
-                      <div className="rounded-xl bg-violet-50/80 p-3 dark:bg-violet-900/40">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-300">
-                          {t('originalSize')}
-                        </span>
-                        <p className="mt-1 text-base font-semibold text-violet-600 dark:text-violet-300">
-                          {formatFileSize(compressionResult.totalOriginalSize || 0)}
-                        </p>
-                      </div>
-                      <div className="rounded-xl bg-violet-50/80 p-3 dark:bg-violet-900/40">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-300">
-                          {t('saved')}
-                        </span>
-                        <p className="mt-1 text-base font-semibold text-violet-600 dark:text-violet-300">
-                          {Math.round(
-                            (((compressionResult.totalOriginalSize || 0) -
-                              (compressionResult.totalCompressedSize || 0)) /
-                              (compressionResult.totalOriginalSize || 1)) *
-                              100
-                          )}
-                          %
-                        </p>
-                      </div>
-                    </div>
+                    <Progress
+                      value={(batchProgress.current / batchProgress.total) * 100}
+                      className="h-1.5"
+                    />
+                  </div>
+                )}
+              </div>
+            </PanelBody>
+          </Panel>
 
-                    <div className="space-y-2">
-                      {compressionResult.batchResults.map((result, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between rounded-xl border border-violet-100/70 bg-white/90 px-3 py-2 text-sm shadow-sm dark:border-violet-500/30 dark:bg-violet-900/40"
+          <Panel>
+            <PanelHeader
+              eyebrow="03"
+              title={hasResult ? t('compressionResult') : t('preview')}
+              description={hasResult ? t('outputFiles') : t('videoCompressionTool')}
+              action={
+                hasResult ? (
+                  <span className="flex items-center gap-2 text-xs font-medium text-primary">
+                    <StatusDot tone="success" />
+                    {t('compressionComplete')}
+                  </span>
+                ) : undefined
+              }
+            />
+            <PanelBody>
+              {isBatch ? (
+                batchResults.length > 0 && compressionResult ? (
+                  <div className="space-y-4">
+                    <Notice
+                      tone="success"
+                      title={t('batchCompressionSuccess')}
+                      description={t('successCount', {
+                        count: batchResults.length,
+                        total: selectedFiles.length
+                      })}
+                    />
+                    <dl className="grid grid-cols-3 divide-x divide-border rounded-lg border border-border bg-muted/25 py-3">
+                      <div className="px-3">
+                        <dt className="text-[11px] text-muted-foreground">{t('fileCount')}</dt>
+                        <dd className="mt-1 text-lg font-semibold text-foreground">
+                          {batchResults.length}
+                        </dd>
+                      </div>
+                      <div className="px-3">
+                        <dt className="text-[11px] text-muted-foreground">{t('originalSize')}</dt>
+                        <dd
+                          className="mt-1 truncate text-sm font-semibold text-foreground"
+                          title={formatFileSize(totalOriginalSize)}
                         >
-                          <span className="truncate font-medium text-slate-700 dark:text-slate-200">
+                          {formatFileSize(totalOriginalSize)}
+                        </dd>
+                      </div>
+                      <div className="px-3">
+                        <dt className="text-[11px] text-muted-foreground">{t('saved')}</dt>
+                        <dd className="mt-1 text-lg font-semibold text-primary">
+                          {totalSavedPercent}%
+                        </dd>
+                      </div>
+                    </dl>
+                    <dl className="divide-y divide-border border-y border-border">
+                      <DataRow
+                        label={t('totalOriginalSize')}
+                        value={formatFileSize(totalOriginalSize)}
+                      />
+                      <DataRow
+                        label={t('totalCompressedSize')}
+                        value={formatFileSize(totalCompressedSize)}
+                      />
+                      <DataRow
+                        label={t('saved')}
+                        value={
+                          <span className="text-primary">
+                            {formatFileSize(totalOriginalSize - totalCompressedSize)}
+                          </span>
+                        }
+                      />
+                      <DataRow label={t('outputFolder')} value={compressionResult.outputPath} />
+                    </dl>
+                    <div className="max-h-56 divide-y divide-border overflow-y-auto border-y border-border">
+                      {batchResults.map((result, index) => (
+                        <div
+                          key={`${result.outputPath}-${index}`}
+                          className="flex items-center gap-3 py-2.5 text-xs"
+                        >
+                          <span
+                            className="min-w-0 flex-1 truncate font-medium text-foreground"
+                            title={result.outputPath}
+                          >
                             {result.fileName || `${t('video')} ${index + 1}`}
                           </span>
-                          <span className="text-xs text-slate-500">
+                          <span className="shrink-0 text-muted-foreground">
                             {formatFileSize(result.originalSize)} →{' '}
                             {formatFileSize(result.compressedSize)}
-                          </span>
-                          <span className="text-xs font-semibold text-violet-600 dark:text-violet-300">
-                            {Math.round(
-                              ((result.originalSize - result.compressedSize) /
-                                result.originalSize) *
-                                100
-                            )}
-                            %
                           </span>
                         </div>
                       ))}
                     </div>
-
-                    <Button
-                      onClick={handleReset}
-                      className="h-10 w-full rounded-xl border border-violet-200/70 bg-white text-sm font-semibold text-violet-600 shadow-sm transition hover:bg-violet-50 dark:border-violet-500/30 dark:bg-transparent dark:text-violet-300 dark:hover:bg-violet-900/40"
-                    >
-                      {t('compressMore')}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-6">
-                  <Card className="border border-purple-100/70 bg-white/90 shadow-xl shadow-purple-900/10 dark:border-purple-500/20 dark:bg-slate-900/70">
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                        {t('fileList')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="max-h-60 space-y-2 overflow-y-auto pr-1">
-                        {selectedFiles.map((file, index) => (
-                          <div
-                            key={`${file.name}-${index}`}
-                            className="flex items-center justify-between rounded-xl border border-purple-100/70 bg-white/90 px-3 py-2 text-sm shadow-sm dark:border-purple-500/30 dark:bg-slate-900/70"
-                          >
-                            <div className="flex min-w-0 items-center gap-3">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100/70 text-purple-500 dark:bg-purple-900/30 dark:text-purple-200">
-                                <FileVideo className="h-4 w-4" />
-                              </div>
-                              <div className="min-w-0">
-                                <p
-                                  className="truncate font-medium text-slate-700 dark:text-slate-200"
-                                  title={file.name}
-                                >
-                                  {file.name}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                  {formatFileSize(file.size)}
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const newFiles = [...selectedFiles]
-                                newFiles.splice(index, 1)
-                                setSelectedFiles(newFiles)
-                              }}
-                              className="text-purple-600 hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
-                            >
-                              {t('remove')}
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border border-slate-200/70 bg-white/95 shadow-xl shadow-purple-900/10 dark:border-slate-700/60 dark:bg-slate-900/70">
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
-                        {t('compressionSettings')}
-                      </CardTitle>
-                      <CardDescription className="text-sm text-slate-500 dark:text-slate-400">
-                        {t('videoBatchSettingsHint')}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <CompressionSettings
-                        qualityPreset={qualityPreset}
-                        outputFormat={outputFormat}
-                        encoder={encoder}
-                        crf={crf}
-                        preset={preset}
-                        maintainAspectRatio={maintainAspectRatio}
-                        showAdvanced={showAdvanced}
-                        isBatchMode={true}
-                        onQualityPresetChange={setQualityPreset}
-                        onFormatChange={setOutputFormat}
-                        onEncoderChange={setEncoder}
-                        onCrfChange={setCrf}
-                        onPresetChange={setPreset}
-                        onMaintainAspectRatioChange={setMaintainAspectRatio}
-                        onShowAdvancedChange={setShowAdvanced}
-                      />
-
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <Button
-                        onClick={batchCompressVideos}
-                        disabled={isCompressing}
-                        className="mt-2 h-11 w-full rounded-xl bg-purple-600 text-sm font-semibold shadow-lg shadow-purple-900/20 transition hover:bg-purple-700 disabled:bg-slate-300 dark:bg-purple-500 dark:hover:bg-purple-400"
+                        type="button"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() =>
+                          window.electron.ipcRenderer.invoke(
+                            'open-file-location',
+                            compressionResult.outputPath
+                          )
+                        }
                       >
-                        {isCompressing ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            {t('batchCompressing')}
-                          </>
-                        ) : (
-                          <>
-                            <FileVideo className="mr-2 h-4 w-4" />
-                            {t('batchCompression')}
-                          </>
-                        )}
+                        <FolderOpen className="mr-2 h-4 w-4" />
+                        {t('openOutputFolder')}
                       </Button>
-
-                      {batchProgress.total > 0 && isCompressing && (
-                        <div className="space-y-2 rounded-xl border border-purple-100/70 bg-purple-50/60 p-3 text-xs text-purple-700 dark:border-purple-500/30 dark:bg-purple-900/20 dark:text-purple-100">
-                          <div className="flex items-center justify-between font-medium">
-                            <span>{batchProgress.currentFileName || t('processing')}</span>
-                            <span>
-                              {Math.round((batchProgress.current / batchProgress.total) * 100)}%
-                            </span>
-                          </div>
-                          <Progress
-                            value={(batchProgress.current / batchProgress.total) * 100}
-                            className="h-1.5 bg-purple-100/60"
-                          />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={handleReset}
+                      >
+                        <FileVideo className="mr-2 h-4 w-4" />
+                        {t('compressMore')}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {selectedFiles.length > 0 && (
+                      <dl className="grid grid-cols-2 divide-x divide-border rounded-lg border border-border bg-muted/25 py-4">
+                        <div className="px-4">
+                          <dt className="text-[11px] text-muted-foreground">{t('fileCount')}</dt>
+                          <dd className="mt-1 text-lg font-semibold text-foreground">
+                            {selectedFiles.length}
+                          </dd>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
+                        <div className="px-4">
+                          <dt className="text-[11px] text-muted-foreground">{t('originalSize')}</dt>
+                          <dd className="mt-1 text-sm font-semibold text-foreground">
+                            {formatFileSize(selectedBatchSize)}
+                          </dd>
+                        </div>
+                      </dl>
+                    )}
+                    <EmptyState
+                      icon={FileVideo}
+                      title={t('compressionResult')}
+                      description={
+                        selectedFiles.length
+                          ? t('videoBatchSettingsHint')
+                          : t('selectVideosToCompress')
+                      }
+                      className="min-h-64"
+                    />
+                  </div>
+                )
+              ) : currentFile ? (
+                compressionComplete && compressionResult ? (
+                  <CompressedVideoPreview
+                    compressionResult={compressionResult}
+                    previewUrl={previewUrl}
+                    onReset={handleReset}
+                  />
+                ) : (
+                  <VideoPreview
+                    videoUrl={videoUrl}
+                    fileName={currentFile.name}
+                    fileSize={currentFile.size}
+                    videoInfo={videoInfo}
+                  />
+                )
+              ) : (
+                <EmptyState
+                  icon={FileVideo}
+                  title={t('preview')}
+                  description={t('selectVideoFile')}
+                  className="min-h-64"
+                />
               )}
-            </TabsContent>
-          </Tabs>
+            </PanelBody>
+          </Panel>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }

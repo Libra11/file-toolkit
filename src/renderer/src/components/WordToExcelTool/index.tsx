@@ -5,40 +5,31 @@
  * Description: Word转Excel工具组件
  */
 import { useState } from 'react'
+import type { FC } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Textarea } from '@renderer/components/ui/textarea'
-import { Card, CardContent } from '@renderer/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@renderer/components/ui/dialog'
+import { Panel, PanelBody, PanelHeader } from '@renderer/components/ui/panel'
+import { SegmentedControl } from '@renderer/components/ui/segmented-control'
+import type { SegmentOption } from '@renderer/components/ui/segmented-control'
+import { EmptyState, Notice } from '@renderer/components/ui/states'
 import { toast } from '@renderer/components/ui/toast'
-import { ListChecks, CheckSquare, FileText, FileSpreadsheet, Sparkles } from 'lucide-react'
+import { CheckSquare, Download, FileSpreadsheet, FileText, ListChecks } from 'lucide-react'
 import ExcelPreview from '@renderer/components/ExcelPreview'
-import { BackToHomeButton } from '@renderer/components/ui/BackToHomeButton'
 
 // 导入xlsx库
 import * as XLSX from 'xlsx'
 
-// 渐入动画配置
-const fadeInAnimation = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.3 }
-}
+const MULTIPLE_CHOICE_OPTION_COLUMNS = 8
+
+type QuestionType = 'multipleChoice' | 'trueFalse' | 'fillBlank'
 
 interface WordToExcelToolProps {
   onBack?: () => void
 }
 
-const WordToExcelTool = ({ onBack }: WordToExcelToolProps): JSX.Element => {
+const WordToExcelTool: FC<WordToExcelToolProps> = (): JSX.Element => {
   const { t } = useTranslation()
 
   // 文件名
@@ -49,10 +40,18 @@ const WordToExcelTool = ({ onBack }: WordToExcelToolProps): JSX.Element => {
   const [oriData, setOriData] = useState<string>('')
   // 预览数据
   const [sheetData, setSheetData] = useState<string[][]>([])
-  // 显示预览对话框
+  // 当前是否为选择题固定列预览
+  const [isMultipleChoicePreview, setIsMultipleChoicePreview] = useState<boolean>(false)
+  // 显示预览
   const [showPreview, setShowPreview] = useState<boolean>(false)
-  // 悬停按钮
-  const [hoveredButton, setHoveredButton] = useState<string | null>(null)
+  // 当前解析题型
+  const [questionType, setQuestionType] = useState<QuestionType>('multipleChoice')
+
+  const questionTypeOptions: SegmentOption<QuestionType>[] = [
+    { value: 'multipleChoice', label: t('multipleChoice'), icon: ListChecks },
+    { value: 'trueFalse', label: t('trueFalse'), icon: CheckSquare },
+    { value: 'fillBlank', label: t('fillBlank'), icon: FileText }
+  ]
 
   // 将文本转换为选择题格式
   const transformData = (text: string): string[][] => {
@@ -72,7 +71,7 @@ const WordToExcelTool = ({ onBack }: WordToExcelToolProps): JSX.Element => {
     const questionArr = text.split(/^\d+\.+/gm).slice(1)
 
     return questionArr.map((item) => {
-      return item.split(answer ? new RegExp(`${answer}`, 'gm') : null) || [item]
+      return answer ? item.split(new RegExp(`${answer}`, 'gm')) : [item]
     })
   }
 
@@ -80,7 +79,7 @@ const WordToExcelTool = ({ onBack }: WordToExcelToolProps): JSX.Element => {
   const transformData3 = (text: string): string[][] => {
     text = text
       .replace(/^(\d+)[、．．\s](\.?)/gm, '$1.')
-      .replace(/[\uFF08-\uFF09]/g, (match) => (match === '\uFF08' ? '(' : ')'))
+      .replace(/[（-）]/g, (match) => (match === '（' ? '(' : ')'))
       .replace(/_{2,}/g, '()')
 
     const questionArr = text.split(/^\d+\.+/gm).slice(1)
@@ -89,7 +88,7 @@ const WordToExcelTool = ({ onBack }: WordToExcelToolProps): JSX.Element => {
     return questionArr.map((item) => {
       let match
       const res = [item.replace(reg, '(  )')]
-      const matches = []
+      const matches: string[] = []
 
       // 创建一个新的RegExp对象，因为全局regexp在使用exec时会记住上次匹配位置
       const regExp = new RegExp(reg)
@@ -109,26 +108,27 @@ const WordToExcelTool = ({ onBack }: WordToExcelToolProps): JSX.Element => {
     if (!oriData.trim()) {
       toast.warning({
         title: t('originalData'),
-        description: '请输入原始数据'
+        description: t('wordToExcelOriginalDataRequired')
       })
       return
     }
 
-    let data = transformData(oriData)
+    const data = transformData(oriData).map((item) => {
+      const row = [...item]
+      const referenceAnswer = answer ? row.pop() || '' : ''
+      const [question = '', ...options] = row
+      const fixedOptions = options.slice(0, MULTIPLE_CHOICE_OPTION_COLUMNS)
+      const optionCount = fixedOptions.length
 
-    if (answer) {
-      const maxLen = Math.max(...data.map((item) => item.length)) - 1
-      data = data.map((item) => {
-        const answers = item.pop() || ''
-        while (item.length < maxLen) {
-          item.push('')
-        }
-        item.push(answers)
-        return item
-      })
-    }
+      while (fixedOptions.length < MULTIPLE_CHOICE_OPTION_COLUMNS) {
+        fixedOptions.push('')
+      }
+
+      return [question, ...fixedOptions, String(optionCount), referenceAnswer]
+    })
 
     setSheetData(data)
+    setIsMultipleChoicePreview(true)
     setShowPreview(true)
   }
 
@@ -137,7 +137,7 @@ const WordToExcelTool = ({ onBack }: WordToExcelToolProps): JSX.Element => {
     if (!oriData.trim()) {
       toast.warning({
         title: t('originalData'),
-        description: '请输入原始数据'
+        description: t('wordToExcelOriginalDataRequired')
       })
       return
     }
@@ -147,6 +147,7 @@ const WordToExcelTool = ({ onBack }: WordToExcelToolProps): JSX.Element => {
     )
 
     setSheetData(data)
+    setIsMultipleChoicePreview(false)
     setShowPreview(true)
   }
 
@@ -155,14 +156,25 @@ const WordToExcelTool = ({ onBack }: WordToExcelToolProps): JSX.Element => {
     if (!oriData.trim()) {
       toast.warning({
         title: t('originalData'),
-        description: '请输入原始数据'
+        description: t('wordToExcelOriginalDataRequired')
       })
       return
     }
 
     const data = transformData3(oriData)
     setSheetData(data)
+    setIsMultipleChoicePreview(false)
     setShowPreview(true)
+  }
+
+  const handlePreview = (): void => {
+    if (questionType === 'multipleChoice') {
+      handleMultipleChoice()
+    } else if (questionType === 'trueFalse') {
+      handleTrueFalse()
+    } else {
+      handleFillBlank()
+    }
   }
 
   // 导出到Excel
@@ -174,218 +186,175 @@ const WordToExcelTool = ({ onBack }: WordToExcelToolProps): JSX.Element => {
       XLSX.writeFile(workbook, fileName ? `${fileName}.xlsx` : '试卷.xlsx')
 
       toast.success({
-        title: '导出成功',
-        description: '文件已成功导出'
+        title: t('wordToExcelExportSuccess'),
+        description: t('wordToExcelExportSuccessDescription')
       })
       setShowPreview(false)
     } catch (error) {
       console.error('导出Excel失败:', error)
       toast.error({
-        title: '导出失败',
-        description: '请检查xlsx库是否正确安装'
+        title: t('wordToExcelExportFailed'),
+        description: t('wordToExcelExportFailedDescription')
       })
     }
   }
 
-  // 获取按钮样式
-  const getButtonStyle = (type: string): string => {
-    const baseStyle = 'gap-2 px-3 transition-all duration-300 font-medium shadow-sm'
-    const isHovered = hoveredButton === type
-
-    switch (type) {
-      case 'multiple':
-        return `${baseStyle} bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white ${isHovered ? 'shadow-lg scale-105' : ''}`
-      case 'trueFalse':
-        return `${baseStyle} bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white ${isHovered ? 'shadow-lg scale-105' : ''}`
-      case 'fillBlank':
-        return `${baseStyle} bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white ${isHovered ? 'shadow-lg scale-105' : ''}`
-      default:
-        return baseStyle
-    }
-  }
+  const outputFileName = fileName ? `${fileName}.xlsx` : '试卷.xlsx'
+  const sourceLineCount = oriData ? oriData.split(/\r?\n/).length : 0
 
   return (
-    <>
-      <motion.div
-        className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-blue-900/10 backdrop-blur-sm transition-all duration-500 dark:border-white/10 dark:bg-slate-900/60"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.45 }}
-      >
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white/50 to-transparent dark:from-blue-900/40 dark:via-slate-900" />
-        <div className="space-y-6">
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-3 flex-row items-center justify-between">
-              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:from-blue-900/50 dark:to-indigo-900/50 dark:text-blue-200">
-                <FileSpreadsheet className="h-4 w-4" />
-                {t('wordToExcel')}
-              </div>
-              {onBack && (
-                <BackToHomeButton
-                  onClick={onBack}
-                  className="bg-blue-100/80 text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50"
-                />
-              )}
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
-                {t('wordToExcel')}
-              </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {t('wordToExcelDescription')}
-              </p>
-            </div>
+    <div className="min-w-0 space-y-4 pb-6">
+      <section className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-lg border border-border bg-card px-4 py-3 text-card-foreground">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <FileSpreadsheet className="h-4 w-4" strokeWidth={1.7} />
           </div>
-
-          <div className="flex items-center gap-3 rounded-2xl border border-blue-100/70 bg-blue-50/70 px-4 py-3 text-sm text-blue-700 shadow-inner dark:border-blue-800/60 dark:bg-blue-900/20 dark:text-blue-100">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 text-blue-500 shadow-sm dark:bg-white/10 dark:text-blue-200">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div className="space-y-0.5">
-              <p className="text-base font-semibold text-slate-900 dark:text-white">
-                {t('wordToExcelTipTitle')}
-              </p>
-              <p className="text-xs leading-relaxed text-blue-600/90 dark:text-blue-200">
-                {t('wordToExcelTipDescription')}
-              </p>
-            </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              {t('outputFile')}
+            </p>
+            <p
+              className="mt-0.5 max-w-[280px] truncate text-sm font-semibold text-foreground"
+              title={outputFileName}
+            >
+              {outputFileName}
+            </p>
           </div>
-
-          <Card className="overflow-hidden rounded-3xl border border-blue-100/70 bg-white/95 shadow-xl shadow-blue-900/10 dark:border-blue-800/40 dark:bg-slate-900/60">
-            <CardContent className="space-y-6 px-6 pt-6 pb-6">
-              <AnimatePresence>
-                <motion.div
-                  key="fileConfig"
-                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                  {...fadeInAnimation}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                >
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                      <FileSpreadsheet className="h-3.5 w-3.5 text-blue-500" />
-                      {t('generateFileName')}
-                    </label>
-                    <Input
-                      value={fileName}
-                      onChange={(e) => setFileName(e.target.value)}
-                      placeholder={t('fileNamePlaceholder')}
-                      className="bg-slate-50 dark:bg-slate-800/50 focus-visible:ring-blue-500 border-blue-100 dark:border-blue-800/30"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                      <CheckSquare className="h-3.5 w-3.5 text-blue-500" />
-                      {t('answerMatching')}
-                    </label>
-                    <Input
-                      value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
-                      placeholder={t('answerMatchingPlaceholder')}
-                      className="bg-slate-50 dark:bg-slate-800/50 focus-visible:ring-blue-500 border-blue-100 dark:border-blue-800/30"
-                    />
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  key="textareaSection"
-                  className="space-y-2"
-                  {...fadeInAnimation}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                >
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <FileText className="h-3.5 w-3.5 text-blue-500" />
-                    {t('originalData')}
-                  </label>
-                  <Textarea
-                    value={oriData}
-                    onChange={(e) => setOriData(e.target.value)}
-                    placeholder={t('originalData')}
-                    className="min-h-[300px] bg-slate-50 dark:bg-slate-800/50 focus-visible:ring-blue-500 border-blue-100 dark:border-blue-800/30 resize-none shadow-inner"
-                  />
-                </motion.div>
-
-                <motion.div
-                  key="buttonSection"
-                  className="flex flex-wrap gap-2 pt-2"
-                  {...fadeInAnimation}
-                  transition={{ duration: 0.3, delay: 0.3 }}
-                >
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      onClick={handleMultipleChoice}
-                      className={getButtonStyle('multiple')}
-                      onMouseEnter={() => setHoveredButton('multiple')}
-                      onMouseLeave={() => setHoveredButton(null)}
-                    >
-                      <ListChecks size={18} />
-                      {t('multipleChoice')}
-                    </Button>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      onClick={handleTrueFalse}
-                      className={getButtonStyle('trueFalse')}
-                      onMouseEnter={() => setHoveredButton('trueFalse')}
-                      onMouseLeave={() => setHoveredButton(null)}
-                    >
-                      <CheckSquare size={18} />
-                      {t('trueFalse')}
-                    </Button>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      onClick={handleFillBlank}
-                      className={getButtonStyle('fillBlank')}
-                      onMouseEnter={() => setHoveredButton('fillBlank')}
-                      onMouseLeave={() => setHoveredButton(null)}
-                    >
-                      <FileText size={18} />
-                      {t('fillBlank')}
-                    </Button>
-                  </motion.div>
-                </motion.div>
-              </AnimatePresence>
-            </CardContent>
-          </Card>
         </div>
-      </motion.div>
-
-      {/* 预览对话框 */}
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-4xl bg-white dark:bg-slate-800/95 border border-blue-100 dark:border-blue-800/30">
-          <DialogHeader>
-            <DialogTitle className="text-blue-700 dark:text-blue-400 flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5" />
-              {t('previewResult')}
-            </DialogTitle>
-            <DialogDescription>{t('previewResult')}</DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4 border border-slate-100 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50 shadow-inner">
-            <ExcelPreview data={sheetData} />
+        <dl className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs lg:ml-auto">
+          <div className="flex items-center gap-2">
+            <dt className="text-muted-foreground">{t('format')}</dt>
+            <dd className="font-medium text-foreground">XLSX</dd>
           </div>
+          <div className="flex items-center gap-2">
+            <dt className="text-muted-foreground">{t('answerMatching')}</dt>
+            <dd
+              className="max-w-[10rem] truncate font-medium text-foreground"
+              title={answer || t('wordToExcelNotSet')}
+            >
+              {answer || t('wordToExcelNotSet')}
+            </dd>
+          </div>
+          <div className="flex items-center gap-2">
+            <dt className="text-muted-foreground">{t('wordToExcelOriginalContent')}</dt>
+            <dd className="font-medium tabular-nums text-foreground">
+              {t('wordToExcelCharacterCount', { count: oriData.length })}
+            </dd>
+          </div>
+        </dl>
+      </section>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowPreview(false)}
-              className="border-blue-200 hover:bg-blue-50 dark:border-blue-800/30 dark:hover:bg-blue-900/20"
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              onClick={exportToExcel}
-              className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-md"
-            >
-              {t('export')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-2">
+        <Panel className="min-w-0">
+          <PanelHeader
+            title={t('wordToExcelInputAndParsing')}
+            description={t('wordToExcelInputDescription')}
+          />
+          <PanelBody className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-xs font-medium text-foreground">
+                {t('wordToExcelQuestionType')}
+              </span>
+              <SegmentedControl
+                value={questionType}
+                onChange={setQuestionType}
+                options={questionTypeOptions}
+                ariaLabel={t('wordToExcelQuestionType')}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label htmlFor="excel-file-name" className="text-xs font-medium text-foreground">
+                  {t('generateFileName')}
+                </label>
+                <Input
+                  id="excel-file-name"
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value)}
+                  placeholder={t('fileNamePlaceholder')}
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="excel-answer-rule" className="text-xs font-medium text-foreground">
+                  {t('answerMatching')}
+                </label>
+                <Input
+                  id="excel-answer-rule"
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  placeholder={t('answerMatchingPlaceholder')}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <label htmlFor="word-source-data" className="text-xs font-medium text-foreground">
+                  {t('originalData')}
+                </label>
+                <span className="text-[11px] tabular-nums text-muted-foreground">
+                  {t('wordToExcelLineCount', { count: sourceLineCount })}
+                </span>
+              </div>
+              <Textarea
+                id="word-source-data"
+                value={oriData}
+                onChange={(e) => setOriData(e.target.value)}
+                placeholder={t('originalData')}
+                spellCheck={false}
+                className="min-h-[340px] resize-y font-mono text-xs leading-6"
+              />
+            </div>
+
+            <Notice title={t('wordToExcelTipTitle')} description={t('wordToExcelTipDescription')} />
+
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                {t('wordToExcelParseNotice')}
+              </p>
+              <Button type="button" onClick={handlePreview} className="shrink-0 gap-2">
+                <FileSpreadsheet className="h-4 w-4" /> {t('wordToExcelParseAndPreview')}
+              </Button>
+            </div>
+          </PanelBody>
+        </Panel>
+
+        <Panel className="min-w-0">
+          <PanelHeader
+            title={t('previewResult')}
+            description={
+              showPreview
+                ? t('wordToExcelPreviewReadyDescription', { count: sheetData.length })
+                : t('wordToExcelPreviewEmptyDescription')
+            }
+            action={
+              <Button
+                type="button"
+                onClick={exportToExcel}
+                disabled={!showPreview || sheetData.length === 0}
+                size="sm"
+                className="gap-2"
+              >
+                <Download className="h-3.5 w-3.5" /> {t('export')}
+              </Button>
+            }
+          />
+          <PanelBody className="min-w-0 p-0">
+            {showPreview ? (
+              <ExcelPreview data={sheetData} fixedMultipleChoiceLayout={isMultipleChoicePreview} />
+            ) : (
+              <EmptyState
+                icon={FileSpreadsheet}
+                title={t('wordToExcelAwaitingPreview')}
+                description={t('wordToExcelAwaitingPreviewDescription')}
+                className="min-h-[480px] rounded-none border-0 bg-muted/10"
+              />
+            )}
+          </PanelBody>
+        </Panel>
+      </div>
+    </div>
   )
 }
 

@@ -1,9 +1,3 @@
-/**
- * Author: Libra
- * Date: 2024-10-07 01:16:20
- * LastEditors: Libra
- * Description:
- */
 import { useTranslation } from 'react-i18next'
 import {
   Select,
@@ -14,7 +8,6 @@ import {
 } from '@renderer/components/ui/select'
 import { ConversionCategory, ConversionType } from '@renderer/lib/conversionTypes'
 import { Label } from '@renderer/components/ui/label'
-import { Badge } from '@renderer/components/ui/badge'
 import { FileInput, FileOutput, ArrowRight } from 'lucide-react'
 
 interface ConversionTypeSelectProps {
@@ -36,7 +29,6 @@ export default function ConversionTypeSelect({
     onConversionChange(value as ConversionType | '')
   }
 
-  // 从转换类型中提取输入和输出格式
   const getFormatDetails = (conversionType: string): { input: string; output: string } | null => {
     const match = conversionType.match(/([A-Za-z0-9]+)To([A-Za-z0-9]+)/)
     if (!match) return null
@@ -47,18 +39,9 @@ export default function ConversionTypeSelect({
   }
 
   return (
-    <div className="space-y-2.5">
-      <Label htmlFor="conversion" className="font-medium flex items-center text-sm">
-        {selectedConversion && (
-          <Badge
-            variant="outline"
-            className="mr-2 bg-primary/5 border-primary/20 text-primary text-[10px] px-1.5 py-0.5 font-medium min-w-[50px] flex items-center justify-center rounded-sm"
-          >
-            <FileOutput className="h-3 w-3 mr-1" />
-            {getFormatDetails(selectedConversion)?.output || ''}
-          </Badge>
-        )}
-        <span className="text-slate-700 dark:text-slate-300">{t('conversionType')}</span>
+    <div className="space-y-2">
+      <Label htmlFor="conversion" className="text-xs font-medium text-foreground">
+        {t('conversionType')}
       </Label>
       <Select
         value={selectedConversion}
@@ -67,11 +50,11 @@ export default function ConversionTypeSelect({
       >
         <SelectTrigger
           id="conversion"
-          className="w-full transition-all duration-200 border-border/50 hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/20 ring-offset-0 disabled:opacity-50 disabled:pointer-events-none"
+          className="h-10 rounded-md border-border bg-card transition-colors hover:border-primary/40 focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:pointer-events-none disabled:opacity-50"
         >
           <SelectValue placeholder={t('selectConversion')} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="rounded-md">
           {categories
             .find((category) => category.name === selectedCategory)
             ?.types.map((type) => {
@@ -80,26 +63,18 @@ export default function ConversionTypeSelect({
                 <SelectItem
                   key={type}
                   value={type}
-                  className="cursor-pointer focus:bg-primary/5 focus:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors duration-150"
+                  className="cursor-pointer rounded-md focus:bg-accent focus:text-accent-foreground"
                 >
-                  <div className="flex items-center w-full py-0.5">
-                    <div className="flex items-center">
-                      <Badge
-                        variant="outline"
-                        className="mr-1 text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 min-w-[50px] flex items-center justify-center"
-                      >
-                        <FileInput className="h-3 w-3 mr-1" />
-                        {formatDetails?.input || ''}
-                      </Badge>
-                      <ArrowRight className="h-3 w-3 text-muted-foreground mx-1" />
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 min-w-[50px] flex items-center justify-center"
-                      >
-                        <FileOutput className="h-3 w-3 mr-1" />
-                        {formatDetails?.output || ''}
-                      </Badge>
-                    </div>
+                  <div className="flex items-center gap-1.5 py-0.5">
+                    <span className="inline-flex min-w-[3.5rem] items-center justify-center gap-1 rounded-sm border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-foreground">
+                      <FileInput className="h-3 w-3 text-muted-foreground" />
+                      {formatDetails?.input || ''}
+                    </span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                    <span className="inline-flex min-w-[3.5rem] items-center justify-center gap-1 rounded-sm border border-primary/20 bg-primary/5 px-1.5 py-0.5 font-mono text-[10px] font-medium text-primary">
+                      <FileOutput className="h-3 w-3" />
+                      {formatDetails?.output || ''}
+                    </span>
                   </div>
                 </SelectItem>
               )

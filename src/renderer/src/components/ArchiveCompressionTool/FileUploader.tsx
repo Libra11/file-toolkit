@@ -1,19 +1,8 @@
-/**
- * Author: Libra
- * Date: 2025-04-15 17:56:04
- * LastEditors: Libra
- * Description:
- */
-/*
- * @Author: Libra
- * @Date: 2024-10-23
- * @LastEditors: Libra
- * @Description: 文件上传组件
- */
 import { useState, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Upload, File } from 'lucide-react'
+import { File, Upload } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import { cn } from '@renderer/lib/utils'
 import { ArchiveFiles } from './types'
 
 interface FileUploaderProps {
@@ -32,8 +21,8 @@ export default function FileUploader({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const fileList = e.target.files
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const fileList = event.target.files
       if (!fileList) return
 
       const files: ArchiveFiles[] = []
@@ -56,25 +45,25 @@ export default function FileUploader({
     [onFilesSelected]
   )
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
     setIsDragging(true)
   }, [])
 
-  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
     setIsDragging(false)
   }, [])
 
   const handleDrop = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault()
-      e.stopPropagation()
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
       setIsDragging(false)
 
-      const fileList = e.dataTransfer.files
+      const fileList = event.dataTransfer.files
       if (!fileList.length) return
 
       const files: ArchiveFiles[] = []
@@ -102,16 +91,16 @@ export default function FileUploader({
 
   return (
     <div
-      className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+      className={cn(
+        'rounded-lg border border-dashed px-4 py-5 transition-colors',
         isDragging
-          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-          : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
-      }`}
+          ? 'border-primary bg-primary/5'
+          : 'border-input bg-muted/20 hover:border-primary/40 hover:bg-muted/40'
+      )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* 文件选择输入 */}
       <input
         type="file"
         ref={fileInputRef}
@@ -121,28 +110,26 @@ export default function FileUploader({
         accept={accept}
       />
 
-      <div className="flex flex-col items-center justify-center space-y-4">
-        <div className="flex flex-col items-center">
-          <Upload className="w-12 h-12 text-slate-400 mb-4" />
-          <h3 className="font-medium text-slate-700 dark:text-slate-300">
-            {t('dragAndDropFiles')}
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+      <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-card text-primary">
+          <Upload className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-foreground">{t('dragAndDropFiles')}</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
             {multiple ? t('orSelectMultipleFiles') : t('orSelectFile')}
           </p>
         </div>
-
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button
-            variant="outline"
-            type="button"
-            onClick={handleSelectFile}
-            className="flex items-center"
-          >
-            <File className="w-4 h-4 mr-2" />
-            {multiple ? t('selectFiles') : t('selectFile')}
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          onClick={handleSelectFile}
+          className="shrink-0"
+        >
+          <File className="mr-1.5 h-3.5 w-3.5" />
+          {multiple ? t('selectFiles') : t('selectFile')}
+        </Button>
       </div>
     </div>
   )

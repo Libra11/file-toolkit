@@ -1,12 +1,8 @@
-/**
- * Author: Libra
- * Date: 2024-03-31
- * LastEditors: Libra
- * Description: 音频压缩工具的文件上传组件
- */
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Music } from 'lucide-react'
+import { FileUp, Music } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import { EmptyState } from '@renderer/components/ui/states'
 import { cn } from '@renderer/lib/utils'
 
 interface FileUploaderProps {
@@ -23,56 +19,35 @@ export function FileUploader({
   className
 }: FileUploaderProps): JSX.Element {
   const { t } = useTranslation()
+  const [isDragging, setIsDragging] = useState(false)
 
-  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>): void => {
-    e.preventDefault()
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const files: File[] = []
-      for (let i = 0; i < e.dataTransfer.files.length; i++) {
-        const file = e.dataTransfer.files[i]
-        if (file.type.startsWith('audio/')) {
-          files.push(file)
-        }
-      }
-      if (files.length > 0) {
-        if (isBatchMode) {
-          onFileSelect(files)
-        } else {
-          // 单文件模式只选第一个
-          onFileSelect([files[0]])
-        }
-      }
-    }
-  }
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>): void => {
-    e.preventDefault()
-  }
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    if (e.target.files && e.target.files.length > 0) {
-      const files: File[] = []
-      for (let i = 0; i < e.target.files.length; i++) {
-        const file = e.target.files[i]
-        if (file.type.startsWith('audio/')) {
-          files.push(file)
-        }
-      }
-      if (files.length > 0) {
-        onFileSelect(files)
-      }
-    }
+  const selectAudios = (fileList: FileList): void => {
+    const files = Array.from(fileList).filter((file) => file.type.startsWith('audio/'))
+    if (files.length > 0) onFileSelect(isBatchMode ? files : files.slice(0, 1))
   }
 
   const openFileDialog = (): void => {
-    const input = document.getElementById('audio-file-input') as HTMLInputElement
-    if (input) {
-      input.click()
+    if (fileInputRef?.current) {
+      fileInputRef.current.click()
+    } else {
+      ;(document.getElementById('audio-file-input') as HTMLInputElement | null)?.click()
     }
   }
 
   return (
-    <div className={cn('mt-4', className)}>
+    <div
+      className={cn(className)}
+      onDrop={(event) => {
+        event.preventDefault()
+        setIsDragging(false)
+        selectAudios(event.dataTransfer.files)
+      }}
+      onDragOver={(event) => {
+        event.preventDefault()
+        setIsDragging(true)
+      }}
+      onDragLeave={() => setIsDragging(false)}
+    >
       <input
         type="file"
         id="audio-file-input"
@@ -80,27 +55,25 @@ export function FileUploader({
         className="hidden"
         accept="audio/*"
         multiple={isBatchMode}
-        onChange={handleFileInputChange}
+        onChange={(event) => {
+          if (event.target.files) selectAudios(event.target.files)
+        }}
       />
-      <div
-        className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
-        onClick={openFileDialog}
-        onDrop={handleFileDrop}
-        onDragOver={handleDragOver}
-      >
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <Music className="h-10 w-10 text-slate-400 dark:text-slate-500" />
-          <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300">
-            {isBatchMode ? t('dropFilesHere') : t('dragDropAudio')}
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
-            {t('supportedFormats')}: MP3, WAV, AAC, OGG, M4A, FLAC
-          </p>
-          <Button className="mt-4" size="sm">
+      <EmptyState
+        icon={isDragging ? Music : FileUp}
+        title={isBatchMode ? t('dropFilesHere') : t('dragDropAudio')}
+        description={`${t('supportedFormats')}: MP3, WAV, AAC, OGG, M4A, FLAC`}
+        className={cn(
+          'min-h-48 bg-muted/20 px-4 py-6',
+          isDragging && 'border-primary bg-primary/[0.05]'
+        )}
+        action={
+          <Button type="button" size="sm" onClick={openFileDialog}>
+            <FileUp className="mr-2 h-4 w-4" />
             {isBatchMode ? t('selectFiles') : t('selectFile')}
           </Button>
-        </div>
-      </div>
+        }
+      />
     </div>
   )
 }

@@ -1,14 +1,7 @@
-/*
- * @Author: Libra
- * @Date: 2025-04-25 10:30:00
- * @LastEditors: Libra
- * @Description: Toast 组件
- */
 import * as React from 'react'
-import { X } from 'lucide-react'
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
 import { cn } from '@renderer/lib/utils'
 
-// Toast 类型定义
 export type ToastVariant = 'default' | 'success' | 'warning' | 'destructive'
 
 export interface Toast {
@@ -26,7 +19,6 @@ interface ToastContextType {
   dismissAllToasts: () => void
 }
 
-// 事件总线机制，允许在组件外调用 toast
 type ToastMessage = Omit<Toast, 'id'>
 type Listener = (toast: ToastMessage) => void
 let listeners: Listener[] = []
@@ -39,13 +31,11 @@ function subscribe(listener: Listener): () => void {
 }
 
 function emit(toast: ToastMessage): void {
-  listeners.forEach((l) => l(toast))
+  listeners.forEach((listener) => listener(toast))
 }
 
-// 创建 Context
 const ToastContext = React.createContext<ToastContextType | undefined>(undefined)
 
-// Toast 提供器
 export function ToastProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const [toasts, setToasts] = React.useState<Toast[]>([])
 
@@ -59,7 +49,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }): JSX.
       const newToast = { id, ...toast }
       setToasts((prev) => [...prev, newToast])
 
-      // 自动关闭
       if (toast.duration !== 0) {
         setTimeout(() => {
           dismissToast(id)
@@ -73,7 +62,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }): JSX.
     setToasts([])
   }, [])
 
-  // 订阅全局 toast 事件
   React.useEffect(() => {
     return subscribe((toast) => {
       addToast(toast)
@@ -88,7 +76,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }): JSX.
   )
 }
 
-// 使用 Toast 的 Hook
 export function useToast(): ToastContextType {
   const context = React.useContext(ToastContext)
   if (!context) {
@@ -97,14 +84,13 @@ export function useToast(): ToastContextType {
   return context
 }
 
-// Toast 容器
 function ToastContainer(): JSX.Element {
   const { toasts } = useToast()
 
   if (toasts.length === 0) return <></>
 
   return (
-    <div className="fixed bottom-0 right-0 z-50 p-4 space-y-2 max-w-xs w-full">
+    <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-2">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} />
       ))}
@@ -112,52 +98,75 @@ function ToastContainer(): JSX.Element {
   )
 }
 
-// 单个 Toast 项
+const variantStyles: Record<ToastVariant, string> = {
+  default: 'border-border bg-card',
+  success: 'border-primary/30 bg-card',
+  warning: 'border-input bg-secondary/60',
+  destructive: 'border-destructive/30 bg-card'
+}
+
+const iconStyles: Record<ToastVariant, string> = {
+  default: 'text-muted-foreground',
+  success: 'text-primary',
+  warning: 'text-foreground',
+  destructive: 'text-destructive'
+}
+
 function ToastItem({ toast }: { toast: Toast }): JSX.Element {
   const { dismissToast } = useToast()
-
-  const variantStyles = {
-    default: 'bg-background border',
-    success: 'bg-green-50 border-green-200 text-green-800',
-    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    destructive: 'bg-red-50 border-red-200 text-red-800'
-  }
+  const variant = toast.variant || 'default'
+  const Icon =
+    variant === 'success'
+      ? CheckCircle2
+      : variant === 'warning'
+        ? AlertTriangle
+        : variant === 'destructive'
+          ? AlertCircle
+          : Info
 
   return (
     <div
+      role={variant === 'destructive' ? 'alert' : 'status'}
+      aria-live={variant === 'destructive' ? 'assertive' : 'polite'}
+      aria-atomic="true"
       className={cn(
-        'rounded-md shadow-md border p-4 animate-in fade-in slide-in-from-bottom-5',
-        variantStyles[toast.variant || 'default']
+        'pointer-events-auto rounded-md border p-3.5 text-card-foreground shadow-lg animate-in fade-in slide-in-from-bottom-2',
+        variantStyles[variant]
       )}
     >
-      <div className="flex justify-between items-start gap-2">
-        <div className="flex-1">
-          {toast.title && <div className="font-medium">{toast.title}</div>}
-          {toast.description && <div className="text-sm opacity-90 mt-1">{toast.description}</div>}
+      <div className="flex items-start gap-3">
+        <Icon className={cn('mt-0.5 h-4 w-4 shrink-0', iconStyles[variant])} strokeWidth={1.8} />
+        <div className="min-w-0 flex-1">
+          {toast.title ? <div className="text-sm font-medium leading-5">{toast.title}</div> : null}
+          {toast.description ? (
+            <div className="mt-1 break-words text-xs leading-5 text-muted-foreground">
+              {toast.description}
+            </div>
+          ) : null}
         </div>
-        <button onClick={() => dismissToast(toast.id)} className="text-gray-500 hover:text-gray-700">
-          <X size={16} />
+        <button
+          type="button"
+          aria-label="Dismiss notification"
+          onClick={() => dismissToast(toast.id)}
+          className="-mr-1 -mt-1 rounded-sm p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
+          <X className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>
   )
 }
 
-// 导出 toast 方法（通过事件总线触发）
 export const toast = {
-  // 常规 toast
   default: (props: Omit<Toast, 'id' | 'variant'>): void => {
     emit({ ...props, variant: 'default' })
   },
-  // 成功 toast
   success: (props: Omit<Toast, 'id' | 'variant'>): void => {
     emit({ ...props, variant: 'success' })
   },
-  // 警告 toast
   warning: (props: Omit<Toast, 'id' | 'variant'>): void => {
     emit({ ...props, variant: 'warning' })
   },
-  // 错误 toast
   error: (props: Omit<Toast, 'id' | 'variant'>): void => {
     emit({ ...props, variant: 'destructive' })
   }

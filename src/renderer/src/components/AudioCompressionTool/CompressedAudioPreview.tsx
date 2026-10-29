@@ -1,18 +1,23 @@
-/**
- * Author: Libra
- * Date: 2024-03-31
- * LastEditors: Libra
- * Description: 压缩后的音频预览组件
- */
-import { useRef, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Music } from 'lucide-react'
+import { FolderOpen, Music } from 'lucide-react'
+import { Button } from '@renderer/components/ui/button'
+import { DataRow } from '@renderer/components/ui/panel'
+import { Notice } from '@renderer/components/ui/states'
+import { cn } from '@renderer/lib/utils'
 import { CompressionResult } from './types'
 
 interface CompressedAudioPreviewProps {
   compressionResult: CompressionResult
   previewUrl: string
   className?: string
+}
+
+function formatSize(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** index).toFixed(2)} ${units[index]}`
 }
 
 export function CompressedAudioPreview({
@@ -22,65 +27,69 @@ export function CompressedAudioPreview({
 }: CompressedAudioPreviewProps): JSX.Element {
   const { t } = useTranslation()
   const audioRef = useRef<HTMLAudioElement>(null)
-
-  const { originalSize, compressedSize, compressionRatio } = compressionResult
+  const { originalSize, compressedSize, compressionRatio, outputPath } = compressionResult
+  const savedPercent = originalSize
+    ? Math.round(((originalSize - compressedSize) / originalSize) * 100)
+    : 0
 
   useEffect(() => {
-    // 组件挂载时重置音频状态
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0
-    }
+    if (audioRef.current) audioRef.current.currentTime = 0
   }, [previewUrl])
 
   return (
-    <div
-      className={`space-y-3 rounded-2xl border border-emerald-200/70 bg-white/95 p-4 shadow-sm shadow-emerald-900/10 dark:border-emerald-500/30 dark:bg-emerald-900/30 ${className || ''}`}
-    >
-      <div className="flex items-center gap-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100/80 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
-          <Music className="h-4 w-4" />
+    <div className={cn('space-y-4', className)}>
+      <Notice tone="success" title={t('compressedAudio')} description={outputPath} />
+
+      <div className="rounded-lg border border-border bg-muted/30 p-5">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-primary">
+            <Music className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-foreground">{t('compressedAudio')}</p>
+            <p className="mt-1 text-[11px] uppercase text-muted-foreground">
+              {compressionResult.format}
+            </p>
+          </div>
         </div>
-        <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-200">
-          {t('compressedAudio')}
-        </h3>
+        <audio
+          ref={audioRef}
+          src={previewUrl}
+          controls
+          className="w-full"
+          controlsList="nodownload"
+        />
       </div>
 
-      <div className="grid gap-2 rounded-xl bg-emerald-50/70 p-3 text-xs text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-100">
-        <div className="flex items-center justify-between">
-          <span className="font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-            {t('originalSize')}
-          </span>
-          <span>{(originalSize / 1024 / 1024).toFixed(2)} MB</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-            {t('compressedSize')}
-          </span>
-          <span>{(compressedSize / 1024 / 1024).toFixed(2)} MB</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-            {t('compressionRatio')}
-          </span>
-          <span>{compressionRatio.toFixed(2)}x</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-            {t('saved')}
-          </span>
-          <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-300">
-            {Math.round(((originalSize - compressedSize) / originalSize) * 100)}%
-          </span>
-        </div>
-      </div>
+      <dl className="divide-y divide-border border-y border-border">
+        <DataRow label={t('originalSize')} value={formatSize(originalSize)} />
+        <DataRow label={t('compressedSize')} value={formatSize(compressedSize)} />
+        <DataRow label={t('compressionRatio')} value={`${compressionRatio.toFixed(2)}×`} />
+        <DataRow
+          label={t('saved')}
+          value={
+            <span className="text-primary">
+              {savedPercent}% · {formatSize(originalSize - compressedSize)}
+            </span>
+          }
+        />
+      </dl>
 
-      <audio
-        ref={audioRef}
-        src={previewUrl}
-        controls
-        className="w-full rounded-lg border border-emerald-100/60 bg-white/90 p-2 text-slate-700 shadow-inner dark:border-emerald-500/30 dark:bg-emerald-900/40 dark:text-emerald-100"
-        controlsList="nodownload"
-      />
+      <Button
+        type="button"
+        size="sm"
+        className="w-full"
+        onClick={() => {
+          if (window.system && typeof window.system.openFileLocation === 'function') {
+            window.system.openFileLocation(outputPath)
+          } else {
+            window.electron.ipcRenderer.invoke('open-file-location', outputPath)
+          }
+        }}
+      >
+        <FolderOpen className="mr-2 h-4 w-4" />
+        {t('openFileLocation')}
+      </Button>
     </div>
   )
 }

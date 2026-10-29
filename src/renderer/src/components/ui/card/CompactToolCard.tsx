@@ -1,11 +1,4 @@
-/*
- * @Author: Libra
- * @Date: 2025-01-09
- * @LastEditors: Libra
- * @Description: 紧凑型工具卡片组件
- */
-import { ReactNode } from 'react'
-import { motion } from 'framer-motion'
+import type { ReactNode } from 'react'
 import { ArrowUpRight } from 'lucide-react'
 import { cn } from '@renderer/lib/utils'
 
@@ -16,6 +9,8 @@ interface CompactToolCardProps {
   onClick?: () => void
   className?: string
   iconColor?: string
+  layout?: 'grid' | 'list'
+  meta?: string
 }
 
 export default function CompactToolCard({
@@ -24,35 +19,57 @@ export default function CompactToolCard({
   description,
   onClick,
   className,
-  iconColor = 'text-blue-500'
+  iconColor = 'text-primary',
+  layout = 'grid',
+  meta
 }: CompactToolCardProps): JSX.Element {
+  const isList = layout === 'list'
+
   return (
-    <motion.button
+    <button
       type="button"
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
       onClick={onClick}
+      disabled={!onClick}
       className={cn(
-        'group flex w-full items-center gap-4 rounded-2xl border border-white/70 bg-white/90 px-4 py-4 text-left shadow-md shadow-indigo-900/5 transition-all duration-200 hover:-translate-y-0.5 hover:border-white hover:bg-white/95 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-slate-900',
+        'group relative w-full rounded-lg border border-border bg-card text-left transition-colors hover:border-primary/30 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-default disabled:hover:border-border disabled:hover:bg-card',
+        isList ? 'flex items-center gap-3 p-3' : 'min-h-[148px] p-4',
         className
       )}
     >
-      <div
+      <span
         className={cn(
-          'flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white',
+          'flex shrink-0 items-center justify-center rounded-md border border-border bg-muted/60',
+          isList ? 'h-9 w-9' : 'h-10 w-10',
           iconColor
         )}
       >
         {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>
-        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-300 line-clamp-2">
+      </span>
+
+      <span className={cn('block min-w-0', isList ? 'flex-1 pr-5' : 'mt-4 pr-4')}>
+        <span className="block truncate text-xs font-semibold text-foreground">{title}</span>
+        <span
+          className={cn(
+            'block leading-relaxed text-muted-foreground',
+            isList ? 'mt-0.5 line-clamp-1 text-[11px]' : 'mt-1.5 line-clamp-2 text-xs'
+          )}
+        >
           {description}
-        </p>
-      </div>
-      <ArrowUpRight className="h-4 w-4 flex-shrink-0 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300" />
-    </motion.button>
+        </span>
+        {!isList && meta && (
+          <span className="mt-3 block text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/75">
+            {meta}
+          </span>
+        )}
+      </span>
+
+      <ArrowUpRight
+        className={cn(
+          'h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-primary',
+          isList ? 'absolute right-3 top-1/2 -translate-y-1/2' : 'absolute right-4 top-4'
+        )}
+        strokeWidth={1.7}
+      />
+    </button>
   )
 }
